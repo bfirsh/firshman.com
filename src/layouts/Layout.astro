@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Ben Firshman</title>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  html {
+    font-size: 20px;
+    line-height: 1.4;
+    font-weight: 600;
+    text-wrap: pretty;
+  }
+
+  @media (min-width: 768px) {
+    html {
+      font-size: 32px;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+      "Segoe UI Symbol";
+    color: black;
+  }
+
+  ::selection {
+    background: black;
+    color: white;
+  }
+
+  ::-moz-selection {
+    background: black;
+    color: white;
+  }
+
+  a,
+  a:hover,
+  a:active {
+    color: black;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  a:focus {
+    background: black;
+    outline: 0.333em solid black;
+    color: white;
+  }
+
+  h1 {
+    font-size: 1rem;
+    font-weight: inherit;
+  }
+
+  h2 {
+    font-size: 2rem;
+    line-height: 1.3;
+    font-weight: inherit;
+  }
+
+  hr {
+    height: 4px;
+    background: black;
+    border: 0;
+  }
+
+  h1,
+  h2,
+  p,
+  hr,
+  ul {
+    margin-bottom: 2rem;
+  }
+
+  main {
+    margin: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    main {
+      margin: 1rem;
+      max-width: 768px;
+    }
+  }
+</style>
