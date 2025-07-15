@@ -11,10 +11,6 @@ export default defineConfig({
     '/projects/jsnes': {
       destination: 'https://jsnes.org',
       status: 301
-    },
-    '/projects/jsnes/': {
-      destination: 'https://jsnes.org',
-      status: 301
     }
   }
 });
