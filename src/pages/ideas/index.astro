@@ -1,0 +1,54 @@
+---
+import { ideas } from '../../data/ideas';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>20 ideas for firshman.com</title>
+  </head>
+  <body>
+    <main>
+      <h1>20 ideas for firshman.com</h1>
+      <p>Each one is a complete redo of the homepage, built from the same content. The <a href="/">current site</a> is unchanged.</p>
+      <ol>
+        {ideas.map((i) => (
+          <li>
+            <a href={`/ideas/${i.slug}`}>
+              <span class="n">{String(i.n).padStart(2, '0')}</span>
+              <span class="t">{i.title}</span>
+              <span class="p">{i.pitch}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </main>
+  </body>
+</html>
+
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0;
+    background: #fff;
+    color: #000;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  main { margin: 1rem; max-width: 900px; }
+  h1 { font-size: 2rem; font-weight: inherit; margin: 1.5rem 0 1rem; }
+  p { font-size: 1.1rem; }
+  a { color: #000; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  ol { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+  li a {
+    display: grid; gap: .25rem; height: 100%; box-sizing: border-box;
+    padding: 1rem; border: 3px solid #000; text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+  }
+  li a:hover, li a:focus-visible { transform: translate(-3px, -3px); box-shadow: 6px 6px 0 #000; outline: none; }
+  .n { font-variant-numeric: tabular-nums; opacity: .5; }
+  .t { font-size: 1.3rem; }
+  .p { font-weight: 400; }
+</style>

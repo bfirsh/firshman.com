@@ -1,0 +1,23 @@
+// Registry of design ideas shown on /ideas. Each has a page at /ideas/<slug>.
+export const ideas = [
+  { n: 1, slug: "terminal", title: "Shell", pitch: "An interactive terminal that follows clig.dev to the letter. Try `help`." },
+  { n: 2, slug: "compose", title: "compose up", pitch: "The site is a compose file. Press play and watch each project's container start." },
+  { n: 3, slug: "balloon", title: "Ascent", pitch: "Scroll to launch a high-altitude balloon. Projects appear as you climb through the atmosphere." },
+  { n: 4, slug: "transcript", title: "Mission transcript", pitch: "Ben's career as a time-stamped flight transcript, with ground control asking the questions." },
+  { n: 5, slug: "platformer", title: "World 1-1", pitch: "A tiny original pixel platformer. Walk right and bump blocks to reveal projects." },
+  { n: 6, slug: "paper", title: "The paper", pitch: "\"On the Collected Works of B. Firshman\": a preprint with an abstract, figures and citations." },
+  { n: 7, slug: "denoise", title: "Denoise", pitch: "The page starts as pure noise and diffuses into focus under your cursor." },
+  { n: 8, slug: "museum", title: "The museum", pitch: "A small museum: each project is an exhibit on a plinth, with a placard and an audio-guide number." },
+  { n: 9, slug: "recipe", title: "Recipe card", pitch: "Ben Firshman. Serves 1. Prep time: a few decades. Ingredients and method." },
+  { n: 10, slug: "mixtape", title: "Mixtape", pitch: "A cassette with every project as a track. The reels spin, and you can flip to side B." },
+  { n: 11, slug: "newspaper", title: "The Firshman Times", pitch: "A broadsheet front page, with headlines, columns, a weather box and a crossword clue." },
+  { n: 12, slug: "departures", title: "Departures", pitch: "A split-flap departures board. Every project is a flight, and the letters flap into place." },
+  { n: 13, slug: "fridge", title: "Fridge door", pitch: "Drag the letter magnets, polaroids and takeaway menus around a fridge door." },
+  { n: 14, slug: "cards", title: "Trading cards", pitch: "Holographic collectible cards, one per project, that tilt and shimmer under the cursor." },
+  { n: 15, slug: "constellations", title: "Night sky", pitch: "Every project is a star. Hover to trace the constellations." },
+  { n: 16, slug: "zine", title: "Zine", pitch: "A photocopied, cut-and-paste zine with ransom-note headlines, tape and staples." },
+  { n: 17, slug: "desktop", title: "FirshOS", pitch: "A retro desktop where windows drag, icons open projects, and the trash can has opinions." },
+  { n: 18, slug: "receipt", title: "Receipt", pitch: "The page prints itself out as a thermal receipt, itemised by project. No refunds." },
+  { n: 19, slug: "metro", title: "Metro map", pitch: "A career as a transit map, with a Python line, a Containers line and an ML line." },
+  { n: 20, slug: "vending", title: "Vending machine", pitch: "Punch in B4 and a project drops into the tray. Sometimes it gets stuck." },
+];
