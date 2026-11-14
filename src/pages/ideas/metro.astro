@@ -1,0 +1,485 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+
+const P = Object.fromEntries(projects.map((p) => [p.slug, p]));
+const A = Object.fromEntries(alsoWorkedOn.map((a) => [a.name, a]));
+
+type LineId = 'space' | 'web' | 'python' | 'containers' | 'terminal';
+const lines: Record<LineId, { name: string; color: string; ink: string; pts: [number, number][]; tag?: [number, number, 'left' | 'right'] }> = {
+  space: { name: 'Space line', color: '#7a4fd3', ink: '#fff', pts: [[150, 570], [380, 340], [600, 120], [760, 120], [958, 318], [1040, 318]], tag: [150, 570, 'left'] },
+  web: { name: 'Web line', color: '#e4473b', ink: '#fff', pts: [[62, 340], [1040, 340]], tag: [62, 340, 'left'] },
+  python: { name: 'Python line', color: '#16955a', ink: '#fff', pts: [[62, 480], [560, 480], [678, 362], [1040, 362]], tag: [62, 480, 'left'] },
+  containers: { name: 'Containers line', color: '#2c6be0', ink: '#fff', pts: [[160, 640], [580, 640], [836, 384], [1040, 384]], tag: [160, 640, 'left'] },
+  terminal: { name: 'Terminal line', color: '#e9a100', ink: '#1a1a1a', pts: [[480, 640], [480, 700], [660, 700], [954, 406], [1040, 406]] },
+};
+
+type Pos = 'above' | 'below' | 'left' | 'right' | 'below-right' | 'above-left';
+type Station = { id: string; label: string; x: number; y: number; lines: LineId[]; pos: Pos; url?: string; blurb: string; ghost?: boolean; y2?: number };
+const st = (slug: string) => P[slug];
+const stations: Station[] = [
+  // Web
+  { id: 'jsnes', label: 'JSNES', x: 110, y: 340, lines: ['web'], pos: 'above', url: st('jsnes').url, blurb: st('jsnes').blurb },
+  { id: 'lanyrd', label: 'Lanyrd', x: 230, y: 340, lines: ['web'], pos: 'above', url: A['Lanyrd'].url, blurb: 'worked on it' },
+  { id: 'spacelog', label: 'Spacelog', x: 380, y: 340, lines: ['web', 'space'], pos: 'above-left', url: A['Spacelog'].url, blurb: 'worked on it' },
+  { id: 'guardian', label: "The Guardian's iPad app", x: 530, y: 340, lines: ['web'], pos: 'above', url: A["The Guardian's iPad app"].url, blurb: 'worked on it' },
+  { id: 'jam', label: 'This Is My Jam', x: 700, y: 340, lines: ['web'], pos: 'above', url: A['This Is My Jam'].url, blurb: 'worked on it' },
+  { id: 'govuk', label: 'GOV.UK', x: 850, y: 340, lines: ['web'], pos: 'above', url: A['GOV.UK'].url, blurb: 'worked on it' },
+  // Space
+  { id: 'ukhas', label: 'UK High Altitude Society', x: 210, y: 510, lines: ['space'], pos: 'right', url: st('ukhas').url, blurb: st('ukhas').blurb },
+  { id: 'nearspace', label: 'Near Space', x: 680, y: 120, lines: ['space'], pos: 'above', blurb: 'request stop. Bring a balloon.', ghost: true },
+  // Python
+  { id: 'django', label: 'Django', x: 120, y: 480, lines: ['python'], pos: 'below', url: st('django').url, blurb: st('django').blurb },
+  { id: 'arxiv-vanity', label: 'arXiv Vanity', x: 330, y: 480, lines: ['python'], pos: 'above', url: st('arxiv-vanity').url, blurb: st('arxiv-vanity').blurb },
+  // Containers
+  { id: 'compose', label: 'Docker Compose', x: 230, y: 640, lines: ['containers'], pos: 'below', url: st('compose').url, blurb: st('compose').blurb },
+  { id: 'machine', label: 'Docker Machine', x: 370, y: 640, lines: ['containers'], pos: 'below', url: st('machine').url, blurb: st('machine').blurb },
+  { id: 'whalebrew', label: 'Whalebrew', x: 480, y: 640, lines: ['containers', 'terminal'], pos: 'above', url: st('whalebrew').url, blurb: st('whalebrew').blurb },
+  { id: 'cog', label: 'Cog', x: 900, y: 362, y2: 384, lines: ['python', 'containers'], pos: 'below', url: st('cog').url, blurb: st('cog').blurb },
+  // Terminal
+  { id: 'clig', label: 'Command Line Interface Guidelines', x: 590, y: 700, lines: ['terminal'], pos: 'below', url: st('clig').url, blurb: st('clig').blurb },
+];
+
+// Line order along each route, used for the station index strips.
+const order: Record<LineId, string[]> = {
+  web: ['jsnes', 'lanyrd', 'spacelog', 'guardian', 'jam', 'govuk'],
+  python: ['django', 'arxiv-vanity', 'cog'],
+  containers: ['compose', 'machine', 'whalebrew', 'cog'],
+  space: ['ukhas', 'spacelog', 'nearspace'],
+  terminal: ['whalebrew', 'clig'],
+};
+const S = Object.fromEntries(stations.map((s) => [s.id, s]));
+
+function roundPath(pts: [number, number][], r = 30) {
+  let d = `M${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [px, py] = pts[i - 1], [cx, cy] = pts[i], [nx, ny] = pts[i + 1];
+    const l1 = Math.hypot(cx - px, cy - py), l2 = Math.hypot(nx - cx, ny - cy);
+    const rr = Math.min(r, l1 / 2, l2 / 2);
+    const ax = cx - ((cx - px) / l1) * rr, ay = cy - ((cy - py) / l1) * rr;
+    const bx = cx + ((nx - cx) / l2) * rr, by = cy + ((ny - cy) / l2) * rr;
+    d += ` L${ax.toFixed(1)} ${ay.toFixed(1)} Q${cx} ${cy} ${bx.toFixed(1)} ${by.toFixed(1)}`;
+  }
+  const [lx, ly] = pts[pts.length - 1];
+  return d + ` L${lx} ${ly}`;
+}
+
+const lineOrder: LineId[] = ['space', 'web', 'python', 'containers', 'terminal'];
+const labelAttrs = (s: Station) => {
+  const yb = s.y2 ?? s.y;
+  switch (s.pos) {
+    case 'above': return { x: s.x, y: s.y - 20, anchor: 'middle' };
+    case 'below': return { x: s.x, y: yb + 32, anchor: 'middle' };
+    case 'left': return { x: s.x - 20, y: s.y + 5, anchor: 'end' };
+    case 'right': return { x: s.x + 20, y: s.y + 5, anchor: 'start' };
+    case 'above-left': return { x: s.x - 16, y: s.y - 20, anchor: 'end' };
+    case 'below-right': return { x: s.x + 16, y: yb + 32, anchor: 'start' };
+  }
+};
+// split long labels across two lines
+const wrap = (t: string) => (t.length > 18 ? (() => { const w = t.split(' '); const h = Math.ceil(w.length / 2); return [w.slice(0, h).join(' '), w.slice(h).join(' ')]; })() : [t]);
+const lineNames = (ids: LineId[]) => ids.map((l) => lines[l].name).join(' / ');
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — Metro map</title>
+    <meta name="description" content="Ben Firshman's career as a transit map: the Python, Containers, Web, Space and Terminal lines, all terminating at Replicate." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <span class="mark-logo" aria-hidden="true"><b>F</b><i></i></span>
+        <div>
+          <h1>{name}</h1>
+          <p>Network map — all lines terminate at <a href={now.url}>{now.name}</a></p>
+        </div>
+      </div>
+      <a class="back" href="/ideas">← all ideas</a>
+    </header>
+
+    <main>
+      <section class="mapwrap" aria-label="Career map">
+        <p class="hint" aria-hidden="true">Drag to explore / tap a station</p>
+        <div class="map" id="map">
+          <svg viewBox="0 0 1290 780" role="img" aria-labelledby="map-title" class="svg">
+            <title id="map-title">A transit map of {name}'s projects. Five lines converge at {now.name}.</title>
+            <defs>
+              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M20 0H0V20" fill="none" stroke="#e7e2d6" stroke-width="1" />
+              </pattern>
+            </defs>
+            <rect width="1290" height="780" fill="url(#grid)" opacity=".55" />
+
+            <g class="lines" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              {lineOrder.map((id, i) => (
+                <path class="line" d={roundPath(lines[id].pts)} stroke={lines[id].color} stroke-width="10" pathLength="1" style={`--i:${i}`} />
+              ))}
+            </g>
+
+            <g class="tags">
+              {lineOrder.filter((id) => lines[id].tag).map((id, i) => {
+                const [x, y] = lines[id].tag!;
+                const label = lines[id].name.replace(' line', '').toUpperCase();
+                const w = label.length * 9 + 22;
+                return (
+                  <g class="tag" style={`--i:${i}`}>
+                    <rect x={x - w - 6} y={y - 13} width={w} height="26" rx="13" fill={lines[id].color} />
+                    <text x={x - w / 2 - 6} y={y + 5} text-anchor="middle" fill={lines[id].ink}>{label}</text>
+                  </g>
+                );
+              })}
+            </g>
+
+            <g class="stations">
+              {stations.map((s) => {
+                const la = labelAttrs(s)!;
+                const parts = wrap(s.label);
+                const inter = s.lines.length > 1;
+                const color = lines[s.lines[0]].color;
+                const inner = (
+                  <>
+                    {s.y2 ? (
+                      <rect class="mark" x={s.x - 12} y={s.y - 12} width="24" height={s.y2 - s.y + 24} rx="12" fill="#fff" stroke="#151515" stroke-width="5" />
+                    ) : inter ? (
+                      <circle class="mark" cx={s.x} cy={s.y} r="12" fill="#fff" stroke="#151515" stroke-width="5" />
+                    ) : (
+                      <circle class="mark" cx={s.x} cy={s.y} r="8.5" fill="#fff" stroke={s.ghost ? '#9b96a8' : color} stroke-width="4.5" stroke-dasharray={s.ghost ? '3 3' : undefined} />
+                    )}
+                    <text class={`label ${s.ghost ? 'ghost' : ''}`} x={la.x} y={la.y - (s.pos.startsWith('above') ? (parts.length - 1) * 16 : 0)} text-anchor={la.anchor}>
+                      {parts.map((p, j) => <tspan x={la.x} dy={j === 0 ? 0 : 16}>{p}</tspan>)}
+                    </text>
+                  </>
+                );
+                return s.url ? (
+                  <a class="station" href={s.url} data-id={s.id} data-name={s.label} data-blurb={s.blurb} data-lines={lineNames(s.lines)} data-color={color} style={`--d:${(s.x / 1040).toFixed(2)}`} aria-label={`${s.label}: ${s.blurb}`}>
+                    <rect class="hit" x={Math.min(s.x, la.x) - 70} y={Math.min(s.y, la.y) - 24} width="140" height={Math.abs((s.y2 ?? s.y) - la.y) + 44} fill="transparent" />
+                    {inner}
+                  </a>
+                ) : (
+                  <g class="station station--ghost" style={`--d:${(s.x / 1040).toFixed(2)}`}>{inner}</g>
+                );
+              })}
+            </g>
+
+            <g class="terminus">
+              <circle class="pulse" cx="1040" cy="362" r="70" fill="none" stroke="#e4473b" stroke-width="3" />
+              <a href={now.url} class="station station--terminus" data-id="replicate" data-name={now.name} data-blurb={now.blurb} data-lines="All lines / terminus" data-color="#151515" aria-label={`${now.name}: ${now.blurb}`}>
+                <rect x="1022" y="300" width="36" height="124" rx="18" fill="#fff" stroke="#151515" stroke-width="7" />
+                <text x="1084" y="356" class="term-name">{now.name}</text>
+                <text x="1086" y="381" class="term-sub">{now.blurb}</text>
+                <text x="1086" y="402" class="term-meta">TERMINUS — ALL LINES</text>
+              </a>
+              <g class="here" aria-hidden="true">
+                <path d="M1040 290 l-9 -13 h18 z" fill="#151515" />
+                <rect x="966" y="244" width="148" height="34" rx="6" fill="#151515" />
+                <circle cx="985" cy="261" r="6" fill="#e4473b" class="here-dot" />
+                <text x="998" y="266" class="here-text">YOU ARE HERE</text>
+              </g>
+            </g>
+          </svg>
+          <div class="tip" id="tip" role="tooltip" hidden>
+            <div class="tip__lines"></div>
+            <div class="tip__name"></div>
+            <div class="tip__blurb"></div>
+            <a class="tip__go" href="#">Alight here →</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="panels">
+        <div class="panel legend">
+          <h2>Lines</h2>
+          <ul>
+            {lineOrder.map((id) => (
+              <li><span class="sw" style={`--c:${lines[id].color}`}></span>{lines[id].name}<span class="count">{order[id].filter((s) => !S[s].ghost).length} stops</span></li>
+            ))}
+            <li><span class="sw sw--int" aria-hidden="true"></span>Interchange</li>
+            <li><span class="sw sw--ghost" aria-hidden="true"></span>Request stop</li>
+          </ul>
+        </div>
+
+        <div class="panel gap">
+          <p class="gap__sign" aria-hidden="true"><span>MIND THE GAP</span></p>
+          <h2>between having an idea and emailing Ben</h2>
+          <p class="gap__mail"><a href={`mailto:${email}`}>{email}</a></p>
+          <ul class="gap__socials">
+            {socials.map((s) => <li><a href={s.url}>{s.name} <span>{s.handle}</span></a></li>)}
+          </ul>
+        </div>
+
+        <div class="panel now">
+          <h2>Service update</h2>
+          <p><strong>Good service</strong> on all lines to <a href={now.url}>{now.name}</a>, where you can {now.blurb}.</p>
+          <p class="small">Engineering works on most lines finished some time ago. Trains still run, mostly on GitHub.</p>
+        </div>
+      </section>
+
+      <section class="index" aria-labelledby="index-h">
+        <h2 id="index-h">Station index</h2>
+        <div class="strips">
+          {lineOrder.map((id) => (
+            <div class="strip" style={`--c:${lines[id].color}`}>
+              <h3><span class="sw" style={`--c:${lines[id].color}`}></span>{lines[id].name}</h3>
+              <ol>
+                {order[id].map((sid) => {
+                  const s = S[sid];
+                  return (
+                    <li class={`${s.lines.length > 1 ? 'int' : ''} ${s.ghost ? 'ghost' : ''}`}>
+                      {s.url ? <a href={s.url}>{s.label}</a> : <span>{s.label}</span>}
+                      <small>{s.blurb}{s.lines.length > 1 ? `. Change for ${s.lines.filter((l) => l !== id).map((l) => lines[l].name).join(', ')}` : ''}</small>
+                    </li>
+                  );
+                })}
+                <li class="int term"><a href={now.url}>{now.name}</a><small>Terminus. {now.blurb.charAt(0).toUpperCase() + now.blurb.slice(1)}.</small></li>
+              </ol>
+            </div>
+          ))}
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <span>Map not to scale. Neither is the career.</span>
+      <a href="/ideas">← all ideas</a>
+    </footer>
+
+    <style is:global>
+      :root {
+        --paper: #f6f3ec;
+        --ink: #151515;
+        --muted: #6a665d;
+        color-scheme: light;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        background: var(--paper); color: var(--ink);
+        font-family: 'Overpass', system-ui, sans-serif; font-size: 16px; line-height: 1.45;
+        overflow-x: hidden;
+      }
+      a { color: inherit; }
+      a:focus-visible { outline: 3px solid #2c6be0; outline-offset: 2px; border-radius: 3px; }
+
+      .top {
+        display: flex; justify-content: space-between; align-items: center; gap: 16px;
+        padding: 20px clamp(16px, 3vw, 40px); border-bottom: 3px solid var(--ink);
+        background: #fff;
+      }
+      .brand { display: flex; gap: 14px; align-items: center; }
+      .mark-logo {
+        width: 46px; height: 46px; border-radius: 12px; background: var(--ink); color: #fff; flex: none;
+        display: grid; place-items: center; position: relative; overflow: hidden;
+      }
+      .mark-logo b { font-weight: 900; font-size: 26px; line-height: 1; margin-top: 4px; position: relative; z-index: 1; }
+      .mark-logo i {
+        position: absolute; left: -10px; right: -10px; bottom: 7px; height: 5px;
+        background: linear-gradient(90deg, #7a4fd3 0 20%, #e4473b 0 40%, #16955a 0 60%, #2c6be0 0 80%, #e9a100 0);
+      }
+      .top h1 { margin: 0; font-size: clamp(22px, 3vw, 30px); font-weight: 900; letter-spacing: -.01em; line-height: 1.05; }
+      .top p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+      .back { font-size: 13px; color: var(--muted); text-decoration: none; white-space: nowrap; }
+      .back:hover { color: var(--ink); text-decoration: underline; }
+
+      main { max-width: 1400px; margin: 0 auto; padding: 0 clamp(12px, 3vw, 40px); }
+      .mapwrap { position: relative; margin: 20px 0 0; }
+      .hint { display: none; }
+      .map { position: relative; }
+      .svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+      .line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.7s cubic-bezier(.55, .1, .3, 1) forwards; animation-delay: calc(var(--i) * .18s + .1s); }
+      @keyframes draw { to { stroke-dashoffset: 0; } }
+      .tag { opacity: 0; animation: fade .4s ease-out forwards; animation-delay: calc(var(--i) * .18s); }
+      .tag text { font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+      .station { opacity: 0; animation: pop .35s cubic-bezier(.3, 1.5, .6, 1) forwards; animation-delay: calc(var(--d) * 1.4s + .4s); transform-box: fill-box; transform-origin: center; }
+      .station--terminus { animation-delay: 2s; }
+      @keyframes pop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+      @keyframes fade { to { opacity: 1; } }
+      .label { font-size: 14.5px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 5px; stroke-linejoin: round; }
+      .label.ghost { fill: #8d889a; font-style: italic; font-weight: 600; }
+      a.station { cursor: pointer; }
+      a.station:hover .label, a.station:focus .label, a.station.is-on .label { fill: #2c6be0; }
+      a.station:hover .mark, a.station:focus .mark, a.station.is-on .mark { stroke-width: 7; }
+      a.station:focus { outline: none; }
+      a.station:focus-visible .label { text-decoration: underline; }
+      .term-name { font-size: 38px; font-weight: 900; letter-spacing: -.02em; fill: var(--ink); }
+      .term-sub { font-size: 14px; font-weight: 600; fill: var(--muted); }
+      .term-meta { font-size: 10.5px; font-weight: 800; letter-spacing: .14em; fill: #e4473b; }
+      .station--terminus:hover .term-name { fill: #2c6be0; }
+      .here { opacity: 0; animation: drop .5s cubic-bezier(.3, 1.6, .6, 1) 2.3s forwards; }
+      @keyframes drop { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+      .here-text { font-size: 13px; font-weight: 900; letter-spacing: .1em; fill: #fff; }
+      .here-dot { animation: blink 1.4s ease-in-out infinite; }
+      @keyframes blink { 50% { opacity: .25; } }
+      .pulse { transform-origin: 1040px 362px; opacity: 0; animation: pulse 2.6s ease-out 2.4s infinite; }
+      @keyframes pulse { 0% { opacity: .5; transform: scale(.5); } 100% { opacity: 0; transform: scale(1.25); } }
+
+      .tip {
+        position: absolute; z-index: 5; width: 250px; padding: 12px 14px 12px; background: #fff;
+        border: 3px solid var(--ink); border-radius: 10px; box-shadow: 0 10px 30px -10px rgba(0,0,0,.35);
+        pointer-events: none; transform: translate(-50%, calc(-100% - 16px));
+      }
+      .tip.is-touch { pointer-events: auto; }
+      .tip::after {
+        content: ''; position: absolute; left: 50%; bottom: -10px; width: 16px; height: 16px; background: #fff;
+        border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink); transform: translateX(-50%) rotate(45deg);
+      }
+      .tip.below { transform: translate(-50%, 18px); }
+      .tip.below::after { bottom: auto; top: -10px; transform: translateX(-50%) rotate(225deg); }
+      .tip__lines { font-size: 10.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--c, var(--muted)); }
+      .tip__name { font-weight: 900; font-size: 18px; line-height: 1.15; margin: 2px 0 4px; }
+      .tip__blurb { font-size: 14px; color: #3a3832; }
+      .tip__go { display: none; margin-top: 8px; font-weight: 800; font-size: 14px; }
+      .tip.is-touch .tip__go { display: inline-block; }
+
+      .panels { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 20px; margin: 28px 0 0; }
+      .panel { background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 18px 20px; }
+      .panel h2 { margin: 0 0 10px; font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+      .legend ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+      .legend li { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+      .legend .count { margin-left: auto; font-weight: 600; font-size: 12px; color: var(--muted); }
+      .sw { display: inline-block; width: 34px; height: 9px; border-radius: 5px; background: var(--c); flex: none; }
+      .sw--int { width: 20px; height: 20px; border-radius: 50%; border: 5px solid var(--ink); background: #fff; margin: 0 7px; }
+      .sw--ghost { width: 18px; height: 18px; border-radius: 50%; border: 3px dashed #9b96a8; background: #fff; margin: 0 8px; }
+      .gap { background: var(--ink); color: #fff; border-color: var(--ink); position: relative; overflow: hidden; }
+      .gap__sign { margin: -18px -20px 14px; padding: 12px 20px; background: #f2c230; color: var(--ink); }
+      .gap__sign span { font-weight: 900; font-size: 22px; letter-spacing: .2em; }
+      .gap h2 { font-size: 15px; letter-spacing: .02em; text-transform: none; font-weight: 600; color: #cfcac0; }
+      .gap__mail { margin: 0 0 12px; font-size: clamp(20px, 2.4vw, 28px); font-weight: 900; }
+      .gap__mail a { text-decoration-color: #f2c230; text-decoration-thickness: 3px; text-underline-offset: 5px; }
+      .gap__socials { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+      .gap__socials a { display: inline-block; border: 2px solid #fff; border-radius: 999px; padding: 3px 12px 1px; font-weight: 700; font-size: 14px; text-decoration: none; }
+      .gap__socials a span { opacity: .6; font-weight: 600; }
+      .gap__socials a:hover { background: #fff; color: var(--ink); }
+      .now p { margin: 0 0 8px; }
+      .small { font-size: 13px; color: var(--muted); }
+
+      .index { margin: 40px 0 0; }
+      .index > h2 { font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 14px; }
+      .strips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
+      .strip h3 { font-size: 15px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; font-weight: 800; }
+      .strip h3 .sw { width: 20px; }
+      .strip ol { list-style: none; margin: 0; padding: 0 0 0 26px; position: relative; }
+      .strip ol::before { content: ''; position: absolute; left: 7px; top: 8px; bottom: 14px; width: 8px; border-radius: 4px; background: var(--c); }
+      .strip li { position: relative; padding: 0 0 14px; }
+      .strip li::before {
+        content: ''; position: absolute; left: -24px; top: 3px; width: 12px; height: 12px; border-radius: 50%;
+        background: #fff; border: 3px solid var(--c);
+      }
+      .strip li.int::before { border-color: var(--ink); border-width: 4px; left: -25px; width: 14px; height: 14px; top: 2px; }
+      .strip li.ghost::before { border-style: dashed; border-color: #9b96a8; }
+      .strip li.term::before { width: 18px; height: 18px; left: -27px; top: 1px; border-width: 5px; }
+      .strip li.term { padding-left: 4px; }
+      .strip li a, .strip li > span { font-weight: 700; display: block; line-height: 1.25; }
+      .strip li.term a { font-weight: 900; font-size: 18px; }
+      .strip li.ghost > span { color: #8d889a; font-style: italic; }
+      .strip small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.35; margin-top: 2px; }
+
+      .foot { max-width: 1400px; margin: 40px auto 0; padding: 18px clamp(16px, 3vw, 40px) 28px; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; color: var(--muted); border-top: 1px solid #ddd6c8; }
+
+      @media (max-width: 1100px) {
+        .panels { grid-template-columns: 1fr 1fr; }
+        .gap { grid-column: 1 / -1; order: -1; }
+        .strips { grid-template-columns: repeat(3, 1fr); }
+      }
+      @media (max-width: 720px) {
+        .top { padding: 14px 16px; }
+        .mark-logo { width: 38px; height: 38px; border-radius: 10px; } .mark-logo b { font-size: 21px; }
+        .top p { font-size: 13px; }
+        main { padding: 0 16px; }
+        .mapwrap { margin: 14px -16px 0; }
+        .hint { display: block; margin: 0 16px 6px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+        .map { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; scrollbar-width: thin; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); background: #fbf9f4; }
+        .svg { width: 980px; max-width: none; padding: 10px 12px; }
+        .panels { grid-template-columns: 1fr; gap: 14px; }
+        .strips { grid-template-columns: 1fr 1fr; gap: 22px 16px; }
+        .tip { width: 230px; position: fixed; }
+      }
+      @media (max-width: 420px) {
+        .strips { grid-template-columns: 1fr; }
+        .back { font-size: 12px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .line, .tag, .station, .here, .pulse, .here-dot { animation: none !important; }
+        .line { stroke-dashoffset: 0; }
+        .tag, .station, .here { opacity: 1; }
+      }
+    </style>
+
+    <script>
+      const map = document.getElementById('map')!;
+      const tip = document.getElementById('tip')!;
+      const tName = tip.querySelector('.tip__name')!;
+      const tBlurb = tip.querySelector('.tip__blurb')!;
+      const tLines = tip.querySelector('.tip__lines') as HTMLElement;
+      const tGo = tip.querySelector('.tip__go') as HTMLAnchorElement;
+      const narrow = matchMedia('(max-width: 720px)');
+      let current: Element | null = null;
+      let lastPointer = 'mouse';
+
+      function show(a: SVGAElement, touch = false) {
+        current?.classList.remove('is-on');
+        current = a;
+        a.classList.add('is-on');
+        const blurb = a.dataset.blurb || '';
+        tName.textContent = a.dataset.name || '';
+        tBlurb.textContent = blurb.charAt(0).toUpperCase() + blurb.slice(1) + '.';
+        tLines.textContent = a.dataset.lines || '';
+        tLines.style.setProperty('--c', a.dataset.color || '');
+        tGo.href = a.getAttribute('href') || '#';
+        tip.classList.toggle('is-touch', touch);
+        tip.hidden = false;
+        const mark = (a.querySelector('.mark') || a.querySelector('rect:not(.hit)') || a) as SVGGraphicsElement;
+        const r = mark.getBoundingClientRect();
+        const fixed = narrow.matches;
+        const base = fixed ? { left: 0, top: 0 } : map.getBoundingClientRect();
+        let x = r.left + r.width / 2 - base.left;
+        const below = r.top < 200;
+        const y = (below ? r.bottom : r.top) - base.top;
+        const half = tip.offsetWidth / 2 + 8;
+        const maxX = (fixed ? innerWidth : map.clientWidth) - half;
+        x = Math.min(Math.max(x, half), maxX);
+        tip.classList.toggle('below', below);
+        tip.style.left = `${x}px`;
+        tip.style.top = `${y}px`;
+      }
+      function hide() {
+        current?.classList.remove('is-on');
+        current = null;
+        tip.hidden = true;
+      }
+
+      document.addEventListener('pointerdown', (e) => (lastPointer = e.pointerType), true);
+      map.querySelectorAll<SVGAElement>('a.station').forEach((a) => {
+        a.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') show(a); });
+        a.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hide(); });
+        a.addEventListener('focus', () => { if (lastPointer !== 'touch') show(a); });
+        a.addEventListener('blur', () => { if (lastPointer !== 'touch') hide(); });
+        a.addEventListener('click', (e) => {
+          // On touch, the first tap shows the tooltip; "Alight here" (or a second tap) follows the link.
+          if (lastPointer === 'touch' && current !== a) {
+            e.preventDefault();
+            show(a, true);
+          }
+        });
+      });
+      document.addEventListener('pointerdown', (e) => {
+        const t = e.target as Element;
+        if (!t.closest('a.station') && !t.closest('.tip')) hide();
+      });
+      map.addEventListener('scroll', hide, { passive: true });
+      addEventListener('scroll', () => { if (narrow.matches) hide(); }, { passive: true });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
+
+      // On phones the map pans: start with the terminus in view.
+      if (narrow.matches) {
+        requestAnimationFrame(() => { map.scrollLeft = map.scrollWidth - map.clientWidth; });
+      }
+    </script>
+  </body>
+</html>

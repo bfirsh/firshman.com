@@ -1,0 +1,505 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+
+type Extra = { qty: number; unit: number; sku: string; note?: string };
+const extras: Record<string, Extra> = {
+  cog: { qty: 1, unit: 12.0, sku: 'COG', note: 'batteries not included' },
+  clig: { qty: 1, unit: 7.99, sku: 'CLIG', note: '--help included' },
+  compose: { qty: 3, unit: 2.99, sku: 'CMPS', note: 'multi-container pack' },
+  machine: { qty: 1, unit: 4.04, sku: 'MCHN', note: 'host not found? try again' },
+  jsnes: { qty: 1, unit: 8.08, sku: 'NES', note: '8-bit pricing' },
+  whalebrew: { qty: 1, unit: 4.5, sku: 'BREW', note: 'served by the pint' },
+  'arxiv-vanity': { qty: 1, unit: 3.14, sku: 'ARXV', note: 'peer-reviewed price' },
+  django: { qty: 1, unit: 5.0, sku: 'DJGO', note: 'pony sold separately' },
+  ukhas: { qty: 1, unit: 9.81, sku: 'UKHS', note: 'price subject to altitude' },
+};
+
+const items = projects.map((p, i) => {
+  const x = extras[p.slug] ?? { qty: 1, unit: 1, sku: p.slug.slice(0, 4).toUpperCase() };
+  return { ...p, ...x, line: x.qty * x.unit, code: `${String(100 + i * 7).padStart(4, '0')}-${x.sku}` };
+});
+const sundries = alsoWorkedOn.map((a) => ({ ...a, line: 1 }));
+const subtotal = items.reduce((s, i) => s + i.line, 0) + sundries.reduce((s, i) => s + i.line, 0);
+const itemCount = items.reduce((s, i) => s + i.qty, 0) + sundries.length;
+const money = (n: number) => n.toFixed(2);
+
+// Torn bottom edge, generated once with a tiny seeded PRNG so it is stable between renders.
+let seed = 7;
+const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const tears: string[] = [];
+for (let x = 0; x <= 100; x += 1.6 + rnd() * 2.2) {
+  tears.push(`${Math.min(100, x).toFixed(2)}% calc(100% - ${(rnd() * 9).toFixed(1)}px)`);
+}
+tears.push('100% calc(100% - 4px)');
+function barcodeSvg(text: string) {
+  let x = 0;
+  let rects = '';
+  const bar = (w: number) => { rects += `<rect x="${x}" y="0" width="${w}" height="40"/>`; x += w; };
+  const gap = (w: number) => { x += w; };
+  bar(1); gap(1); bar(1); gap(2);
+  for (const ch of text) {
+    for (const bit of ch.charCodeAt(0).toString(2).padStart(8, '0')) { bar(bit === '1' ? 2.4 : 0.9); gap(1.1); }
+    gap(0.8);
+  }
+  gap(1); bar(1); gap(1); bar(1);
+  return `<svg viewBox="0 0 ${x.toFixed(1)} 40" preserveAspectRatio="none" fill="currentColor" aria-hidden="true">${rects}</svg>`;
+}
+const tornClip = `polygon(0 0, 100% 0, ${tears.reverse().join(', ')})`;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — Receipt</title>
+    <meta name="description" content="Ben Firshman's homepage, printed as a thermal receipt and itemised by project. No refunds." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <a class="back" href="/ideas">← all ideas</a>
+
+    <main class="stage">
+      <div class="printer" aria-hidden="false">
+        <div class="printer__face">
+          <span class="printer__brand">FIRSH<b>·80</b></span>
+          <span class="printer__led" aria-hidden="true"></span>
+          <div class="printer__btns">
+            <button class="pbtn" data-sound aria-pressed="false" title="Toggle printer sound">
+              <span class="pbtn__cap" aria-hidden="true"></span><span class="pbtn__label">Sound <em>off</em></span>
+            </button>
+            <button class="pbtn pbtn--go" data-reprint title="Print another receipt">
+              <span class="pbtn__cap" aria-hidden="true"></span><span class="pbtn__label">Print another</span>
+            </button>
+          </div>
+        </div>
+        <div class="printer__lip"><div class="printer__slot"></div></div>
+      </div>
+
+      <div class="feed">
+        <div class="shadow">
+          <article class="paper" aria-label={`Receipt from ${name}`} style={`--torn: ${tornClip}`}>
+            <div class="paper__inner">
+              <div class="ln gap"></div>
+              <div class="ln c logo" aria-hidden="true">✳</div>
+              <h1 class="ln c big">FIRSHMAN &amp; CO.</h1>
+              <div class="ln c">— EST. WHENEVER —</div>
+              <div class="ln c small">Software, containers &amp; sundries</div>
+              <div class="ln c small">OPEN: usually · CLOSED: rarely</div>
+              <div class="ln gap"></div>
+              <div class="ln row"><span>STORE <span data-f="store">#042</span></span><span>REG 01</span><span>TXN <span data-f="txn">000173</span></span></div>
+              <div class="ln row"><span>CASHIER: BEN</span><span data-f="cashier">LANE 1 OPEN</span></div>
+              <div class="ln row"><span>DATE <span data-f="date">TODAY-ISH</span></span><span>TIME <span data-f="time">NOW-ISH</span></span></div>
+              <div class="ln rule eq" aria-hidden="true"></div>
+
+              <div class="ln c inv"><a href={now.url}>NOW SERVING: {now.name.toUpperCase()}</a></div>
+              <div class="ln c small">{now.blurb}</div>
+              <div class="ln c small">— currently on shift —</div>
+              <div class="ln rule" aria-hidden="true"></div>
+
+              <div class="ln row head"><span class="q">QTY</span><span class="n">ITEM</span><span class="p">AMT</span></div>
+              <div class="ln rule" aria-hidden="true"></div>
+              {items.map((it) => (
+                <>
+                  <div class="ln row item">
+                    <span class="q">{it.qty}</span>
+                    <a class="n" href={it.url}>{it.name}</a>
+                    <span class="p">{money(it.line)}</span>
+                  </div>
+                  <div class="ln sub">{it.blurb}</div>
+                  <div class="ln sub dim row"><span>SKU {it.code}{it.qty > 1 ? ` · ${it.qty} @ ${money(it.unit)}` : ''}</span>{it.note && <span class="note">{it.note}</span>}</div>
+                </>
+              ))}
+              <div class="ln gap"></div>
+              <div class="ln c small">· · · SUNDRIES · · ·</div>
+              {sundries.map((s) => (
+                <div class="ln row item">
+                  <span class="q">1</span>
+                  <a class="n" href={s.url}>{s.name}</a>
+                  <span class="p">{money(s.line)}</span>
+                </div>
+              ))}
+              <div class="ln rule" aria-hidden="true"></div>
+              <div class="ln row"><span>ITEMS</span><span>{itemCount}</span></div>
+              <div class="ln row"><span>SUBTOTAL</span><span>{money(subtotal)}</span></div>
+              <div class="ln row"><span>TAX (open source)</span><span>0.00</span></div>
+              <div class="ln row total"><span>TOTAL</span><span>{money(subtotal)}</span></div>
+              <div class="ln rule eq" aria-hidden="true"></div>
+              <div class="ln row"><span>PAID WITH:</span><span>curiosity</span></div>
+              <div class="ln row"><span>CHANGE DUE:</span><span data-f="change">1 new idea</span></div>
+              <div class="ln rule" aria-hidden="true"></div>
+              <div class="ln gap"></div>
+              <div class="ln c bold">*** CUSTOMER COPY ***</div>
+              <div class="ln c small">No refunds.</div>
+              <div class="ln c small">Exchanges for cool ideas only.</div>
+              <div class="ln gap"></div>
+              <div class="ln c">Questions? Call…</div>
+              <div class="ln c">actually, email: <a href={`mailto:${email}`}>{email}</a></div>
+              <div class="ln c small socials">
+                {socials.map((s, i) => (<>{i > 0 && <span aria-hidden="true"> · </span>}<a href={s.url}>{s.name} {s.handle}</a></>))}
+              </div>
+              <div class="ln gap"></div>
+              <div class="ln c special small" data-f="special">TODAY'S SPECIAL: a good README</div>
+              <div class="ln gap"></div>
+              <div class="ln c barcode" role="img" aria-label="Barcode that says “thanks for reading”" data-f="barcode" set:html={barcodeSvg('THANKS FOR READING')} />
+              <div class="ln c tiny" data-f="barcode-text">* THANKS FOR READING *</div>
+              <div class="ln gap"></div>
+              <div class="ln c small">THANK YOU · COME AGAIN</div>
+              <div class="ln gap"></div>
+              <div class="ln gap"></div>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="after">
+        <button class="again" data-reprint>↻ Print another</button>
+      </div>
+    </main>
+
+    <style is:global>
+      :root {
+        --bg: #1c1b19;
+        --paper: #fbf9f3;
+        --ink: #2a2a30;
+        --w: 400px;
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        min-height: 100vh;
+        background:
+          radial-gradient(ellipse 60% 70% at 50% 18%, #36332d 0%, transparent 70%),
+          radial-gradient(circle at 50% 120%, #2a2824, transparent 60%),
+          var(--bg);
+        color: #d8d3c8;
+        font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+        overflow-x: hidden;
+      }
+      .back {
+        position: absolute; top: 14px; left: 16px; font-size: 13px; color: #a29d92; text-decoration: none;
+        letter-spacing: .02em;
+      }
+      .back:hover { color: #fff; }
+      a:focus-visible, button:focus-visible { outline: 2px solid #f0c24b; outline-offset: 3px; }
+
+      .stage { width: min(var(--w) + 72px, 100% - 24px); margin: 0 auto; padding: 56px 0 80px; }
+
+      /* ---------- printer ---------- */
+      .printer { position: relative; z-index: 3; }
+      .printer__face {
+        display: flex; align-items: center; gap: 12px;
+        height: 76px; padding: 0 18px 0 20px;
+        border-radius: 18px 18px 6px 6px;
+        background: linear-gradient(#45423d, #33312d 55%, #2b2926);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -2px 0 rgba(0,0,0,.35), 0 18px 30px -12px rgba(0,0,0,.7);
+      }
+      .printer__brand { font-weight: 600; font-size: 13px; letter-spacing: .18em; color: #9a958b; }
+      .printer__brand b { color: #d9d3c6; font-weight: 600; }
+      .printer__led {
+        width: 7px; height: 7px; border-radius: 50%; background: #3d6b3a;
+        box-shadow: 0 0 0 2px rgba(0,0,0,.35);
+      }
+      .printing .printer__led { background: #8ff07a; box-shadow: 0 0 10px #8ff07a, 0 0 0 2px rgba(0,0,0,.35); animation: led .18s steps(2) infinite; }
+      @keyframes led { 50% { opacity: .55; } }
+      .printer__btns { margin-left: auto; display: flex; gap: 14px; }
+      .pbtn {
+        display: flex; flex-direction: column; align-items: center; gap: 5px;
+        background: none; border: 0; padding: 0; color: #a7a297; font: 500 10px/1 'IBM Plex Mono', monospace;
+        letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+      }
+      .pbtn__cap {
+        width: 30px; height: 18px; border-radius: 5px;
+        background: linear-gradient(#5b5852, #45423d); box-shadow: 0 3px 0 #1d1c1a, inset 0 1px 0 rgba(255,255,255,.15);
+        transition: transform .08s, box-shadow .08s;
+      }
+      .pbtn--go .pbtn__cap { background: linear-gradient(#f0c24b, #d6a42c); box-shadow: 0 3px 0 #7e5f12, inset 0 1px 0 rgba(255,255,255,.4); }
+      .pbtn[aria-pressed="true"] .pbtn__cap { background: linear-gradient(#8ff07a, #5fbf4c); box-shadow: 0 3px 0 #2f6326, inset 0 1px 0 rgba(255,255,255,.4); }
+      .pbtn:active .pbtn__cap { transform: translateY(3px); box-shadow: 0 0 0 #000; }
+      .pbtn em { font-style: normal; color: #d9d3c6; }
+      .pbtn:hover .pbtn__label { color: #fff; }
+      .printer__lip {
+        height: 22px; margin: -6px 10px 0; border-radius: 0 0 12px 12px;
+        background: linear-gradient(#2b2926, #1f1e1b); position: relative;
+        box-shadow: 0 10px 18px -8px rgba(0,0,0,.8);
+      }
+      .printer__slot {
+        position: absolute; left: 50%; bottom: 7px; transform: translateX(-50%);
+        width: calc(min(var(--w), 100%) + 10px); max-width: calc(100% - 16px); height: 5px; border-radius: 3px;
+        background: #070707; box-shadow: inset 0 2px 2px #000, 0 1px 0 rgba(255,255,255,.07);
+      }
+
+      /* ---------- paper ---------- */
+      .feed { position: relative; z-index: 2; margin-top: -10px; display: flex; justify-content: center; }
+      .shadow { width: min(var(--w), 100%); filter: drop-shadow(0 14px 14px rgba(0,0,0,.45)) drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
+      .paper {
+        position: relative; transform-origin: 50% 0;
+        transform: rotate(var(--tilt, -.4deg));
+        background-color: var(--paper);
+        background-image:
+          linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,0) 26px),
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.38 0 0 0 0 0.3 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        color: var(--ink);
+        clip-path: var(--torn);
+        overflow: hidden;
+        font-size: 13.5px; line-height: 1.5; letter-spacing: .01em;
+      }
+      /* faded thermal head column + curl shading at the leading edge */
+      .paper::after {
+        content: ''; position: absolute; inset: 0; pointer-events: none;
+        background:
+          linear-gradient(90deg, transparent 61%, rgba(251,249,243,.45) 63.5%, transparent 66%),
+          linear-gradient(transparent calc(100% - 70px), rgba(70,60,40,.10) calc(100% - 20px), rgba(70,60,40,.2)),
+          linear-gradient(90deg, rgba(70,60,40,.10), transparent 6%, transparent 94%, rgba(70,60,40,.10));
+      }
+      .paper__inner { padding: 10px 24px 26px; }
+      .ln { min-height: 1.5em; color: var(--ink); opacity: var(--fade, 1); }
+      .ln a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: rgba(42,42,48,.35); }
+      .ln a:hover { text-decoration-color: currentColor; background: rgba(42,42,48,.07); }
+      .c { text-align: center; }
+      .row { display: flex; justify-content: space-between; gap: 10px; }
+      .gap { min-height: .75em; }
+      .small { font-size: 12px; }
+      .tiny { font-size: 10px; letter-spacing: .2em; }
+      .dim { opacity: calc(var(--fade, 1) * .62); }
+      .bold { font-weight: 600; }
+      .logo { font-size: 26px; line-height: 1.1; }
+      .big {
+        margin: 6px 0 10px; font-size: 22px; font-weight: 600; letter-spacing: .06em; line-height: 1;
+        transform: scaleY(1.7); transform-origin: 50% 50%;
+      }
+      .rule { overflow: hidden; white-space: nowrap; }
+      .rule::before { content: '------------------------------------------------------------------------------------------------'; letter-spacing: .1em; opacity: .75; }
+      .rule.eq::before { content: '================================================================================================'; }
+      .inv { background: var(--ink); color: var(--paper); font-weight: 600; letter-spacing: .08em; margin: 4px 0 2px; padding: 2px 0; }
+      .inv a { color: var(--paper); text-decoration: none; }
+      .inv a:hover { background: none; text-decoration: underline; }
+      .head { font-size: 11px; letter-spacing: .1em; }
+      .item { margin-top: 6px; font-weight: 500; }
+      .item .q, .head .q { width: 3.6ch; flex: none; }
+      .item .n { flex: 1; text-transform: uppercase; }
+      .item .p, .head .p { flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+      .head .n { flex: 1; }
+      .sub { padding-left: calc(3.6ch + 10px); font-size: 12px; line-height: 1.4; min-height: 0; }
+      .sub.row { justify-content: flex-start; flex-wrap: wrap; gap: 0 10px; }
+      .note { font-style: italic; }
+      .total { font-size: 18px; font-weight: 600; margin: 4px 0; transform: scaleY(1.25); }
+      .socials { line-height: 1.7; }
+      .barcode svg { display: block; margin: 0 auto; width: 92%; height: 58px; }
+      .barcode { min-height: 58px; }
+
+      /* ---------- printing states (JS only) ---------- */
+      .js .paper { height: 0; }
+      .js .printing .ln:not(.on), .js .waiting .ln:not(.on) { visibility: hidden; }
+      .ln.on.burn { animation: burn .32s ease-out; }
+      @keyframes burn { from { opacity: .15; filter: blur(.6px); } }
+      .paper.feeding { transition: height .09s linear; }
+      .paper.tear { animation: tear .4s cubic-bezier(.3, 1.6, .5, 1); }
+      @keyframes tear { 30% { transform: rotate(calc(var(--tilt, -.4deg) + .9deg)) translateY(4px) scaleY(1.004); } }
+      .paper.away { animation: away .55s cubic-bezier(.5, 0, .9, .5) forwards; }
+      @keyframes away {
+        to { transform: rotate(-7deg) translate(-30px, 160px); opacity: 0; }
+      }
+
+      .after { display: flex; justify-content: center; margin-top: 34px; }
+      .again {
+        font: 500 13px 'IBM Plex Mono', monospace; letter-spacing: .06em; color: #1c1b19; cursor: pointer;
+        background: #f0c24b; border: 0; border-radius: 999px; padding: 10px 20px;
+        box-shadow: 0 4px 0 #7e5f12; transition: transform .08s, box-shadow .08s, opacity .3s;
+      }
+      .again:active { transform: translateY(4px); box-shadow: 0 0 0 #000; }
+      
+      .js .after { opacity: 0; transition: opacity .4s; }
+      .js .done .after { opacity: 1; }
+
+      @media (max-width: 520px) {
+        .stage { width: calc(100% - 24px); padding-top: 48px; }
+        .printer__face { height: 68px; padding: 0 12px 0 14px; gap: 8px; }
+        .printer__brand { font-size: 11px; letter-spacing: .12em; }
+        .printer__btns { gap: 10px; }
+        .pbtn { font-size: 9px; }
+        .paper__inner { padding: 8px 16px 24px; }
+        .paper { font-size: 12.5px; }
+        .big { font-size: 20px; }
+        .feed { padding: 0 4px; }
+        .shadow { width: 100%; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .paper { transform: rotate(var(--tilt, -.4deg)); }
+        .ln.on.burn, .paper.tear, .paper.away, .printing .printer__led { animation: none; }
+      }
+    </style>
+
+    <script>
+      const root = document.documentElement;
+      const stage = document.querySelector('.stage') as HTMLElement;
+      const paper = document.querySelector('.paper') as HTMLElement;
+      const lines = Array.from(paper.querySelectorAll<HTMLElement>('.ln'));
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+      const f = (k: string) => paper.querySelector<HTMLElement>(`[data-f="${k}"]`)!;
+
+      /* ---------- variations ---------- */
+      const specials = [
+        "TODAY'S SPECIAL: a good README",
+        "TODAY'S SPECIAL: docker compose up",
+        "TODAY'S SPECIAL: --help, but helpful",
+        "TODAY'S SPECIAL: one (1) side project",
+        "TODAY'S SPECIAL: shipping it",
+        "TODAY'S SPECIAL: a model, run in the cloud",
+      ];
+      const cashier = ['LANE 1 OPEN', 'ON A BREAK SOON', 'STILL HERE', 'HAS OPINIONS', 'WAVES HELLO'];
+      const change = ['1 new idea', '2 tabs to open', '1 side project', 'a fresh perspective', 'exact curiosity'];
+      const codes = ['THANKS FOR READING', 'HI THERE', 'SHIP IT', 'COME BACK SOON', 'BE CURIOUS'];
+      let round = 0;
+      const pick = <T,>(a: T[], i: number) => a[i % a.length];
+
+      function barcode(text: string) {
+        // Not a real symbology: each character's 8 bits become a thin (0) or thick (1) bar.
+        let x = 0;
+        let rects = '';
+        const bar = (w: number) => { rects += `<rect x="${x}" y="0" width="${w}" height="40"/>`; x += w; };
+        const gap = (w: number) => { x += w; };
+        bar(1); gap(1); bar(1); gap(2); // start guard
+        for (const ch of text) {
+          for (const bit of ch.charCodeAt(0).toString(2).padStart(8, '0')) { bar(bit === '1' ? 2.4 : 0.9); gap(1.1); }
+          gap(0.8);
+        }
+        gap(1); bar(1); gap(1); bar(1); // end guard
+        return `<svg viewBox="0 0 ${x.toFixed(1)} 40" preserveAspectRatio="none" fill="currentColor" aria-hidden="true">${rects}</svg>`;
+      }
+
+      function stamp() {
+        const d = new Date();
+        const pad = (n: number) => String(n).padStart(2, '0');
+        f('date').textContent = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+        f('time').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        f('store').textContent = `#${String(42 + round * 7).padStart(3, '0')}`;
+        f('txn').textContent = String(173 + round * 61 + Math.floor(Math.random() * 40)).padStart(6, '0');
+        f('special').textContent = pick(specials, round);
+        f('cashier').textContent = pick(cashier, round);
+        f('change').textContent = pick(change, round);
+        const code = pick(codes, round);
+        f('barcode').innerHTML = barcode(code);
+        f('barcode').setAttribute('aria-label', `Barcode that says “${code.toLowerCase()}”`);
+        f('barcode-text').textContent = `* ${code} *`;
+        paper.style.setProperty('--tilt', `${(Math.random() * 0.6 - 0.35).toFixed(2)}deg`);
+        // uneven thermal ink, line by line
+        lines.forEach((l) => l.style.setProperty('--fade', (0.8 + Math.random() * 0.2).toFixed(2)));
+      }
+
+      /* ---------- sound (muted by default) ---------- */
+      let soundOn = false;
+      let ac: AudioContext | null = null;
+      const soundBtns = document.querySelectorAll<HTMLButtonElement>('[data-sound]');
+      soundBtns.forEach((b) =>
+        b.addEventListener('click', () => {
+          soundOn = !soundOn;
+          if (soundOn && !ac) ac = new AudioContext();
+          ac?.resume();
+          b.setAttribute('aria-pressed', String(soundOn));
+          b.querySelector('em')!.textContent = soundOn ? 'on' : 'off';
+        }),
+      );
+      function noise(dur: number, freq: number, gain: number, q = 2) {
+        if (!soundOn || !ac) return;
+        const len = Math.max(1, Math.floor(ac.sampleRate * dur));
+        const buf = ac.createBuffer(1, len, ac.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+        const src = ac.createBufferSource();
+        src.buffer = buf;
+        const bp = ac.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = freq;
+        bp.Q.value = q;
+        const g = ac.createGain();
+        g.gain.value = gain;
+        src.connect(bp).connect(g).connect(ac.destination);
+        src.start();
+      }
+      const chirp = () => noise(0.045, 2600 + Math.random() * 900, 0.35, 3);
+      const rip = () => noise(0.32, 1400, 0.5, 0.7);
+
+      /* ---------- printing ---------- */
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      let job = 0;
+      let skip = false;
+      let tearing = false;
+      const fullHeight = () => (paper.firstElementChild as HTMLElement).offsetHeight;
+
+      async function print() {
+        const id = ++job;
+        skip = false;
+        stamp();
+        stage.classList.remove('done');
+        stage.classList.add('busy', 'printing');
+        lines.forEach((l) => l.classList.remove('on', 'burn'));
+        paper.classList.remove('away', 'tear');
+        paper.style.height = '0px';
+
+        if (reduce.matches) {
+          lines.forEach((l) => l.classList.add('on'));
+          paper.style.height = 'auto';
+          stage.classList.remove('busy', 'printing');
+          stage.classList.add('done');
+          return;
+        }
+        paper.classList.add('feeding');
+        await sleep(350);
+        const top = paper.getBoundingClientRect().top;
+        for (const l of lines) {
+          if (id !== job) return;
+          l.classList.add('on', 'burn');
+          const bottom = l.getBoundingClientRect().bottom - top;
+          paper.style.height = `${Math.ceil(bottom + 4)}px`;
+          if (!skip) {
+            chirp();
+            const len = (l.textContent || '').trim().length;
+            await sleep(l.classList.contains('gap') ? 30 : 38 + Math.min(len, 40) * 1.6);
+          }
+        }
+        if (id !== job) return;
+        // feed a little extra, then tear
+        paper.style.height = `${fullHeight()}px`;
+        await sleep(skip ? 0 : 260);
+        paper.classList.remove('feeding');
+        paper.style.height = 'auto';
+        paper.classList.add('tear');
+        rip();
+        stage.classList.remove('busy', 'printing');
+        stage.classList.add('done');
+      }
+
+      async function reprint() {
+        if (tearing) return;
+        tearing = true;
+        job++; // cancel any print in progress
+        round++;
+        stage.classList.add('busy');
+        if (!reduce.matches) {
+          paper.classList.remove('tear');
+          void paper.offsetWidth;
+          paper.classList.add('away');
+          rip();
+          await sleep(560);
+        }
+        window.scrollTo({ top: 0, behavior: reduce.matches ? 'auto' : 'smooth' });
+        paper.style.height = '0px';
+        lines.forEach((l) => l.classList.remove('on', 'burn'));
+        paper.classList.remove('away');
+        await sleep(200);
+        tearing = false;
+        print();
+      }
+      document.querySelectorAll('[data-reprint]').forEach((b) => b.addEventListener('click', reprint));
+      // click the paper while printing to hurry it along
+      paper.addEventListener('click', () => { if (stage.classList.contains('printing')) skip = true; });
+
+      document.fonts?.ready.then(() => print()) ?? print();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,768 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name, profileImage } from '../../data/bio';
+import { icons, pixelSvg } from '../../components/ideas/desktop/icons';
+
+const iconFor: Record<string, string> = {
+  cog: 'gear',
+  clig: 'terminal',
+  compose: 'boxes',
+  machine: 'rack',
+  jsnes: 'pad',
+  whalebrew: 'mug',
+  'arxiv-vanity': 'paper',
+  django: 'globe',
+  ukhas: 'balloon',
+};
+const shortLabel: Record<string, string> = {
+  clig: 'CLI Guidelines',
+  ukhas: 'UKHAS',
+};
+const host = (u: string) => u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+
+const svg = (key: string, cls = 'ico') => pixelSvg(icons[key] ?? icons.doc, cls);
+
+type DeskIcon = { id: string; label: string; icon: string; href: string };
+const deskIcons: DeskIcon[] = [
+  { id: 'readme', label: 'ReadMe', icon: 'readme', href: '#win-readme' },
+  { id: 'replicate', label: now.name, icon: 'monitor', href: now.url },
+  ...projects.map((p) => ({
+    id: p.slug,
+    label: shortLabel[p.slug] ?? p.name,
+    icon: iconFor[p.slug] ?? 'doc',
+    href: p.url,
+  })),
+  { id: 'also', label: 'Also worked on', icon: 'folder', href: '#also' },
+  { id: 'contact', label: 'Contact.txt', icon: 'doc', href: `mailto:${email}` },
+];
+
+const contactTxt = [
+  'To reach Ben, try:',
+  '',
+  `${'Email'.padEnd(10, ' ')}<a href="mailto:${email}">${email}</a>`,
+  ...socials.map((s) => `${s.name.padEnd(10, ' ')}<a href="${s.url}">${s.handle}</a>`),
+  '',
+  'Replies are not guaranteed, but they are',
+  'likely.<span class="caret" aria-hidden="true"></span>',
+].join('\n');
+
+const kinds: Record<string, string> = {
+  'GOV.UK': 'Website',
+  "The Guardian's iPad app": 'iPad app',
+  'This Is My Jam': 'Website',
+  Lanyrd: 'Website',
+  Spacelog: 'Website',
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — FirshOS</title>
+    <meta name="description" content="Ben Firshman's homepage as a small, opinionated retro desktop. Double-click a project to open it." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+    <Fragment set:html={`<noscript><style>.win[data-nojs],#win-also,#win-contact{display:flex!important}.win__close{display:none!important}#win-also{--x:640px;--y:40px}#win-contact{--x:640px;--y:330px}@media (max-width:640px){.windows{position:static!important;margin-top:24px}.win{position:relative!important;left:auto!important;top:auto!important;height:auto!important;margin-bottom:18px;border:2px solid #000!important;box-shadow:4px 4px 0 #000!important}}</style></noscript>`} />
+  </head>
+  <body>
+    <header class="menubar">
+      <div class="menu">
+        <button class="menu__btn menu__btn--logo" aria-haspopup="true" aria-expanded="false" aria-label="FirshOS menu">
+          <Fragment set:html={svg('logo', 'logo')} /><span>FirshOS</span>
+        </button>
+        <div class="menu__list" role="menu" hidden>
+          <button role="menuitem" data-action="about">About This Ben…</button>
+          <hr />
+          <button role="menuitem" data-action="wallpaper">Change Wallpaper</button>
+          <button role="menuitem" data-action="restart">Restart</button>
+          <button role="menuitem" data-action="shutdown">Shut Down…</button>
+        </div>
+      </div>
+      <div class="menu">
+        <button class="menu__btn" aria-haspopup="true" aria-expanded="false">File</button>
+        <div class="menu__list" role="menu" hidden>
+          <button role="menuitem" data-action="open-selected">Open <kbd>Enter</kbd></button>
+          <button role="menuitem" data-action="close">Close Window <kbd>Esc</kbd></button>
+          <hr />
+          <a role="menuitem" href="/ideas/receipt">Print…</a>
+        </div>
+      </div>
+      <div class="menu">
+        <button class="menu__btn" aria-haspopup="true" aria-expanded="false">Go</button>
+        <div class="menu__list" role="menu" hidden>
+          <a role="menuitem" href={now.url}>{now.name}</a>
+          {socials.map((s) => <a role="menuitem" href={s.url}>{s.name}</a>)}
+          <hr />
+          <a role="menuitem" href="/ideas">← All ideas</a>
+        </div>
+      </div>
+      <div class="menu menu--help">
+        <button class="menu__btn" aria-haspopup="true" aria-expanded="false">Help</button>
+        <div class="menu__list" role="menu" hidden>
+          <a role="menuitem" href={`mailto:${email}`}>Email Ben…</a>
+          <button role="menuitem" data-open="readme">Show ReadMe</button>
+        </div>
+      </div>
+      <time class="clock" aria-live="off">--:--</time>
+    </header>
+
+    <main class="desk" id="desk">
+      <h1 class="sr-only">{name}</h1>
+
+      <div class="note" aria-hidden="false">
+        <p><strong>Hello.</strong> This is {name}'s computer. I'm working on <a href={now.url}>{now.name}</a>. Tap things.</p>
+      </div>
+
+      <nav class="icons" aria-label="Desktop">
+        {deskIcons.map((d) => (
+          <a class="icon" href={d.href} data-open={d.id} draggable="false">
+            <span class="icon__img" set:html={svg(d.icon)} />
+            <span class="icon__label">{d.label}</span>
+          </a>
+        ))}
+      </nav>
+
+      <a class="icon icon--trash" href="#trash" data-open="trash" draggable="false">
+        <span class="icon__img" set:html={svg('trash')} />
+        <span class="icon__label">Trash</span>
+      </a>
+
+      <a class="allideas" href="/ideas">← all ideas</a>
+
+      <div class="windows" id="windows">
+        <section class="win" id="win-readme" data-win="readme" data-nojs aria-labelledby="t-readme" style="--x:150px;--y:118px;--w:460px">
+          <div class="win__bar"><h2 class="win__title" id="t-readme">ReadMe</h2><button class="win__close" aria-label="Close ReadMe"></button></div>
+          <div class="win__body prose">
+            <p class="big">Hello. You've found {name}'s computer.</p>
+            <p>I'm working on <a href={now.url}>{now.name}</a>, which lets you {now.blurb}.</p>
+            <p>Everything else on the desktop is other stuff I've done. Double-click an icon to open it. Drag windows by their title bars. <span class="kbdhint">Tab, Enter and Esc work too.</span></p>
+            <p>Please don't empty the Trash. It has feelings.</p>
+          </div>
+          <div class="win__status"><span>1 document</span><span>Read me, then close me</span></div>
+        </section>
+
+        <section class="win" id="win-replicate" data-win="replicate" data-nojs aria-labelledby="t-replicate" style="--x:64px;--y:44px;--w:400px">
+          <div class="win__bar"><h2 class="win__title" id="t-replicate">{now.name} — {now.blurb}</h2><button class="win__close" aria-label={`Close ${now.name}`}></button></div>
+          <div class="win__body">
+            <div class="proj">
+              <span class="proj__icon" set:html={svg('monitor')} />
+              <div>
+                <h3>{now.name}</h3>
+                <p>Run AI models with a cloud API.</p>
+              </div>
+            </div>
+            <dl class="info">
+              <dt>Status</dt><dd><span class="blink" aria-hidden="true">●</span> Running. Do not quit.</dd>
+              <dt>Where</dt><dd>{host(now.url)}</dd>
+            </dl>
+            <a class="btn" href={now.url}>Open in browser →</a>
+          </div>
+          <div class="win__status"><span>Now running</span><span>since whenever</span></div>
+        </section>
+
+        {projects.map((p) => (
+          <section class="win" id={`win-${p.slug}`} data-win={p.slug} hidden aria-labelledby={`t-${p.slug}`} style="--w:380px">
+            <div class="win__bar"><h2 class="win__title" id={`t-${p.slug}`}>{p.name} — {p.blurb}</h2><button class="win__close" aria-label={`Close ${p.name}`}></button></div>
+            <div class="win__body">
+              <div class="proj">
+                <span class="proj__icon" set:html={svg(iconFor[p.slug] ?? 'doc')} />
+                <div>
+                  <h3>{p.name}</h3>
+                  <p>{p.blurb.charAt(0).toUpperCase() + p.blurb.slice(1)}.</p>
+                </div>
+              </div>
+              <dl class="info">
+                <dt>Kind</dt><dd>{p.era === 'early' ? 'Vintage' : p.era === 'middle' ? 'Classic' : 'Recent'} project</dd>
+                <dt>Tags</dt><dd>{p.tags.join(', ')}</dd>
+                <dt>Where</dt><dd>{host(p.url)}</dd>
+              </dl>
+              <a class="btn" href={p.url}>Open in browser →</a>
+            </div>
+            <div class="win__status"><span>1 item</span><span>{p.tags[0]}</span></div>
+          </section>
+        ))}
+
+        <section class="win" id="win-also" data-win="also" hidden aria-labelledby="t-also" style="--w:420px">
+          <div class="win__bar"><h2 class="win__title" id="t-also">Also worked on</h2><button class="win__close" aria-label="Close Also worked on"></button></div>
+          <div class="win__body win__body--flush">
+            <table class="list">
+              <thead><tr><th>Name</th><th>Kind</th></tr></thead>
+              <tbody>
+                {alsoWorkedOn.map((a) => (
+                  <tr><td><span class="mini" set:html={svg('doc')} /><a href={a.url}>{a.name}</a></td><td>{kinds[a.name] ?? 'Thing'}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div class="win__status"><span>{alsoWorkedOn.length} items</span><span>all shipped</span></div>
+        </section>
+
+        <section class="win" id="win-contact" data-win="contact" hidden aria-labelledby="t-contact" style="--w:400px">
+          <div class="win__bar"><h2 class="win__title" id="t-contact">Contact.txt</h2><button class="win__close" aria-label="Close Contact.txt"></button></div>
+          <div class="win__body txt">
+<pre set:html={contactTxt} />
+          </div>
+          <div class="win__status"><span>Plain text</span><span>read-only</span></div>
+        </section>
+
+        <section class="win win--dialog" id="win-trash" data-win="trash" hidden aria-labelledby="t-trash" style="--w:360px">
+          <div class="win__bar"><h2 class="win__title" id="t-trash">Trash</h2><button class="win__close" aria-label="Close Trash"></button></div>
+          <div class="win__body">
+            <div class="proj">
+              <span class="proj__icon" set:html={svg('trash')} />
+              <div>
+                <p class="trash__msg" aria-live="polite"><strong>Trash contains:</strong> Epio, 3 other startups.<br />Empty?</p>
+              </div>
+            </div>
+            <div class="btnrow">
+              <button class="btn btn--plain" data-trash="empty">Empty Trash</button>
+              <button class="btn" data-trash="no">No.</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="win win--dialog" id="win-about" data-win="about" hidden aria-labelledby="t-about" style="--w:340px">
+          <div class="win__bar"><h2 class="win__title" id="t-about">About This Ben</h2><button class="win__close" aria-label="Close About This Ben"></button></div>
+          <div class="win__body about">
+            <div class="about__photo">
+              <img src={profileImage} alt={`Photo of ${name}`} width="160" height="160" />
+              <canvas width="160" height="160" aria-hidden="true"></canvas>
+            </div>
+            <h3>{name}</h3>
+            <p class="dim">FirshOS, still in beta</p>
+            <dl class="info">
+              <dt>Currently</dt><dd><a href={now.url}>{now.name}</a></dd>
+              <dt>Memory</dt><dd>Mostly Django</dd>
+              <dt>Email</dt><dd><a href={`mailto:${email}`}>{email}</a></dd>
+            </dl>
+          </div>
+        </section>
+
+        <section class="win win--dialog" id="win-shutdown" data-win="shutdown" hidden aria-labelledby="t-shutdown" style="--w:320px">
+          <div class="win__bar"><h2 class="win__title" id="t-shutdown">Shut Down</h2><button class="win__close" aria-label="Close"></button></div>
+          <div class="win__body">
+            <p>FirshOS can't shut down while there are interesting problems left.</p>
+            <p class="dim">There are always interesting problems left.</p>
+            <div class="btnrow"><button class="btn" data-close>OK</button></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <style is:global>
+      :root {
+        --ink: #000;
+        --paper: #fff;
+        --menu-h: 30px;
+        --px: 3; /* icon pixel scale */
+        --dither: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' shape-rendering='crispEdges'%3E%3Crect width='2' height='2' fill='%23fff'/%3E%3Crect width='1' height='1' fill='%23000'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23000'/%3E%3C/svg%3E");
+        --wp-1: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' shape-rendering='crispEdges'%3E%3Crect width='4' height='4' fill='%23fff'/%3E%3Crect width='1' height='1' fill='%23000'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23000'/%3E%3C/svg%3E");
+        --wp-2: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%23fff'/%3E%3Cpath d='M0 0h1v1H0zM4 0h1v1H4zM2 2h1v1H2zM6 2h1v1H6zM0 4h1v1H0zM4 4h1v1H4zM2 6h1v1H2zM6 6h1v1H6zM1 1h1v1H1zM5 5h1v1H5z' fill='%23000'/%3E%3C/svg%3E");
+        --wp-3: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%23fff'/%3E%3Cpath d='M0 3h8v1H0zM3 0h1v3H3zM7 4h1v4H7z' fill='%23000'/%3E%3C/svg%3E");
+        --wp-4: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%23fff'/%3E%3Cpath d='M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM4 4h1v1H4zM5 5h1v1H5zM6 6h1v1H6zM7 7h1v1H7z' fill='%23000'/%3E%3C/svg%3E");
+        --wallpaper: var(--wp-1);
+        color-scheme: light;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        font-family: 'Pixelify Sans', ui-monospace, Menlo, monospace;
+        font-size: 16px;
+        line-height: 1.35;
+        color: var(--ink);
+        background: var(--paper);
+        overflow: hidden;
+        -webkit-font-smoothing: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      ::selection { background: var(--ink); color: var(--paper); }
+      a { color: inherit; text-underline-offset: 3px; text-decoration-thickness: 2px; }
+      a:focus-visible, button:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
+      .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      svg { display: block; }
+      kbd { font: inherit; font-size: 12px; border: 1px solid; padding: 0 4px; margin-left: auto; }
+
+      /* ---------- menu bar ---------- */
+      .menubar {
+        position: fixed; inset: 0 0 auto 0; height: var(--menu-h); z-index: 10000;
+        display: flex; align-items: stretch; gap: 0;
+        background: var(--paper); border-bottom: 2px solid var(--ink);
+        padding: 0 8px; user-select: none;
+      }
+      .menu { position: relative; display: flex; }
+      .menu__btn {
+        font: inherit; font-weight: 700; color: inherit; background: none; border: 0;
+        padding: 0 12px; display: flex; align-items: center; gap: 6px; cursor: default;
+      }
+      .menu__btn .logo { width: 20px; height: 20px; }
+      .menu__btn[aria-expanded="true"] { background: var(--ink); color: var(--paper); }
+      .menu__btn[aria-expanded="true"] .logo { filter: invert(1); }
+      .menu__list {
+        position: absolute; top: calc(var(--menu-h) - 2px); left: 0; min-width: 210px;
+        background: var(--paper); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+        padding: 4px 0; display: flex; flex-direction: column;
+      }
+      .menu__list[hidden] { display: none; }
+      .menu__list > button, .menu__list > a {
+        font: inherit; text-align: left; color: inherit; background: none; border: 0;
+        padding: 4px 16px; text-decoration: none; display: flex; gap: 12px; align-items: center; cursor: default;
+      }
+      .menu__list > button:hover, .menu__list > a:hover,
+      .menu__list > button:focus-visible, .menu__list > a:focus-visible { background: var(--ink); color: var(--paper); outline: none; }
+      .menu__list hr { border: 0; height: 2px; margin: 4px 0; background: var(--dither); background-size: 2px 2px; }
+      .clock { margin-left: auto; display: flex; align-items: center; font-weight: 500; padding: 0 8px; font-variant-numeric: tabular-nums; }
+
+      /* ---------- desktop ---------- */
+      .desk {
+        position: fixed; inset: var(--menu-h) 0 0 0;
+        background-color: #fff; background-image: var(--wallpaper); background-size: 8px 8px;
+        image-rendering: pixelated;
+        overflow: hidden;
+      }
+      .note { display: none; }
+      .icons {
+        position: absolute; top: 18px; right: 12px; bottom: 120px;
+        display: grid; grid-auto-flow: column; grid-template-rows: repeat(auto-fill, 92px);
+        grid-auto-columns: 104px; direction: rtl; gap: 4px 6px;
+      }
+      .icon {
+        direction: ltr; display: flex; flex-direction: column; align-items: center; gap: 4px;
+        text-decoration: none; color: var(--ink); width: 104px; padding-top: 4px;
+        touch-action: manipulation; user-select: none; -webkit-user-select: none; cursor: default;
+      }
+      .icon__img svg { width: calc(16px * var(--px)); height: calc(16px * var(--px)); }
+      .icon__label {
+        background: var(--paper); padding: 1px 5px; font-size: 14px; line-height: 1.2;
+        text-align: center; max-width: 100px; border: 1px solid transparent;
+      }
+      .icon:focus-visible { outline: none; }
+      .icon:focus-visible .icon__label { outline: 2px dashed var(--ink); outline-offset: 1px; }
+      .icon.is-selected .icon__img svg { filter: invert(1); }
+      .icon.is-selected .icon__label { background: var(--ink); color: var(--paper); }
+      .icon.is-open .icon__img svg { opacity: 1; }
+      .icon.is-open .icon__img { background: var(--dither); background-size: 2px 2px; }
+      .icon--trash { position: absolute; right: 12px; bottom: 14px; }
+      .allideas {
+        position: absolute; left: 12px; bottom: 12px; font-size: 13px; background: var(--paper);
+        border: 2px solid var(--ink); padding: 2px 8px; text-decoration: none; box-shadow: 2px 2px 0 var(--ink);
+      }
+      .allideas:hover { background: var(--ink); color: var(--paper); }
+
+      /* ---------- windows ---------- */
+      .windows { position: absolute; inset: 0; pointer-events: none; }
+      .win {
+        position: absolute; left: var(--x, 80px); top: var(--y, 80px); width: min(var(--w, 380px), calc(100vw - 24px));
+        background: var(--paper); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink);
+        pointer-events: auto; display: flex; flex-direction: column;
+      }
+      .win[hidden] { display: none; }
+      html.js .win[data-nojs]:not(.is-open) { display: none; }
+      .win__bar {
+        position: relative; display: flex; align-items: center; height: 28px; padding: 0 6px;
+        border-bottom: 2px solid var(--ink); cursor: grab; touch-action: none; user-select: none;
+        background: var(--paper);
+      }
+      .win.is-active .win__bar { background-image: var(--dither); background-size: 2px 2px; }
+      .win.is-dragging .win__bar { cursor: grabbing; }
+      .win__title {
+        margin: 0; font-size: 15px; font-weight: 700; padding: 0 8px; background: var(--paper);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 34px);
+        line-height: 22px;
+      }
+      .win.is-active .win__title { border: 2px solid var(--ink); line-height: 18px; }
+      .win__close {
+        margin-left: auto; flex: none; width: 20px; height: 20px; border: 2px solid var(--ink); background: var(--paper);
+        padding: 0; cursor: default; position: relative;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M1 1h1v1H1zM2 2h1v1H2zM3 3h2v2H3zM5 2h1v1H5zM6 1h1v1H6zM2 5h1v1H2zM1 6h1v1H1zM5 5h1v1H5zM6 6h1v1H6z' fill='%23000'/%3E%3C/svg%3E");
+        background-size: 12px 12px; background-position: center; background-repeat: no-repeat;
+      }
+      .win__close:active { filter: invert(1); }
+      .win__body { padding: 16px 18px 18px; overflow: auto; }
+      .win__body--flush { padding: 0; }
+      .win__status {
+        display: flex; justify-content: space-between; gap: 12px; font-size: 12px;
+        border-top: 2px solid var(--ink); padding: 3px 10px;
+      }
+      .prose p { margin: 0 0 10px; }
+      .prose p:last-child { margin-bottom: 0; }
+      .big { font-size: 22px; font-weight: 700; line-height: 1.15; }
+      .dim { opacity: .7; }
+      .proj { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+      .proj__icon svg { width: 64px; height: 64px; }
+      .proj h3 { margin: 0 0 2px; font-size: 22px; line-height: 1.1; }
+      .proj p { margin: 0; }
+      .info { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; margin: 0 0 16px; font-size: 14px; }
+      .info dt { font-weight: 700; }
+      .info dd { margin: 0; overflow-wrap: anywhere; }
+      .btn {
+        display: inline-flex; align-items: center; gap: 6px; font: inherit; font-weight: 700; color: var(--ink);
+        background: var(--paper); border: 2px solid var(--ink); border-radius: 0; box-shadow: 3px 3px 0 var(--ink);
+        padding: 5px 14px; text-decoration: none; cursor: default;
+      }
+      .btn:hover { background: var(--ink); color: var(--paper); }
+      .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+      .btn--plain { box-shadow: none; }
+      .btnrow { display: flex; justify-content: flex-end; gap: 12px; margin-top: 6px; }
+      .btn:disabled { opacity: .5; pointer-events: none; }
+      .trash__msg { margin: 0; }
+      .list { width: 100%; border-collapse: collapse; font-size: 15px; }
+      .list th { text-align: left; font-size: 12px; padding: 6px 12px; border-bottom: 2px solid var(--ink); }
+      .list td { padding: 5px 12px; }
+      .list td:first-child { display: flex; gap: 8px; align-items: center; }
+      .list tr:nth-child(even) td { background: linear-gradient(#fff, #fff) padding-box; }
+      .list tbody tr:hover td { background: var(--ink); color: var(--paper); }
+      .list tbody tr:hover .mini svg { filter: invert(1); }
+      .mini svg { width: 16px; height: 16px; }
+      .txt pre { margin: 0; font: inherit; font-size: 15px; white-space: pre-wrap; }
+      .caret { display: inline-block; width: 8px; height: 16px; background: var(--ink); vertical-align: -3px; margin-left: 2px; animation: blink 1s steps(1) infinite; }
+      .blink { animation: blink 1.2s steps(1) infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+      .about { text-align: center; }
+      .about h3 { margin: 10px 0 0; font-size: 22px; }
+      .about p { margin: 0 0 12px; }
+      .about .info { text-align: left; justify-content: center; margin-bottom: 0; }
+      .about__photo { width: 164px; height: 164px; margin: 0 auto; border: 2px solid var(--ink); position: relative; }
+      .about__photo img, .about__photo canvas { width: 160px; height: 160px; display: block; }
+      .about__photo img { filter: grayscale(1) contrast(1.4); }
+      .about__photo canvas { position: absolute; inset: 0; image-rendering: pixelated; display: none; }
+      .about__photo.is-dithered canvas { display: block; }
+      .zoomrect { position: fixed; border: 2px dotted var(--ink); pointer-events: none; z-index: 9999; }
+
+      /* ---------- phone launcher ---------- */
+      @media (max-width: 640px) {
+        body { overflow: auto; }
+        .menubar { padding: 0 2px; }
+        .menu__btn { padding: 0 8px; }
+        .menu__btn--logo span { display: none; }
+        .menu--help { display: none; }
+        .menu__list { position: fixed; left: 8px; right: 8px; top: calc(var(--menu-h) - 2px); }
+        .desk { position: relative; inset: auto; min-height: 100vh; min-height: 100dvh; padding: calc(var(--menu-h) + 16px) 14px 40px; overflow: visible; }
+        .note { display: block; background: var(--paper); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); padding: 12px 14px; margin-bottom: 20px; font-size: 17px; }
+        .note p { margin: 0; }
+        .icons { position: static; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: none; grid-auto-flow: row; direction: ltr; gap: 14px 4px; }
+        .icon { width: auto; }
+        .icon__label { font-size: 12px; max-width: 100%; }
+        .icon--trash { position: static; width: 25%; margin-top: 14px; }
+        .allideas { position: static; display: table; margin: 40px auto 0; }
+        .windows { position: fixed; inset: var(--menu-h) 0 0 0; z-index: 5000; }
+        .win { left: 0 !important; top: 0 !important; width: 100% !important; height: 100%; box-shadow: none; border: 0; }
+        .win__bar { height: 40px; cursor: default; }
+        .win__close { width: 30px; height: 30px; background-size: 16px 16px; }
+        .win__body { flex: 1; }
+        .win--dialog .win__body { flex: 1; }
+      }
+      @media (max-width: 640px) and (min-height: 1px) {
+        .icon__img svg { width: 48px; height: 48px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .caret, .blink { animation: none; }
+      }
+    </style>
+
+    <script>
+      document.documentElement.classList.add('js');
+      const $ = <T extends Element = HTMLElement>(s: string, el: ParentNode = document) => el.querySelector(s) as T;
+      const $$ = <T extends Element = HTMLElement>(s: string, el: ParentNode = document) => Array.from(el.querySelectorAll(s)) as T[];
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+      const phone = matchMedia('(max-width: 640px)');
+
+      /* ---------- clock ---------- */
+      const clock = $('.clock') as HTMLTimeElement;
+      const tick = () => {
+        const d = new Date();
+        const day = d.toLocaleDateString('en-GB', { weekday: 'short' });
+        const t = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        clock.textContent = `${day} ${t}`;
+        clock.dateTime = d.toISOString();
+      };
+      tick();
+      setInterval(tick, 1000 * 15);
+
+      /* ---------- window manager ---------- */
+      let z = 10;
+      let cascade = 0;
+      const opener = new Map<string, HTMLElement | null>();
+      const win = (id: string) => document.getElementById(`win-${id}`) as HTMLElement | null;
+      const iconFor = (id: string) => $(`.icon[data-open="${id}"]`) as HTMLElement | null;
+
+      function setActive(w: HTMLElement | null) {
+        $$('.win.is-active').forEach((x) => x.classList.remove('is-active'));
+        if (w) { w.classList.add('is-active'); w.style.zIndex = String(++z); }
+      }
+      function topWindow(): HTMLElement | null {
+        const open = $$('.win.is-open').filter((w) => !w.hidden);
+        open.sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0));
+        return open[0] ?? null;
+      }
+      function zoom(from: DOMRect, to: DOMRect) {
+        if (reduce.matches || phone.matches) return;
+        const r = document.createElement('div');
+        r.className = 'zoomrect';
+        document.body.append(r);
+        const f = (b: DOMRect) => ({ left: `${b.left}px`, top: `${b.top}px`, width: `${b.width}px`, height: `${b.height}px` });
+        r.animate([f(from), f(to)], { duration: 220, easing: 'steps(6, end)', fill: 'forwards' }).finished.then(() => r.remove());
+      }
+      function place(w: HTMLElement) {
+        if (w.dataset.placed) return;
+        const desk = $('#desk').getBoundingClientRect();
+        const dialog = w.classList.contains('win--dialog');
+        const width = Math.min(parseInt(getComputedStyle(w).width) || 380, desk.width - 24);
+        let x: number, y: number;
+        if (dialog) {
+          x = (desk.width - width) / 2;
+          y = Math.max(40, desk.height * 0.18);
+        } else {
+          x = Math.min(desk.width * 0.42, desk.width - width - 24) + (cascade % 8) * 30;
+          y = 70 + (cascade % 8) * 28;
+          cascade++;
+        }
+        w.style.setProperty('--x', `${Math.round(x)}px`);
+        w.style.setProperty('--y', `${Math.round(y)}px`);
+        w.dataset.placed = '1';
+      }
+      function open(id: string, from?: HTMLElement | null) {
+        const w = win(id);
+        if (!w) return false;
+        const wasOpen = w.classList.contains('is-open');
+        w.hidden = false;
+        place(w);
+        w.classList.add('is-open');
+        setActive(w);
+        iconFor(id)?.classList.add('is-open');
+        if (!wasOpen) {
+          opener.set(id, from ?? (document.activeElement as HTMLElement));
+          const src = from ?? iconFor(id);
+          if (src) zoom(src.getBoundingClientRect(), w.getBoundingClientRect());
+        }
+        w.tabIndex = -1;
+        w.focus({ preventScroll: true });
+        if (id === 'about') ditherPhoto();
+        return true;
+      }
+      function close(w: HTMLElement | null) {
+        if (!w) return;
+        const id = w.dataset.win!;
+        w.classList.remove('is-open', 'is-active');
+        w.hidden = true;
+        iconFor(id)?.classList.remove('is-open');
+        const next = topWindow();
+        setActive(next);
+        const back = opener.get(id);
+        if (back && document.contains(back) && back.offsetParent !== null) back.focus({ preventScroll: true });
+        else next?.focus({ preventScroll: true });
+      }
+
+      // Initial cascade: ReadMe + Replicate are rendered visible for no-JS; adopt them here.
+      for (const id of ['replicate', 'readme']) {
+        const w = win(id)!;
+        w.dataset.placed = '1';
+        if (!phone.matches) {
+          w.classList.add('is-open');
+          iconFor(id)?.classList.add('is-open');
+          setActive(w);
+        } else {
+          w.hidden = true;
+        }
+      }
+      if (!phone.matches && !reduce.matches) {
+        // replay the cascade as a little boot sequence
+        const ws = ['replicate', 'readme'].map((id) => win(id)!);
+        ws.forEach((w) => (w.style.visibility = 'hidden'));
+        ws.forEach((w, i) =>
+          setTimeout(() => {
+            w.style.visibility = '';
+            const ic = iconFor(w.dataset.win!);
+            if (ic) zoom(ic.getBoundingClientRect(), w.getBoundingClientRect());
+          }, 250 + i * 260),
+        );
+      }
+
+      /* ---------- icons ---------- */
+      let lastPointer = 'mouse';
+      document.addEventListener('pointerdown', (e) => (lastPointer = e.pointerType), true);
+      const select = (el: HTMLElement | null) => {
+        $$('.icon.is-selected').forEach((x) => x.classList.remove('is-selected'));
+        el?.classList.add('is-selected');
+      };
+      $$('.icon').forEach((icon) => {
+        const id = icon.dataset.open!;
+        icon.addEventListener('click', (e) => {
+          if (!win(id)) return; // no window: behave like a normal link
+          e.preventDefault();
+          select(icon);
+          // keyboard (detail 0), touch and phone layout open on a single activation
+          if (e.detail === 0 || lastPointer === 'touch' || phone.matches) open(id, icon);
+        });
+        icon.addEventListener('dblclick', (e) => {
+          e.preventDefault();
+          open(id, icon);
+        });
+        icon.addEventListener('focus', () => select(icon));
+      });
+      $('#desk').addEventListener('pointerdown', (e) => {
+        const t = e.target as HTMLElement;
+        if (!t.closest('.icon') && !t.closest('.win')) select(null);
+      });
+
+      /* ---------- window chrome: focus, close, drag ---------- */
+      $$('.win').forEach((w) => {
+        w.addEventListener('pointerdown', () => { if (!w.classList.contains('is-active')) setActive(w); });
+        w.addEventListener('focusin', () => { if (!w.classList.contains('is-active')) setActive(w); });
+        $('.win__close', w).addEventListener('click', () => close(w));
+        $$('[data-close]', w).forEach((b) => b.addEventListener('click', () => close(w)));
+        const bar = $('.win__bar', w);
+        bar.addEventListener('pointerdown', (e) => {
+          if (phone.matches || (e.target as HTMLElement).closest('button')) return;
+          e.preventDefault();
+          const desk = $('#desk').getBoundingClientRect();
+          const start = { x: e.clientX, y: e.clientY, l: w.offsetLeft, t: w.offsetTop };
+          w.classList.add('is-dragging');
+          bar.setPointerCapture(e.pointerId);
+          const move = (ev: PointerEvent) => {
+            const l = Math.min(Math.max(start.l + ev.clientX - start.x, 40 - w.offsetWidth), desk.width - 60);
+            const t = Math.min(Math.max(start.t + ev.clientY - start.y, 0), desk.height - 30);
+            w.style.setProperty('--x', `${l}px`);
+            w.style.setProperty('--y', `${t}px`);
+          };
+          const up = () => {
+            w.classList.remove('is-dragging');
+            bar.removeEventListener('pointermove', move);
+            bar.removeEventListener('pointerup', up);
+            bar.removeEventListener('pointercancel', up);
+          };
+          bar.addEventListener('pointermove', move);
+          bar.addEventListener('pointerup', up);
+          bar.addEventListener('pointercancel', up);
+        });
+      });
+
+      /* ---------- trash ---------- */
+      const replies = [
+        'No.',
+        'Still no. Epio was Heroku for Python before Heroku was Heroku for Python. It stays.',
+        'These are load-bearing failures.',
+        'The Trash has filed a complaint with the FirshOS ombudsman.',
+        'Fine. Emptying… just kidding. No.',
+      ];
+      let r = 0;
+      const msg = $('.trash__msg');
+      $('[data-trash="empty"]').addEventListener('click', () => {
+        msg.textContent = replies[Math.min(r, replies.length - 1)];
+        r++;
+        if (r >= replies.length) ($('[data-trash="empty"]') as HTMLButtonElement).disabled = true;
+      });
+      $('[data-trash="no"]').addEventListener('click', () => close(win('trash')));
+
+      /* ---------- about: Atkinson-dithered photo ---------- */
+      let dithered = false;
+      function ditherPhoto() {
+        if (dithered) return;
+        const wrap = $('.about__photo');
+        const img = $('img', wrap) as HTMLImageElement;
+        const c = $('canvas', wrap) as HTMLCanvasElement;
+        const go = () => {
+          try {
+            const W = c.width, H = c.height;
+            const ctx = c.getContext('2d', { willReadFrequently: true })!;
+            ctx.drawImage(img, 0, 0, W, H);
+            const d = ctx.getImageData(0, 0, W, H);
+            const g = new Float32Array(W * H);
+            for (let i = 0; i < W * H; i++) {
+              const v = 0.299 * d.data[i * 4] + 0.587 * d.data[i * 4 + 1] + 0.114 * d.data[i * 4 + 2];
+              g[i] = Math.min(255, Math.max(0, (v - 128) * 1.25 + 140));
+            }
+            const spread = [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]];
+            for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+              const i = y * W + x;
+              const o = g[i] < 128 ? 0 : 255;
+              const err = (g[i] - o) / 8;
+              g[i] = o;
+              for (const [dx, dy] of spread) {
+                const nx = x + dx, ny = y + dy;
+                if (nx >= 0 && nx < W && ny < H) g[ny * W + nx] += err;
+              }
+            }
+            for (let i = 0; i < W * H; i++) { d.data[i * 4] = d.data[i * 4 + 1] = d.data[i * 4 + 2] = g[i]; d.data[i * 4 + 3] = 255; }
+            ctx.putImageData(d, 0, 0);
+            wrap.classList.add('is-dithered');
+            dithered = true;
+          } catch { /* keep the greyscale <img> */ }
+        };
+        if (img.complete && img.naturalWidth) go();
+        else img.addEventListener('load', go, { once: true });
+      }
+
+      /* ---------- menus ---------- */
+      const menus = $$('.menu');
+      let menuOpen = false;
+      const closeMenus = () => {
+        menus.forEach((m) => { $('.menu__btn', m).setAttribute('aria-expanded', 'false'); $('.menu__list', m).hidden = true; });
+        menuOpen = false;
+      };
+      const openMenu = (m: HTMLElement, focusFirst = false) => {
+        closeMenus();
+        $('.menu__btn', m).setAttribute('aria-expanded', 'true');
+        const list = $('.menu__list', m);
+        list.hidden = false;
+        menuOpen = true;
+        if (focusFirst) ($('[role="menuitem"]', list) as HTMLElement)?.focus();
+      };
+      menus.forEach((m) => {
+        const btn = $('.menu__btn', m);
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (btn.getAttribute('aria-expanded') === 'true') closeMenus();
+          else openMenu(m, e.detail === 0);
+        });
+        btn.addEventListener('pointerenter', () => { if (menuOpen && btn.getAttribute('aria-expanded') !== 'true') openMenu(m); });
+        m.addEventListener('keydown', (e) => {
+          const items = $$('[role="menuitem"]', m);
+          const i = items.indexOf(document.activeElement as HTMLElement);
+          if (e.key === 'ArrowDown') { e.preventDefault(); if (!menuOpen) openMenu(m); items[(i + 1) % items.length]?.focus(); }
+          if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
+        });
+      });
+      document.addEventListener('click', (e) => { if (!(e.target as HTMLElement).closest('.menu')) closeMenus(); });
+
+      const wallpapers = ['--wp-1', '--wp-2', '--wp-3', '--wp-4'];
+      let wp = 0;
+      const actions: Record<string, () => void> = {
+        about: () => open('about'),
+        wallpaper: () => {
+          wp = (wp + 1) % wallpapers.length;
+          document.documentElement.style.setProperty('--wallpaper', `var(${wallpapers[wp]})`);
+        },
+        restart: () => {
+          $$('.win.is-open').forEach((w) => close(w));
+          cascade = 0;
+          $$('.win').forEach((w) => { if (!['readme', 'replicate'].includes(w.dataset.win!)) delete w.dataset.placed; });
+          setTimeout(() => open('replicate'), 200);
+          setTimeout(() => open('readme'), 450);
+        },
+        shutdown: () => open('shutdown'),
+        'open-selected': () => { const s = $('.icon.is-selected'); if (s) open(s.dataset.open!, s); },
+        close: () => close(topWindow()),
+      };
+      $$('.menu__list [data-action]').forEach((b) =>
+        b.addEventListener('click', () => { closeMenus(); actions[b.dataset.action!]?.(); }),
+      );
+      $$('.menu__list [data-open]').forEach((b) =>
+        b.addEventListener('click', () => { closeMenus(); open(b.dataset.open!); }),
+      );
+
+      /* ---------- keyboard ---------- */
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if (menuOpen) {
+          const btn = $('.menu__btn[aria-expanded="true"]');
+          closeMenus();
+          btn?.focus();
+          return;
+        }
+        close(topWindow());
+      });
+    </script>
+  </body>
+</html>
