@@ -1,0 +1,210 @@
+---
+// Strata: a reaction-diffusion pattern whose history stacks into a sculpture.
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman works on Replicate. Before that: Cog, Command Line Interface Guidelines, Docker Compose, JSNES and more." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+    <script is:inline>
+      // Choose the edition before first paint so the page colours never flash.
+      (function () {
+        var q = parseInt(new URLSearchParams(location.search).get('seed') || '', 10);
+        var seed = q > 0 ? q : 1 + Math.floor(Math.random() * 99999);
+        window.__strataSeed = seed;
+        var a = (seed * 104729 + 7) | 0;
+        function R() {
+          a = (a + 0x6d2b79f5) | 0;
+          var t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        }
+        R();
+        // keep in step with PALETTES in sculpture.ts: [bg, ink, dark]
+        var P = [['#0e1412', '#e1e8e2', 1], ['#ebe6de', '#1f1c19', 0], ['#dcd6cc', '#24201c', 0], ['#060b12', '#d6e2e8', 1], ['#11141d', '#e2e4ec', 1], ['#efe9e6', '#251d1d', 0]];
+        var p = P[Math.floor(R() * P.length)];
+        var s = document.documentElement.style;
+        s.setProperty('--bg', p[0]);
+        s.setProperty('--ink', p[1]);
+        document.documentElement.dataset.tone = p[2] ? 'dark' : 'light';
+        var m = document.createElement('meta');
+        m.name = 'theme-color';
+        m.content = p[0];
+        document.head.appendChild(m);
+      })();
+    </script>
+  </head>
+  <body>
+    <canvas id="stone" aria-hidden="true"></canvas>
+
+    <main>
+      <h1>Ben Firshman</h1>
+
+      <p>I'm working on <a href="https://replicate.com">Replicate</a>. Some other stuff I've done:</p>
+
+      <ul>
+        <li><a href="https://github.com/replicate/cog">Cog</a>, containers for machine learning.</li>
+        <li><a href="https://clig.dev">Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+        <li><a href="https://github.com/docker/compose">Docker Compose</a> and <a href="https://github.com/docker/machine">Docker Machine</a>.</li>
+        <li><a href="https://github.com/bfirsh/jsnes">JSNES</a>, one of the first JavaScript emulators.</li>
+        <li><a href="https://github.com/whalebrew/whalebrew">Whalebrew</a>, a Docker package manager.</li>
+        <li><a href="https://www.arxiv-vanity.com/">arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+        <li>I worked on <a href="https://gov.uk">GOV.UK</a>, <a href="https://www.youtube.com/watch?v=53ZJdJNsBto">The Guardian's iPad app</a>, <a href="https://www.thisismyjam.com">This Is My Jam</a>, <a href="https://en.wikipedia.org/wiki/Lanyrd">Lanyrd</a>, and <a href="https://spacelog.org">Spacelog</a>.</li>
+        <li>I worked on many parts of <a href="https://www.djangoproject.com/">Django</a>, including class-based views, feeds, and search.</li>
+        <li>I helped start the <a href="https://ukhas.org.uk/">UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+      </ul>
+
+      <p>Email me at <a href="mailto:ben@firshman.com">ben@firshman.com</a>.<br />
+        I'm also on <a href="https://x.com/bfirsh">X</a>, <a href="https://github.com/bfirsh">GitHub</a>, and <a href="https://www.linkedin.com/in/bfirsh/">LinkedIn</a>.</p>
+    </main>
+
+    <footer class="mark">
+      <button type="button" id="edition" class="edition" hidden></button>
+      <a href="/ideas" class="ideas">ideas</a>
+    </footer>
+
+    <style>
+      :root {
+        --bg: #e4dfd6;
+        --ink: #24201c;
+        --col: min(34rem, 40vw);
+      }
+      * { box-sizing: border-box; }
+      html { background: var(--bg); }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        min-height: 100svh;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      #stone {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        opacity: 0;
+        transition: opacity 1.6s ease;
+      }
+      #stone.on { opacity: 1; }
+      main {
+        position: relative;
+        width: var(--col);
+        min-width: 21rem;
+        padding: clamp(2.5rem, 11vh, 7.5rem) 0 4rem clamp(1.5rem, 6vw, 6.5rem);
+        box-sizing: content-box;
+        max-width: calc(100vw - 3rem);
+      }
+      h1 {
+        font-weight: 500;
+        font-size: 1.32rem;
+        letter-spacing: -0.005em;
+        line-height: 1.25;
+        margin: 0 0 1.5rem;
+      }
+      p { margin: 0 0 1.1rem; }
+      ul { list-style: none; margin: 0 0 1.3rem; padding: 0; }
+      li {
+        position: relative;
+        padding-left: 1rem;
+        margin: 0 0 0.45rem;
+        opacity: 0.86;
+      }
+      li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.8em;
+        width: 0.32rem;
+        height: 1px;
+        background: currentColor;
+        opacity: 0.45;
+      }
+      a {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.22em;
+        text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+        transition: text-decoration-color 0.2s;
+      }
+      a:hover, a:focus-visible { text-decoration-color: currentColor; }
+      a:focus-visible, button:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
+      .mark {
+        position: fixed;
+        right: max(1rem, env(safe-area-inset-right));
+        bottom: max(0.8rem, env(safe-area-inset-bottom));
+        display: flex;
+        gap: 0.9rem;
+        align-items: baseline;
+        font-size: 11px;
+        letter-spacing: 0.05em;
+      }
+      .edition {
+        font: inherit;
+        color: inherit;
+        opacity: 0.4;
+        background: none;
+        border: 0;
+        padding: 0;
+        cursor: pointer;
+        font-variant-numeric: tabular-nums;
+        transition: opacity 0.3s;
+      }
+      .edition:hover, .edition:focus-visible { opacity: 0.85; }
+      .ideas { opacity: 0.16; text-decoration: none; transition: opacity 0.3s; }
+      .ideas:hover, .ideas:focus-visible { opacity: 0.85; }
+      @media (max-width: 760px) {
+        #stone { position: absolute; height: 64vh; height: 64svh; -webkit-mask-image: linear-gradient(#000 78%, transparent); mask-image: linear-gradient(#000 78%, transparent); }
+        main { width: auto; min-width: 0; max-width: none; padding: 2.4rem 1.25rem 2rem; box-sizing: border-box; }
+        html.gl main { padding-top: calc(60svh + 0.5rem); }
+        .mark { position: static; justify-content: flex-end; padding: 0 1.25rem 1.2rem; }
+      }
+    </style>
+
+    <script>
+      import { mountEdition } from '../../components/ideas/strata/edition';
+      import { startStrata } from '../../components/ideas/strata/sculpture';
+
+      const seed: number = (window as any).__strataSeed;
+      mountEdition(document.getElementById('edition') as HTMLButtonElement, seed);
+      const canvas = document.getElementById('stone') as HTMLCanvasElement;
+      const main = document.querySelector('main') as HTMLElement;
+      const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const layout = () => {
+        const mobile = innerWidth <= 760;
+        if (mobile) return { mobile, shiftX: 0, shiftY: -0.04 };
+        const r = main.getBoundingClientRect();
+        const right = Math.min(r.right + 24, innerWidth * 0.62);
+        const cx = right + (innerWidth - right) * 0.5;
+        return { mobile, shiftX: (cx / innerWidth) * 2 - 1, shiftY: -0.02 };
+      };
+      try {
+        const r = startStrata(canvas, seed, { still, layout, onReady: () => canvas.classList.add('on') });
+        if (r) {
+          document.documentElement.classList.add('gl');
+          (window as any).__strata = r.params;
+          // the palette is the source of truth for the page colours
+          const st = document.documentElement.style;
+          st.setProperty('--bg', r.palette.bg);
+          st.setProperty('--ink', r.palette.ink);
+        }
+        else canvas.remove();
+      } catch (e) {
+        console.warn(e);
+        canvas.remove();
+      }
+    </script>
+  </body>
+</html>
