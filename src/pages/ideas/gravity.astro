@@ -1,0 +1,731 @@
+---
+import { name, email, now, projects, alsoWorkedOn, socials } from '../../data/bio';
+
+const p = Object.fromEntries(projects.map((x) => [x.slug, x]));
+const [gov, guardian, jam, lanyrd, spacelog] = alsoWorkedOn;
+const x = socials.find((s) => s.name === 'X')!;
+const gh = socials.find((s) => s.name === 'GitHub')!;
+const li = socials.find((s) => s.name === 'LinkedIn')!;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Ben Firshman — Gravity</title>
+    <meta name="description" content="Ben Firshman's homepage, exactly as it is, until gravity switches on. Fling the words around, then tidy them back up." />
+  </head>
+  <body>
+    <main id="page">
+      <h1>{name}</h1>
+
+      <p>I'm working on <a href={now.url}>{now.name}</a>. Some other stuff I've done:</p>
+
+      <ul>
+        <li><span class="dot" aria-hidden="true"></span><a href={p.cog.url}>{p.cog.name}</a>, {p.cog.blurb}.</li>
+        <li><span class="dot" aria-hidden="true"></span><a href={p.clig.url}>{p.clig.name}</a>, {p.clig.blurb}.</li>
+        <li><span class="dot" aria-hidden="true"></span><a href={p.compose.url}>{p.compose.name}</a> and <a href={p.machine.url}>{p.machine.name}</a>.</li>
+        <li><span class="dot" aria-hidden="true"></span><a href={p.jsnes.url}>{p.jsnes.name}</a>, {p.jsnes.blurb}.</li>
+        <li><span class="dot" aria-hidden="true"></span><a href={p.whalebrew.url}>{p.whalebrew.name}</a>, {p.whalebrew.blurb}.</li>
+        <li><span class="dot" aria-hidden="true"></span><a href={p['arxiv-vanity'].url}>{p['arxiv-vanity'].name}</a>, which {p['arxiv-vanity'].blurb}.</li>
+        <li><span class="dot" aria-hidden="true"></span>I worked on <a href={gov.url}>{gov.name}</a>, <a href={guardian.url}>{guardian.name}</a>, <a href={jam.url}>{jam.name}</a>, <a href={lanyrd.url}>{lanyrd.name}</a>, and <a href={spacelog.url}>{spacelog.name}</a>.</li>
+        <li><span class="dot" aria-hidden="true"></span>I worked on many parts of <a href={p.django.url}>{p.django.name}</a>, including class-based views, feeds, and search.</li>
+        <li><span class="dot" aria-hidden="true"></span>I helped start the <a href={p.ukhas.url}>{p.ukhas.name}</a>, a group for amateur near-space exploration.</li>
+      </ul>
+
+      <p>Email me at <a href={`mailto:${email}`} class="email">{email}</a>.<br />
+        I'm also on <a href={x.url}>{x.name}</a>, <a href={gh.url}>{gh.name}</a>, and <a href={li.url}>{li.name}</a>.</p>
+
+      <hr />
+    </main>
+
+    <nav class="chrome" aria-label="Gravity controls">
+      <a class="back" href="/ideas">← all ideas</a>
+      <button type="button" id="drop" class="js-only">↓ gravity</button>
+      <button type="button" id="zerog" aria-pressed="false" hidden>zero-g</button>
+      <button type="button" id="tidy" hidden>tidy up</button>
+      <div id="dial" role="slider" tabindex="0" aria-label="Gravity direction" aria-valuemin="0" aria-valuemax="359" aria-valuenow="180" aria-valuetext="down" hidden>
+        <svg viewBox="-20 -20 40 40" aria-hidden="true">
+          <circle r="17" class="ring" />
+          <g class="needle"><line x1="0" y1="-7" x2="0" y2="8" /><path d="M-5 5 L0 12 L5 5 Z" /></g>
+          <circle r="2.2" class="hub" />
+        </svg>
+      </div>
+    </nav>
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      import { World, Body } from '../../components/ideas/gravity/physics';
+
+      const main = document.getElementById('page')!;
+      const root = document.documentElement;
+      const dropBtn = document.getElementById('drop') as HTMLButtonElement;
+      const zeroBtn = document.getElementById('zerog') as HTMLButtonElement;
+      const tidyBtn = document.getElementById('tidy') as HTMLButtonElement;
+      const dial = document.getElementById('dial')!;
+      const needle = dial.querySelector('.needle') as SVGGElement;
+      const toast = document.getElementById('toast')!;
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      root.classList.add('js');
+
+      // ---------- split every word into its own element (links stay links) ----------
+      const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+      const texts: Text[] = [];
+      while (walker.nextNode()) texts.push(walker.currentNode as Text);
+      for (const t of texts) {
+        if (!t.data.trim()) continue;
+        const frag = document.createDocumentFragment();
+        for (const part of t.data.split(/(\s+)/)) {
+          if (!part) continue;
+          if (/^\s+$/.test(part)) { frag.append(part); continue; }
+          const s = document.createElement('span');
+          s.className = 'w';
+          s.textContent = part;
+          frag.append(s);
+        }
+        t.replaceWith(frag);
+      }
+
+      type Item = {
+        el: HTMLElement;
+        kind: 'word' | 'heavy' | 'dot' | 'beam';
+        link: HTMLAnchorElement | null;
+        // home box (viewport coords at freeze) and collision box
+        hx: number; hy: number; hw: number; hh: number;
+        body: Body | null;
+        phase: number; freq: number; delay: number;
+      };
+      const items: Item[] = [];
+      const byEl = new Map<Element, Item>();
+      for (const el of main.querySelectorAll<HTMLElement>('.w, .dot, hr')) {
+        const link = el.closest('a');
+        const kind = el.tagName === 'HR' ? 'beam' : el.classList.contains('dot') ? 'dot' : link?.classList.contains('email') ? 'heavy' : 'word';
+        const it: Item = { el, kind, link, hx: 0, hy: 0, hw: 0, hh: 0, body: null, phase: Math.random() * 6.28, freq: 15 + Math.random() * 10, delay: 0 };
+        items.push(it);
+        byEl.set(el, it);
+      }
+      const hr = items.find((i) => i.kind === 'beam')!;
+
+      // ---------- state ----------
+      let state: 'flow' | 'wobble' | 'live' | 'tidy' = 'flow';
+      let world = new World();
+      let W = innerWidth, H = innerHeight;
+      let scrollAtFreeze = 0;
+      let raf = 0;
+      let last = 0;
+      let acc = 0;
+      let liveT = 0;
+      const G = 2000;
+      let gAngle = Math.PI / 2;
+      let tiltVec: { x: number; y: number } | null = null;
+      let zeroG = false;
+      let walls: Body[] = [];
+
+      // Measure every word where it sits, then pin it absolutely in exactly the same place.
+      function freeze() {
+        scrollAtFreeze = scrollY;
+        const measured = items.map((it) => {
+          const r = it.el.getBoundingClientRect();
+          const fs = parseFloat(getComputedStyle(it.el).fontSize);
+          return { r, fs };
+        });
+        root.classList.add('dropped');
+        W = innerWidth; H = innerHeight;
+        items.forEach((it, i) => {
+          const { r, fs } = measured[i];
+          const s = it.el.style;
+          if (it.kind === 'word' || it.kind === 'heavy') {
+            // trim the empty space above the ascenders so words stack snugly
+            const trimTop = 0.17 * fs, trimBot = 0.03 * fs;
+            const h = r.height - trimTop - trimBot;
+            it.hw = r.width / 2; it.hh = h / 2;
+            it.hx = r.left + it.hw; it.hy = r.top + trimTop + it.hh;
+            s.width = r.width + 'px';
+            s.height = h + 'px';
+            s.lineHeight = r.height - 2 * trimTop + 'px';
+          } else if (it.kind === 'beam') {
+            const h = 16;
+            it.hw = r.width / 2; it.hh = h / 2;
+            it.hx = r.left + it.hw; it.hy = r.top + r.height / 2;
+            s.width = r.width + 'px';
+          } else {
+            it.hw = r.width / 2; it.hh = r.height / 2;
+            it.hx = r.left + it.hw; it.hy = r.top + it.hh;
+          }
+          place(it, it.hx, it.hy, 0);
+        });
+      }
+
+      function place(it: Item, x: number, y: number, a: number) {
+        it.el.style.transform = `translate(${(x - it.hw).toFixed(2)}px,${(y - it.hh).toFixed(2)}px) rotate(${a.toFixed(4)}rad)`;
+      }
+
+      function thaw() {
+        root.classList.remove('dropped');
+        hr.el.classList.remove('girder');
+        for (const it of items) it.el.removeAttribute('style');
+        main.removeAttribute('style');
+        scrollTo(0, scrollAtFreeze);
+      }
+
+      // ---------- the drop ----------
+      let autoTimer = 0;
+      function startDrop() {
+        if (state !== 'flow') return;
+        clearTimeout(autoTimer);
+        dropBtn.classList.remove('fuse');
+        freeze();
+        state = 'wobble';
+        dropBtn.hidden = true;
+        hr.el.classList.add('girder');
+        const t0 = performance.now();
+        const dur = reduce ? 0 : 700;
+        const shake = (now: number) => {
+          if (state !== 'wobble') return;
+          const t = (now - t0) / dur;
+          if (t >= 1 || reduce) { release(); return; }
+          const amp = t * t;
+          for (const it of items) {
+            const k = Math.sin((now / 1000) * it.freq + it.phase);
+            const rot = it.kind === 'beam' ? k * 0.004 * amp : k * 0.05 * amp;
+            place(it, it.hx + Math.cos(it.phase * 3 + now / 37) * 0.8 * amp, it.hy + k * 1.2 * amp, rot);
+          }
+          requestAnimationFrame(shake);
+        };
+        requestAnimationFrame(shake);
+      }
+
+      function setupWalls() {
+        const big = 4000;
+        world.setWall(walls[0], W / 2, H + 500, W + big, 500); // floor
+        world.setWall(walls[1], -500, H / 2, 500, H + big); // left
+        world.setWall(walls[2], W + 500, H / 2, 500, H + big); // right
+        world.setWall(walls[3], W / 2, -500, W + big, 500); // ceiling
+      }
+
+      function release() {
+        world = new World();
+        walls = [0, 1, 2, 3].map(() => world.newBody(1, 1, 0));
+        walls[3].kind = 'ceiling';
+        setupWalls();
+        applyGravity();
+        world.onImpact = onImpact;
+        // everything below the fold rains in from above, keeping its layout
+        let maxBottom = H;
+        for (const it of items) maxBottom = Math.max(maxBottom, it.hy + it.hh);
+        const lift = maxBottom + 40;
+        for (const it of items) {
+          const density = it.kind === 'beam' ? 3.5 : it.kind === 'heavy' ? 5 : 1;
+          const b = new Body(world.nextId++, it.hw, it.hh, density);
+          b.kind = it.kind;
+          b.el = it.el;
+          b.x = it.hx; b.y = it.hy;
+          b.setAngle(0);
+          if (it.kind === 'dot') { b.restitution = 0.45; b.friction = 0.4; }
+          if (it.kind === 'beam') { b.restitution = 0.02; b.friction = 0.8; }
+          if (it.hy + it.hh > H) { b.y -= lift; b.inside = false; it.delay = 0; }
+          else {
+            if (it.hy + it.hh < 0) b.inside = false;
+            it.delay = reduce ? 0 : Math.random() * 0.4;
+            b.w = (Math.random() - 0.5) * 3;
+            b.vx = (Math.random() - 0.5) * 70;
+            b.vy = -Math.random() * 60;
+          }
+          it.body = b;
+        }
+        state = 'live';
+        liveT = 0;
+        zeroBtn.hidden = false; tidyBtn.hidden = false; dial.hidden = false;
+        updateDial();
+        start();
+      }
+
+      let lastShake = 0;
+      function onImpact(b: Body, _o: Body, speed: number) {
+        if (reduce || (b.kind !== 'beam' && b.kind !== 'heavy') || speed < 900) return;
+        const now = performance.now();
+        if (now - lastShake < 350) return;
+        lastShake = now;
+        const a = Math.min(1, speed / 2600) * (b.kind === 'beam' ? 9 : 6);
+        main.animate(
+          [{ transform: 'none' }, { transform: `translate(0,${a}px)` }, { transform: `translate(0,${-a * 0.5}px)` }, { transform: `translate(0,${a * 0.2}px)` }, { transform: 'none' }],
+          { duration: 260, easing: 'ease-out' },
+        );
+      }
+
+      // ---------- gravity controls ----------
+      function applyGravity() {
+        if (zeroG) { world.gx = 0; world.gy = 0; }
+        else if (tiltVec) { world.gx = tiltVec.x * G; world.gy = tiltVec.y * G; }
+        else { world.gx = Math.cos(gAngle) * G; world.gy = Math.sin(gAngle) * G; }
+        world.wakeAll();
+        updateDial();
+      }
+
+      function updateDial() {
+        const a = tiltVec ? Math.atan2(tiltVec.y, tiltVec.x) : gAngle;
+        needle.style.transform = `rotate(${a - Math.PI / 2}rad)`;
+        dial.classList.toggle('off', zeroG);
+        dial.classList.toggle('tilt', !!tiltVec);
+        const deg = Math.round((((a - Math.PI / 2) * 180) / Math.PI + 180 + 720) % 360);
+        dial.setAttribute('aria-valuenow', String(deg));
+        const dirs = ['up', 'up-right', 'right', 'down-right', 'down', 'down-left', 'left', 'up-left'];
+        dial.setAttribute('aria-valuetext', zeroG ? 'off (zero-g)' : dirs[Math.round(deg / 45) % 8]);
+      }
+
+      function dialFromPointer(e: PointerEvent) {
+        const r = dial.getBoundingClientRect();
+        const a = Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2));
+        gAngle = Math.round(a / (Math.PI / 36)) * (Math.PI / 36);
+        if (zeroG) setZeroG(false);
+        applyGravity();
+      }
+      dial.addEventListener('pointerdown', (e) => {
+        if (tiltVec) return;
+        dial.setPointerCapture(e.pointerId);
+        dialFromPointer(e);
+      });
+      dial.addEventListener('pointermove', (e) => { if (dial.hasPointerCapture(e.pointerId)) dialFromPointer(e); });
+      dial.addEventListener('dblclick', () => { gAngle = Math.PI / 2; applyGravity(); });
+      dial.addEventListener('keydown', (e) => {
+        const step = Math.PI / 12;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') gAngle += step;
+        else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') gAngle -= step;
+        else if (e.key === 'Home') gAngle = Math.PI / 2;
+        else return;
+        e.preventDefault();
+        if (zeroG) setZeroG(false);
+        applyGravity();
+      });
+
+      // Tilt, but only where it works without a permission prompt (not iOS).
+      const DOE = (window as any).DeviceOrientationEvent;
+      if (DOE && typeof DOE.requestPermission !== 'function' && matchMedia('(pointer: coarse)').matches) {
+        addEventListener('deviceorientation', (e: DeviceOrientationEvent) => {
+          if (e.beta == null || e.gamma == null) return;
+          const d = Math.PI / 180;
+          let ax = Math.sin(e.gamma * d), ay = Math.sin(Math.max(-90, Math.min(90, e.beta)) * d);
+          const ang = ((screen.orientation?.angle ?? 0) * d);
+          const sx = ax * Math.cos(ang) + ay * Math.sin(ang);
+          const sy = -ax * Math.sin(ang) + ay * Math.cos(ang);
+          let mx = sx * 1.4, my = sy * 1.4;
+          const m = Math.hypot(mx, my);
+          if (m > 1) { mx /= m; my /= m; }
+          const prev = tiltVec;
+          tiltVec = prev ? { x: prev.x * 0.7 + mx * 0.3, y: prev.y * 0.7 + my * 0.3 } : { x: mx, y: my };
+          if (state !== 'live') return;
+          if (!prev || Math.hypot(tiltVec.x - prev.x, tiltVec.y - prev.y) > 0.02) applyGravity();
+          else updateDial();
+        });
+      }
+
+      function setZeroG(on: boolean) {
+        zeroG = on;
+        zeroBtn.setAttribute('aria-pressed', String(on));
+        zeroBtn.textContent = on ? 'gravity' : 'zero-g';
+        applyGravity();
+        if (on) {
+          for (const b of world.bodies) {
+            b.vx += (Math.random() - 0.5) * 90;
+            b.vy += -Math.random() * 160 - 20;
+            b.w += (Math.random() - 0.5) * 1.6;
+            if (!b.inside) b.vy = 220;
+          }
+        }
+      }
+      zeroBtn.addEventListener('click', () => setZeroG(!zeroG));
+
+      // ---------- tidy up ----------
+      tidyBtn.addEventListener('click', () => {
+        if (state !== 'live') return;
+        state = 'tidy';
+        world.drag = null;
+        zeroBtn.hidden = true; tidyBtn.hidden = true; dial.hidden = true;
+        const t0 = performance.now();
+        const order = items.slice().sort((a, b) => a.hy - b.hy || a.hx - b.hx);
+        const anims = order.map((it, i) => {
+          const b = it.body!;
+          let a = b.a % (Math.PI * 2);
+          if (a > Math.PI) a -= Math.PI * 2;
+          if (a < -Math.PI) a += Math.PI * 2;
+          return { it, fx: b.x, fy: b.y, fa: a, delay: i * (520 / order.length), arc: reduce ? 0 : 40 + Math.random() * 90 };
+        });
+        const dur = 720;
+        const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+        const tick = (now: number) => {
+          let done = true;
+          for (const an of anims) {
+            const t = Math.max(0, Math.min(1, (now - t0 - an.delay) / dur));
+            if (t < 1) done = false;
+            const e = ease(t);
+            const it = an.it;
+            place(it, an.fx + (it.hx - an.fx) * e, an.fy + (it.hy - an.fy) * e - Math.sin(Math.PI * e) * an.arc, an.fa * (1 - e));
+          }
+          if (!done) { requestAnimationFrame(tick); return; }
+          for (const it of items) it.body = null;
+          state = 'flow';
+          thaw();
+          dropBtn.hidden = false;
+          if (zeroG) setZeroG(false);
+        };
+        requestAnimationFrame(tick);
+      });
+
+      // ---------- grab and fling ----------
+      let grab: { id: number; x0: number; y0: number; moved: boolean } | null = null;
+      let suppressClick = false;
+      main.addEventListener('pointerdown', (e) => {
+        if (state !== 'live' || e.button > 0) return;
+        const el = (e.target as Element).closest('.w, .dot, hr');
+        const it = el && byEl.get(el);
+        const b = it?.body;
+        if (!b || !world.bodies.includes(b)) return;
+        e.preventDefault();
+        const dx = e.clientX - b.x, dy = e.clientY - b.y;
+        world.drag = {
+          body: b, lx: b.c * dx + b.s * dy, ly: -b.s * dx + b.c * dy, tx: e.clientX, ty: e.clientY,
+          ix: 0, iy: 0, rx: 0, ry: 0, k11: 0, k12: 0, k22: 0, cbx: 0, cby: 0, gamma: 0, maxImpulse: 0,
+        };
+        b.wake();
+        grab = { id: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false };
+        root.classList.add('grabbing');
+      });
+      addEventListener('pointermove', (e) => {
+        if (!grab || e.pointerId !== grab.id || !world.drag) return;
+        world.drag.tx = Math.max(0, Math.min(W, e.clientX));
+        world.drag.ty = Math.max(0, Math.min(H, e.clientY));
+        if (Math.hypot(e.clientX - grab.x0, e.clientY - grab.y0) > 6) grab.moved = true;
+      });
+      const letGo = (e: PointerEvent) => {
+        if (!grab || e.pointerId !== grab.id) return;
+        if (grab.moved) { suppressClick = true; setTimeout(() => (suppressClick = false), 0); }
+        grab = null;
+        world.drag = null;
+        root.classList.remove('grabbing');
+      };
+      addEventListener('pointerup', letGo);
+      addEventListener('pointercancel', letGo);
+      // a drag is not a click; a click (without a drag) on a linked word follows the link
+      document.addEventListener('click', (e) => { if (suppressClick) { e.preventDefault(); e.stopPropagation(); } }, true);
+      main.addEventListener('dragstart', (e) => e.preventDefault());
+
+      // ---------- the loop ----------
+      const STEP = 1 / 120;
+      let eggT = 0, eggShown = false;
+      function frame(now: number) {
+        raf = 0;
+        if (state !== 'live') return;
+        const dt = Math.min(0.05, (now - last) / 1000 || 0);
+        last = now;
+        liveT += dt;
+        // staggered release: a word joins the world after its little delay
+        for (const it of items) {
+          const b = it.body;
+          if (b && it.delay >= 0 && liveT >= it.delay) { world.add(b); it.delay = -1; }
+        }
+        acc += dt;
+        let n = 0;
+        while (acc >= STEP && n < 4) { world.step(STEP); acc -= STEP; n++; }
+        if (n === 4) acc = 0;
+        for (const b of world.bodies) {
+          if (b.x === b.rx && b.y === b.ry && b.a === b.ra) continue;
+          b.rx = b.x; b.ry = b.y; b.ra = b.a;
+          b.el!.style.transform = `translate(${(b.x - b.hw).toFixed(2)}px,${(b.y - b.hh).toFixed(2)}px) rotate(${b.a.toFixed(4)}rad)`;
+        }
+        checkEgg(dt);
+        raf = requestAnimationFrame(frame);
+      }
+      function start() {
+        if (raf || document.hidden) return;
+        last = performance.now();
+        acc = 0;
+        raf = requestAnimationFrame(frame);
+      }
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+        else if (state === 'live') start();
+      });
+
+      function checkEgg(dt: number) {
+        if (eggShown || zeroG || world.gy < G * 0.6 || liveT < 3) return;
+        const line = Math.max(60, H * 0.1);
+        const held = world.drag?.body;
+        let hit = false;
+        for (const b of world.bodies) {
+          if (!b.inside || b.minY > line || b === held) continue;
+          // a sleeping body under gravity is, by definition, resting on something
+          if (!b.awake) { hit = true; break; }
+          if (b.vx * b.vx + b.vy * b.vy > 40 * 40) continue;
+          const touch = world.touching(b);
+          if (!touch.length || (held && touch.includes(held))) continue;
+          hit = true;
+          break;
+        }
+        eggT = hit ? eggT + dt : 0;
+        if (eggT > 0.8) {
+          eggShown = true;
+          toast.textContent = '🎉 you built a homepage';
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 4200);
+        }
+      }
+
+      addEventListener('resize', () => {
+        if (state !== 'live') return;
+        W = innerWidth; H = innerHeight;
+        setupWalls();
+        world.wakeAll();
+      });
+
+      dropBtn.addEventListener('click', startDrop);
+      if (!reduce) {
+        dropBtn.classList.add('fuse');
+        autoTimer = window.setTimeout(startDrop, 2000);
+      }
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  /* The homepage, verbatim (from Layout.astro) */
+  html {
+    font-size: 20px;
+    line-height: 1.4;
+    font-weight: 600;
+    text-wrap: pretty;
+  }
+
+  @media (min-width: 768px) {
+    html {
+      font-size: 32px;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+      "Segoe UI Symbol";
+    color: black;
+    background: white;
+  }
+
+  ::selection {
+    background: black;
+    color: white;
+  }
+
+  a,
+  a:hover,
+  a:active {
+    color: black;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  a:focus {
+    background: black;
+    outline: 0.333em solid black;
+    color: white;
+  }
+
+  h1 {
+    font-size: 1rem;
+    font-weight: inherit;
+  }
+
+  hr {
+    height: 4px;
+    background: black;
+    border: 0;
+  }
+
+  h1,
+  p,
+  hr,
+  ul {
+    margin-bottom: 2rem;
+  }
+
+  main {
+    margin: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    main {
+      margin: 1rem;
+      max-width: 768px;
+    }
+  }
+
+  /* Bullets are real elements so they can fall too. Drawn to match the default disc. */
+  ul { list-style: none; }
+  li { position: relative; }
+  .dot {
+    position: absolute;
+    /* fitted to Chrome's own disc marker at both font sizes */
+    left: calc(-5.33px - 0.683em);
+    top: calc(2.7px + 0.475em);
+    width: 0.3125em;
+    height: 0.3125em;
+    border-radius: 50%;
+    background: black;
+  }
+
+  /* ---------- the controls ---------- */
+  .chrome {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .chrome a,
+  .chrome button {
+    font: inherit;
+    font-weight: 600;
+    color: black;
+    background: rgba(255, 255, 255, 0.9);
+    border: 0;
+    border-radius: 6px;
+    padding: 7px 8px;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    position: relative;
+  }
+  .chrome a:focus,
+  .chrome button:focus-visible {
+    background: black;
+    color: white;
+    outline: 3px solid black;
+  }
+  .chrome [hidden] { display: none; }
+  .chrome button[aria-pressed="true"] { background: black; color: white; }
+  html:not(.js) .js-only { display: none; }
+  #drop.fuse::after {
+    content: "";
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 2px;
+    height: 2px;
+    background: black;
+    transform-origin: left;
+    animation: fuse 2s linear forwards;
+  }
+  @keyframes fuse {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  #dial {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    cursor: grab;
+    touch-action: none;
+    margin-left: 2px;
+  }
+  #dial svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  #dial .ring { fill: none; stroke: black; stroke-width: 2.4; }
+  #dial .needle { transition: transform 0.25s cubic-bezier(.3,1.6,.5,1); }
+  #dial.tilt .needle { transition: none; }
+  #dial .needle line { stroke: black; stroke-width: 2.6; stroke-linecap: round; }
+  #dial .needle path, #dial .hub { fill: black; }
+  #dial.off .needle { opacity: 0.2; }
+  #dial.tilt { cursor: default; }
+  #dial:focus-visible { outline: 3px solid black; outline-offset: 2px; }
+
+  #toast {
+    position: fixed;
+    left: 50%;
+    top: 34%;
+    z-index: 11;
+    transform: translate(-50%, 12px) scale(0.9);
+    opacity: 0;
+    pointer-events: none;
+    background: black;
+    color: white;
+    font-size: 18px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    white-space: nowrap;
+    transition: opacity 0.3s, transform 0.4s cubic-bezier(.3,1.6,.5,1);
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+  /* ---------- once the words are bodies ---------- */
+  html.dropped,
+  html.dropped body { overflow: hidden; height: 100%; }
+  html.dropped main {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    max-width: none;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  html.dropped li { position: static; }
+  html.dropped a { text-decoration: none; }
+  html.dropped a:focus { background: none; outline: 0; }
+  html.dropped .w,
+  html.dropped .dot,
+  html.dropped hr {
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin: 0;
+    white-space: nowrap;
+    transform-origin: 50% 50%;
+    will-change: transform;
+    cursor: grab;
+  }
+  html.dropped a .w {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  html.dropped a:focus .w { background: black; color: white; outline: 0.15em solid black; }
+  html.grabbing, html.grabbing * { cursor: grabbing !important; }
+
+  /* the rule becomes a steel girder */
+  html.dropped hr {
+    height: 16px;
+    background: transparent;
+    overflow: visible;
+  }
+  html.dropped hr::before,
+  html.dropped hr::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transition: transform 0.5s cubic-bezier(.3,1.5,.5,1), opacity 0.35s;
+  }
+  html.dropped hr::before {
+    background: black;
+    transform: scaleY(0.25);
+  }
+  html.dropped hr::after {
+    opacity: 0;
+    transform: scaleY(0.25);
+    background:
+      radial-gradient(circle at 50% 50%, #c9ced2 0 1.6px, #3a4045 1.7px 2.4px, transparent 2.5px) 6px 50% / 22px 100% repeat-x,
+      linear-gradient(#1d2124 0 3px, #8e979e 3px 4px, #59626a 4px 12px, #2a2f33 12px 13px, #1d2124 13px);
+    border-radius: 1px;
+  }
+  html.dropped hr.girder::before { opacity: 0; transform: scaleY(1); }
+  html.dropped hr.girder::after { opacity: 1; transform: scaleY(1); }
+
+  @media (prefers-reduced-motion: reduce) {
+    #toast, #dial .needle, html.dropped hr::before, html.dropped hr::after { transition: none; }
+  }
+</style>

@@ -1,0 +1,478 @@
+---
+import { name, email, now, projects, alsoWorkedOn, socials } from '../../data/bio';
+
+const p = Object.fromEntries(projects.map((x) => [x.slug, x]));
+const x = socials.find((s) => s.name === 'X')!;
+const gh = socials.find((s) => s.name === 'GitHub')!;
+const li = socials.find((s) => s.name === 'LinkedIn')!;
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — Contraption</title>
+    <meta name="description" content="Ben Firshman's homepage as a Rube Goldberg machine. Scroll to run it: a marble trips over every project on its way to the email address." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <a class="skip" href="#parts">Skip to the parts list</a>
+
+    <nav class="tools" aria-label="Machine controls">
+      <a href="/ideas">← all ideas</a>
+      <button type="button" id="run" class="js-only">▶ run it</button>
+      <button type="button" id="sound" class="js-only" aria-pressed="false">sound: off</button>
+      <a href="#parts">parts list</a>
+    </nav>
+
+    <header class="titleblock">
+      <p class="kicker">General arrangement · Drg. no. BF‑001 · Rev. C</p>
+      <h1>{name}</h1>
+      <p class="sub">A machine for delivering one (1) email address, by way of most of the things I’ve made.</p>
+      <p class="howto js-only"><span class="arrow">↓</span> Scroll to operate. Scroll up to un‑operate.</p>
+      <dl class="tb">
+        <div><dt>Drawn</dt><dd>B.F.</dd></div>
+        <div><dt>Scale</dt><dd>None</dd></div>
+        <div><dt>Marbles</dt><dd>1</dd></div>
+        <div><dt>Sheet</dt><dd>1 of 1</dd></div>
+      </dl>
+    </header>
+
+    <div id="machine" class="js-only" aria-label="The machine, an illustration. Every part is also in the parts list below.">
+      <svg id="drawing" aria-hidden="true"></svg>
+
+      <aside class="callout" data-n="1">
+        <p class="fig"><span class="num">1</span>Fig. 1</p>
+        <h2>The operator</h2>
+        <p>That’s you. Turn the wheel to run the machine. Turn it back to run it backwards; nothing is harmed.</p>
+      </aside>
+      <aside class="callout" data-n="2">
+        <p class="fig"><span class="num">2</span>Fig. 2</p>
+        <h2>The Django dominoes</h2>
+        <p>I worked on many parts of <a href={p.django.url}>{p.django.name}</a>, including class-based views, feeds, and search.</p>
+      </aside>
+      <aside class="callout" data-n="3">
+        <p class="fig"><span class="num">3</span>Fig. 3</p>
+        <h2>The JSNES cartridge</h2>
+        <p><a href={p.jsnes.url}>{p.jsnes.name}</a>, {p.jsnes.blurb}. Fitted here with a pixel spring.</p>
+      </aside>
+      <aside class="callout" data-n="4">
+        <p class="fig"><span class="num">4</span>Fig. 4</p>
+        <h2>The UKHAS balloon</h2>
+        <p>I helped start the <a href={p.ukhas.url}>{p.ukhas.name}</a>, a group for amateur near-space exploration.</p>
+      </aside>
+      <aside class="callout" data-n="5">
+        <p class="fig"><span class="num">5</span>Fig. 5</p>
+        <h2>The Cog gear train</h2>
+        <p><a href={p.cog.url}>{p.cog.name}</a>, {p.cog.blurb}.</p>
+      </aside>
+      <aside class="callout" data-n="6">
+        <p class="fig"><span class="num">6</span>Fig. 6</p>
+        <h2>The Compose stack and the Whalebrew lever</h2>
+        <p><a href={p.compose.url}>{p.compose.name}</a>, to {p.compose.blurb}, and <a href={p.machine.url}>{p.machine.name}</a>, to {p.machine.blurb}. <a href={p.whalebrew.url}>{p.whalebrew.name}</a>, {p.whalebrew.blurb}.</p>
+      </aside>
+      <aside class="callout" data-n="7">
+        <p class="fig"><span class="num">7</span>Fig. 7</p>
+        <h2>The arXiv Vanity page-turner</h2>
+        <p><a href={p['arxiv-vanity'].url}>{p['arxiv-vanity'].name}</a> {p['arxiv-vanity'].blurb}.</p>
+      </aside>
+      <aside class="callout" data-n="8">
+        <p class="fig"><span class="num">8</span>Fig. 8</p>
+        <h2>The CLIG terminal</h2>
+        <p>The <a href={p.clig.url}>{p.clig.name}</a>, {p.clig.blurb}. This one prints its help text when asked.</p>
+      </aside>
+      <aside class="callout" data-n="9">
+        <p class="fig"><span class="num">9</span>Fig. 9</p>
+        <h2>The Replicate flag</h2>
+        <p>I’m working on <a href={now.url}>{now.name}</a>: {now.blurb}. The envelope is for you.</p>
+      </aside>
+
+      <div class="letter" id="letter">
+        <p class="salute">Dear reader,</p>
+        <p>Email me at <a href={`mailto:${email}`}>{email}</a>.</p>
+        <p>I’m also on <a href={x.url}>{x.name}</a>, <a href={gh.url}>{gh.name}</a>, and <a href={li.url}>{li.name}</a>.</p>
+        <p class="sign">— Ben</p>
+      </div>
+    </div>
+
+    <section id="parts" class="parts">
+      <h2>Parts list</h2>
+      <table>
+        <thead><tr><th scope="col">Item</th><th scope="col">Part</th><th scope="col">Description</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Operator</td><td>You. Supplied separately.</td></tr>
+          <tr><td>2</td><td><a href={p.django.url}>{p.django.name}</a></td><td>{cap(p.django.blurb)}.</td></tr>
+          <tr><td>3</td><td><a href={p.jsnes.url}>{p.jsnes.name}</a></td><td>{cap(p.jsnes.blurb)}.</td></tr>
+          <tr><td>4</td><td><a href={p.ukhas.url}>{p.ukhas.name}</a></td><td>{cap(p.ukhas.blurb)}.</td></tr>
+          <tr><td>5</td><td><a href={p.cog.url}>{p.cog.name}</a></td><td>{cap(p.cog.blurb)}.</td></tr>
+          <tr><td>6a</td><td><a href={p.compose.url}>{p.compose.name}</a></td><td>{cap(p.compose.blurb)}.</td></tr>
+          <tr><td>6b</td><td><a href={p.machine.url}>{p.machine.name}</a></td><td>{cap(p.machine.blurb)}.</td></tr>
+          <tr><td>6c</td><td><a href={p.whalebrew.url}>{p.whalebrew.name}</a></td><td>{cap(p.whalebrew.blurb)}.</td></tr>
+          <tr><td>7</td><td><a href={p['arxiv-vanity'].url}>{p['arxiv-vanity'].name}</a></td><td>{cap(p['arxiv-vanity'].blurb)}.</td></tr>
+          <tr><td>8</td><td><a href={p.clig.url}>{p.clig.name}</a></td><td>{cap(p.clig.blurb)}.</td></tr>
+          <tr><td>9</td><td><a href={now.url}>{now.name}</a></td><td>{cap(now.blurb)}. Current work.</td></tr>
+          <tr><td>10</td><td>Envelope</td><td><a href={`mailto:${email}`}>{email}</a> · <a href={x.url}>{x.name}</a> · <a href={gh.url}>{gh.name}</a> · <a href={li.url}>{li.name}</a></td></tr>
+          <tr class="misc"><td>—</td><td>Also in the workshop (not shown)</td><td>{alsoWorkedOn.map((a, i) => <>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>)}.</td></tr>
+        </tbody>
+      </table>
+      <p class="foot"><a href="/ideas">← all ideas</a> <span>Do not scale from this drawing.</span></p>
+    </section>
+
+    <div class="readout js-only" aria-hidden="true"><span id="clock">T + 00.00 s</span><span id="figno">FIG. 1</span></div>
+
+    <script>
+      import { now, email, socials } from '../../data/bio';
+      import { operator, dominoes, jsnes, ukhas, cog, whale, arxiv, terminal, bell } from '../../components/ideas/rube/stages';
+      import { Machine, Sound } from '../../components/ideas/rube/machine';
+
+      document.documentElement.classList.add('js');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const host = document.getElementById('machine')!;
+      const drawing = document.getElementById('drawing') as unknown as SVGSVGElement;
+      const callouts = [...host.querySelectorAll<HTMLElement>('.callout')];
+      const letter = document.getElementById('letter')!;
+      const clock = document.getElementById('clock')!;
+      const figno = document.getElementById('figno')!;
+      const runBtn = document.getElementById('run') as HTMLButtonElement;
+      const soundBtn = document.getElementById('sound') as HTMLButtonElement;
+      const sound = new Sound();
+
+      const gh = socials.find((s) => s.name === 'GitHub');
+      const help = [
+        'Usage: ben <command>',
+        '',
+        'Commands:',
+        `  replicate  ${now.blurb}`,
+        `  email      ${email}`,
+        gh ? `  github     ${gh.handle}` : '',
+        '',
+        'Docs: https://clig.dev',
+      ];
+
+      let machine: Machine;
+      let builtWidth = 0;
+      let mobile = false;
+      let letterAt = { t: 0, x: 0, y: 0 };
+      let tDisp = 0, tTarget = 0, lastFrame = 0, raf = 0;
+      const anchor = () => (mobile ? 0.52 : 0.5);
+
+      function build() {
+        const w = host.clientWidth;
+        mobile = w < 860;
+        const stages = [operator(), dominoes(), jsnes(), ukhas(), cog(), whale(), arxiv(), terminal(help), bell(now.name.toUpperCase())];
+        machine = new Machine(drawing, stages, callouts, w, mobile);
+        host.style.height = Math.ceil(machine.height) + 'px';
+        builtWidth = w;
+        const last = machine.placed[machine.placed.length - 1];
+        const L = last.st.letter!;
+        letterAt = { t: last.t0 + L.t, x: last.x + L.at[0] * last.s, y: last.y + L.at[1] * last.s };
+        const lw = Math.min(300, w - 32);
+        letter.style.width = lw + 'px';
+        letter.style.left = Math.max(16, Math.min(w - lw - 16, letterAt.x - lw / 2)) + 'px';
+        letter.style.top = letterAt.y - letter.offsetHeight + 10 + 'px';
+        tTarget = targetFromScroll();
+        tDisp = reduce ? machine.snap(tTarget) : tTarget;
+        render(tDisp);
+      }
+
+      function hostTop() { return host.getBoundingClientRect().top + scrollY; }
+      function targetFromScroll() {
+        return machine.timeAt(scrollY + innerHeight * anchor() - hostTop());
+      }
+      function scrollForTime(t: number) {
+        return hostTop() + machine.focusAt(t) - innerHeight * anchor();
+      }
+
+      function render(t: number) {
+        machine.update(t);
+        clock.textContent = `T + ${t.toFixed(2).padStart(5, '0')} s`;
+        figno.textContent = `FIG. ${machine.stageAt(t) + 1}`;
+        // the letter climbs out of the envelope
+        const k = Math.max(0, Math.min(1, (t - letterAt.t) / 0.7));
+        const e = 1 - Math.pow(1 - k, 3);
+        letter.style.opacity = String(Math.min(1, k * 2));
+        letter.style.transform = `translateY(${((1 - e) * 60).toFixed(1)}px) rotate(${((1 - e) * -3).toFixed(2)}deg)`;
+        letter.style.visibility = k > 0 ? 'visible' : 'hidden';
+        letter.classList.toggle('out', k >= 1);
+      }
+
+      function frame(now: number) {
+        raf = 0;
+        const dt = Math.min(0.1, (now - (lastFrame || now)) / 1000);
+        lastFrame = now;
+        if (running) stepRun(dt);
+        tTarget = targetFromScroll();
+        const prev = tDisp;
+        if (reduce) tDisp = machine.snap(tTarget);
+        else {
+          tDisp += (tTarget - tDisp) * (1 - Math.exp(-dt * 9));
+          if (Math.abs(tTarget - tDisp) < 0.002) tDisp = tTarget;
+        }
+        if (tDisp !== prev) {
+          // play what happened since the last frame, going forwards at a sane rate
+          if (tDisp > prev && tDisp - prev < 0.5) for (const e of machine.events) if (e.t > prev && e.t <= tDisp) sound.play(e.kind);
+          render(tDisp);
+        }
+        if (tDisp !== tTarget || running) kick();
+        else lastFrame = 0;
+      }
+      function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+
+      // ---------- ▶ run it ----------
+      let running = false, tRun = 0, nextJump = 0;
+      function setRunning(on: boolean) {
+        running = on;
+        runBtn.textContent = on ? '❚❚ stop' : '▶ run it';
+        runBtn.setAttribute('aria-pressed', String(on));
+        if (on) kick();
+      }
+      function stepRun(dt: number) {
+        if (reduce) {
+          nextJump -= dt;
+          if (nextJump > 0) return;
+          nextJump = 1.6;
+          const s = machine.snap(tRun + 0.05);
+          tRun = s <= tRun ? machine.T : s;
+        } else tRun += dt;
+        if (tRun >= machine.T) { tRun = machine.T; setRunning(false); }
+        scrollTo(0, scrollForTime(tRun));
+      }
+      runBtn.addEventListener('click', () => {
+        if (running) { setRunning(false); return; }
+        tRun = tDisp >= machine.T - 0.05 ? 0 : tDisp;
+        nextJump = 0;
+        if (tRun === 0) scrollTo(0, scrollForTime(0));
+        setRunning(true);
+      });
+      const interrupt = () => { if (running) setRunning(false); };
+      addEventListener('wheel', interrupt, { passive: true });
+      addEventListener('touchstart', interrupt, { passive: true });
+      addEventListener('keydown', (e) => { if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'Home', 'End'].includes(e.key)) interrupt(); });
+
+      // ---------- sound ----------
+      soundBtn.addEventListener('click', () => {
+        const on = !sound.on;
+        if (on) { sound.enable(); sound.play('ding'); } else sound.disable();
+        soundBtn.textContent = on ? 'sound: on' : 'sound: off';
+        soundBtn.setAttribute('aria-pressed', String(on));
+      });
+
+      addEventListener('scroll', kick, { passive: true });
+      addEventListener('resize', () => {
+        if (Math.abs(host.clientWidth - builtWidth) > 1) build();
+        else kick();
+      });
+      document.addEventListener('visibilitychange', () => { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = 0; lastFrame = 0; } else kick(); });
+
+      build();
+      document.fonts?.ready.then(() => { if (host.clientWidth) build(); });
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --paper: #f3ecdc;
+    --paper-2: #ebe2cd;
+    --ink: #1f2a3a;
+    --ink-soft: rgba(31, 42, 58, 0.55);
+    --grid: rgba(31, 42, 58, 0.055);
+    --accent: #e0532c;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    --cond: "Barlow Condensed", "Arial Narrow", sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: auto; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    font: 400 14px/1.55 var(--mono);
+    overflow-x: hidden;
+  }
+  a { color: var(--ink); text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  a:hover { color: var(--accent); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  html:not(.js) .js-only { display: none !important; }
+
+  .skip { position: absolute; left: -9999px; }
+  .skip:focus { left: 16px; top: 16px; z-index: 20; background: var(--paper); padding: 6px 10px; }
+
+  .tools {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    font: 500 12px/1 var(--mono);
+    text-transform: lowercase;
+  }
+  .tools a, .tools button {
+    font: inherit;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    padding: 7px 10px;
+    text-decoration: none;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .tools #run { background: var(--ink); color: var(--paper); }
+  .tools #run[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+  .tools #sound[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent); }
+  .tools a:hover, .tools button:hover { color: var(--accent); }
+  .tools #run:hover { color: var(--paper); background: var(--accent); border-color: var(--accent); }
+
+  .titleblock {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 96px 24px 8px;
+    position: relative;
+  }
+  .kicker { font: 500 12px/1.4 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 6px; }
+  h1 {
+    font: 700 clamp(56px, 11vw, 132px)/0.86 var(--cond);
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    margin: 0;
+  }
+  .sub { font: 500 clamp(17px, 2.2vw, 22px)/1.35 var(--mono); max-width: 34em; margin: 16px 0 0; }
+  .howto { margin: 18px 0 0; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 12px; }
+  .howto .arrow { display: inline-block; color: var(--accent); animation: nudge 1.6s ease-in-out infinite; margin-right: 4px; }
+  @keyframes nudge { 50% { transform: translateY(4px); } }
+  .tb { display: flex; margin: 22px 0 0; border: 1.5px solid var(--ink); width: max-content; max-width: 100%; }
+  .tb div { padding: 5px 12px; border-right: 1px solid var(--ink); }
+  .tb div:last-child { border-right: 0; }
+  .tb dt { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
+  .tb dd { margin: 0; font: 600 16px/1.2 var(--cond); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  #machine { position: relative; width: 100%; margin-top: 8px; }
+  #drawing { position: absolute; left: 0; top: 0; display: block; overflow: visible; }
+
+  .callout {
+    position: absolute;
+    z-index: 2;
+    width: 320px;
+  }
+  .callout .fig { margin: 0; font: 600 11px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); display: flex; align-items: center; gap: 8px; }
+  .callout .num {
+    display: inline-grid; place-items: center;
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1.5px solid var(--ink); color: var(--ink);
+    background: var(--paper);
+    font: 700 15px/1 var(--cond); letter-spacing: 0;
+  }
+  .callout h2 { font: 700 30px/0.95 var(--cond); text-transform: uppercase; margin: 8px 0 6px; letter-spacing: 0.01em; }
+  .callout p { margin: 0; }
+  .callout p:last-child { font-size: 13.5px; }
+
+  .letter {
+    position: absolute;
+    z-index: 3;
+    background: #fbf7ee;
+    border: 1.5px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    padding: 16px 18px 14px;
+    font-size: 14px;
+    visibility: hidden;
+    opacity: 0;
+    transform-origin: 50% 100%;
+  }
+  .letter p { margin: 0 0 6px; }
+  .letter .salute { font: 600 20px/1 var(--cond); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 10px; }
+  .letter .sign { margin: 10px 0 0; text-align: right; font: 600 18px/1 var(--cond); }
+
+  .parts { max-width: 1120px; margin: 0 auto; padding: 60px 24px 80px; }
+  .parts h2 { font: 700 44px/1 var(--cond); text-transform: uppercase; margin: 0 0 16px; }
+  .parts table { width: 100%; border-collapse: collapse; border: 1.5px solid var(--ink); background: rgba(243, 236, 220, 0.85); }
+  .parts th, .parts td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--ink); vertical-align: top; }
+  .parts th { font: 600 11px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; background: var(--paper-2); }
+  .parts td:first-child { width: 4.5em; font-weight: 600; }
+  .parts td:nth-child(2) { width: 34%; font-weight: 600; }
+  .parts tr.misc td { background: var(--paper-2); }
+  .parts .foot { display: flex; justify-content: space-between; gap: 16px; margin-top: 16px; font-size: 12px; color: var(--ink-soft); }
+
+  .readout {
+    position: fixed;
+    left: 12px;
+    bottom: 12px;
+    z-index: 10;
+    display: flex;
+    gap: 10px;
+    font: 600 11px/1 var(--mono);
+    letter-spacing: 0.08em;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    padding: 6px 9px;
+    font-variant-numeric: tabular-nums;
+  }
+  .readout #figno { color: var(--accent); }
+
+  /* ---------- the drawing ---------- */
+  #drawing .ink { stroke: var(--ink); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  #drawing .heavy { stroke-width: 2.6; }
+  #drawing .thin { stroke-width: 1; }
+  #drawing .hair { stroke-width: 0.7; }
+  #drawing .paperfill { fill: var(--paper); }
+  #drawing .inkfill { fill: var(--ink); }
+  #drawing .accfill { fill: var(--accent); }
+  #drawing .acc { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+  #drawing .tone { fill: var(--ink); opacity: 0.08; }
+  #drawing .toneline { fill: var(--ink); opacity: 0.5; }
+  #drawing .hatchfill { fill: url(#hatch); }
+  #drawing .hatchline { stroke: var(--ink); stroke-width: 1; }
+  #drawing .cutaway { fill: url(#hatch); opacity: 0.35; }
+  #drawing .break { stroke-dasharray: 5 3; stroke-width: 1; }
+  #drawing .cup { fill: var(--paper-2); stroke-width: 1.4; }
+  #drawing .centre { stroke: var(--ink); stroke-width: 0.7; stroke-dasharray: 12 3 2 3; opacity: 0.7; }
+  #drawing .string { stroke: var(--ink); stroke-width: 1; fill: none; stroke-dasharray: 1 0; }
+  #drawing .pixel { stroke: var(--accent); stroke-width: 3; fill: none; stroke-linecap: square; stroke-linejoin: miter; }
+  #drawing .water { stroke: var(--ink); stroke-width: 1.4; fill: none; stroke-linecap: round; opacity: 0.8; }
+  #drawing .waterdrop { fill: var(--ink); opacity: 0.8; }
+  #drawing .screen { fill: var(--ink); }
+  #drawing .term { font: 500 9.2px var(--mono); fill: var(--paper); white-space: pre; }
+  #drawing .termcur { fill: var(--accent); }
+  #drawing .key { font: 600 9px var(--mono); fill: var(--ink); }
+  #drawing .lbl { font: 600 10px var(--mono); fill: var(--ink); letter-spacing: 0.06em; }
+  #drawing .small { font-size: 9px; }
+  #drawing .tiny { font-size: 7.5px; letter-spacing: 0.1em; }
+  #drawing .glyph { font: 700 17px var(--cond); fill: var(--ink); letter-spacing: 0.04em; }
+  #drawing .glyph.small { font-size: 13px; }
+  #drawing .pagehead { font: 700 12px var(--cond); fill: var(--accent); }
+  #drawing .flagtext { font: 700 10px var(--cond); fill: var(--paper); letter-spacing: 0.08em; }
+  #drawing .zone { font: 600 10px var(--mono); fill: var(--ink-soft); }
+  #drawing .leader { stroke: var(--ink); stroke-width: 1; fill: none; }
+  #drawing .badge { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
+  #drawing .badgetext { font: 700 12px var(--cond); fill: var(--ink); }
+  #drawing .marble { fill: var(--accent); stroke: var(--ink); stroke-width: 1.4; }
+  #drawing .marbleline { stroke: rgba(255, 255, 255, 0.55); stroke-width: 1.2; fill: none; }
+  #drawing .marbleshine { fill: #fff; opacity: 0.7; }
+  #drawing .puff { opacity: 0; }
+
+  @media (max-width: 859px) {
+    .titleblock { padding: 84px 16px 4px; }
+    .tools { left: 12px; right: 12px; justify-content: flex-start; }
+    .tools a, .tools button { padding: 6px 8px; font-size: 11px; }
+    .callout h2 { font-size: 25px; }
+    /* on a phone, anything that floats up past a callout goes behind it */
+    .callout { background: rgba(243, 236, 220, 0.94); box-shadow: 0 0 0 6px rgba(243, 236, 220, 0.94); }
+    .parts { padding: 40px 16px 80px; }
+    .parts th:nth-child(1), .parts td:nth-child(1) { display: none; }
+    .parts td:nth-child(2) { width: 40%; }
+    .tb div { padding: 4px 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .howto .arrow { animation: none; }
+  }
+</style>
