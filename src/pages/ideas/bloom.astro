@@ -1,0 +1,209 @@
+---
+import { PALETTES } from '../../components/ideas/bloom/palettes';
+const palettes = PALETTES.map((p) => ({ bg: p.bg, bg2: p.bg2, ink: p.ink, muted: p.muted, dark: p.dark }));
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman is working on Replicate. Before that: Cog, Command Line Interface Guidelines, Docker Compose, JSNES, arXiv Vanity, and more." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ palettes }}>
+      // pick this edition before first paint, so the text is born in the right colours
+      var q = new URLSearchParams(location.search).get('seed');
+      var seed = q && /^\d{1,9}$/.test(q) ? parseInt(q, 10) : 1 + Math.floor(Math.random() * 99999);
+      var p = palettes[seed % palettes.length];
+      var de = document.documentElement;
+      de.dataset.seed = String(seed);
+      de.dataset.palette = String(seed % palettes.length);
+      de.classList.add('js');
+      if (p.dark) de.classList.add('dark');
+      de.style.setProperty('--bg', p.bg);
+      de.style.setProperty('--bg2', p.bg2);
+      de.style.setProperty('--ink', p.ink);
+      de.style.setProperty('--muted', p.muted);
+    </script>
+  </head>
+  <body>
+    <main id="text">
+      <h1>Ben Firshman</h1>
+
+      <p>I’m working on <a href="https://replicate.com">Replicate</a>. Some other stuff I’ve done:</p>
+
+      <ul>
+        <li><a href="https://github.com/replicate/cog">Cog</a>, containers for machine learning.</li>
+        <li><a href="https://clig.dev">Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+        <li><a href="https://github.com/docker/compose">Docker Compose</a> and <a href="https://github.com/docker/machine">Docker Machine</a>.</li>
+        <li><a href="https://github.com/bfirsh/jsnes">JSNES</a>, one of the first JavaScript emulators.</li>
+        <li><a href="https://github.com/whalebrew/whalebrew">Whalebrew</a>, a Docker package manager.</li>
+        <li><a href="https://www.arxiv-vanity.com/">arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+        <li>I worked on <a href="https://gov.uk">GOV.UK</a>, <a href="https://www.youtube.com/watch?v=53ZJdJNsBto">The Guardian’s iPad app</a>, <a href="https://www.thisismyjam.com">This Is My Jam</a>, <a href="https://en.wikipedia.org/wiki/Lanyrd">Lanyrd</a>, and <a href="https://spacelog.org">Spacelog</a>.</li>
+        <li>I worked on many parts of <a href="https://www.djangoproject.com/">Django</a>, including class-based views, feeds, and search.</li>
+        <li>I helped start the <a href="https://ukhas.org.uk/">UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+      </ul>
+
+      <p>Email me at <a href="mailto:ben@firshman.com">ben@firshman.com</a>.<br />
+        I’m also on <a href="https://x.com/bfirsh">X</a>, <a href="https://github.com/bfirsh">GitHub</a>, and <a href="https://www.linkedin.com/in/bfirsh/">LinkedIn</a>.</p>
+    </main>
+
+    <canvas id="growth" aria-hidden="true"></canvas>
+
+    <div class="corner">
+      <a class="ed" id="ed" href="?seed=" title="Copy a link to this edition"></a>
+      <a class="ideas" href="/ideas">ideas</a>
+    </div>
+
+    <style is:global>
+      :root {
+        --bg: #d9d5cf;
+        --bg2: #e4e1dc;
+        --ink: #23211e;
+        --muted: #5f5a53;
+        --sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+        color-scheme: light;
+      }
+      :root.dark { color-scheme: dark; }
+      /* a faint paper grain over everything, so the soft gradients never band */
+      body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+        opacity: 0.05;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1.4 -0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        mix-blend-mode: overlay;
+      }
+      html { background: var(--bg); }
+      html, body { margin: 0; overflow-x: hidden; }
+      body {
+        min-height: 100vh;
+        min-height: 100svh;
+        background: radial-gradient(ellipse 60% 70% at 68% 48%, var(--bg2), var(--bg) 100%) fixed;
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 15.5px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        display: flex;
+        align-items: center;
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+        box-sizing: border-box;
+        width: min(100%, calc(31rem + 2 * clamp(24px, 6vw, 104px)));
+        padding: 56px clamp(24px, 6vw, 104px);
+      }
+      h1 {
+        font-weight: 600;
+        font-size: 1.12rem;
+        letter-spacing: -0.005em;
+        margin: 0 0 1.25rem;
+      }
+      p { margin: 0 0 0.95rem; }
+      ul { list-style: none; margin: 0 0 1.2rem; padding: 0; }
+      li { margin: 0 0 0.32rem; }
+      a {
+        color: inherit;
+        text-decoration-line: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.2em;
+        text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
+        transition: text-decoration-color 0.2s;
+      }
+      a:hover, a:focus-visible { text-decoration-color: currentColor; }
+      a:focus-visible { outline: 1px solid currentColor; outline-offset: 2px; border-radius: 1px; }
+      ::selection { background: color-mix(in srgb, var(--ink) 16%, transparent); }
+
+      #growth {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        z-index: 0;
+        opacity: 0;
+        transition: opacity 3s ease;
+      }
+      #growth.on { opacity: 1; }
+      /* no script or no WebGL: the text stands alone */
+      html:not(.js) #growth, #growth.off { display: none; }
+
+      .corner {
+        position: fixed;
+        z-index: 2;
+        right: 18px;
+        bottom: 14px;
+        display: flex;
+        gap: 14px;
+        font-size: 11.5px;
+        letter-spacing: 0.02em;
+      }
+      .corner a {
+        color: var(--ink);
+        opacity: 0.28;
+        text-decoration: none;
+        transition: opacity 0.3s;
+      }
+      .corner a:hover, .corner a:focus-visible { opacity: 0.85; }
+      .ed { display: none; font-variant-numeric: tabular-nums; }
+      .js .ed { display: inline; }
+
+      @media (max-width: 760px) {
+        body {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          background: radial-gradient(ellipse 90% 40% at 50% 24%, var(--bg2), var(--bg) 100%) no-repeat, var(--bg);
+        }
+        main { padding: 8px 22px 64px; }
+        html:not(.js) main, body:has(#growth.off) main { padding-top: 64px; }
+        #growth {
+          order: -1;
+          position: relative;
+          height: 54svh;
+          min-height: 340px;
+        }
+        .corner { position: absolute; bottom: auto; top: 14px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #growth { transition: none; }
+      }
+    </style>
+
+    <script>
+      import { PALETTES } from '../../components/ideas/bloom/palettes';
+      import { startBloom } from '../../components/ideas/bloom/scene';
+
+      const de = document.documentElement;
+      const seed = parseInt(de.dataset.seed || '1', 10);
+      const palette = PALETTES[parseInt(de.dataset.palette || '0', 10)] || PALETTES[0];
+
+      const ed = document.getElementById('ed') as HTMLAnchorElement;
+      const label = `No. ${seed}`;
+      ed.textContent = label;
+      ed.href = `?seed=${seed}`;
+      ed.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const url = `${location.origin}${location.pathname}?seed=${seed}`;
+        try { history.replaceState(null, '', `?seed=${seed}`); } catch {}
+        try { await navigator.clipboard.writeText(url); ed.textContent = 'Copied'; }
+        catch { ed.textContent = `?seed=${seed}`; }
+        setTimeout(() => (ed.textContent = label), 1600);
+      });
+
+      startBloom({
+        canvas: document.getElementById('growth') as HTMLCanvasElement,
+        seed,
+        palette,
+        reduce: matchMedia('(prefers-reduced-motion: reduce)').matches,
+      });
+    </script>
+  </body>
+</html>
