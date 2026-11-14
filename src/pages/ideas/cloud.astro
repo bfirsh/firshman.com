@@ -1,0 +1,229 @@
+---
+// Cloud: plain text under a soft voxel cloud, in a sky that follows the visitor's local time.
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman works on Replicate. Before that: Cog, Command Line Interface Guidelines, Docker Compose, JSNES, and more." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet" />
+    <script is:inline>
+      (function () {
+        var d = document.documentElement, q = new URLSearchParams(location.search);
+        var s = parseInt(q.get('seed') || '', 10);
+        if (!(s > 0 && s < 100000)) s = 1 + Math.floor(Math.random() * 99999);
+        var a = (s * 2654435761) >>> 0;
+        function r() { a = (a + 0x6d2b79f5) | 0; var t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+        d.dataset.seed = s;
+        d.dataset.comp = ['right', 'left', 'above'][Math.min(2, Math.floor(r() * 3))];
+        var variant = Math.min(2, Math.floor(r() * 3));
+
+        // Where is the sun? Local clock time, today's date, a mid latitude, and a guess
+        // at the hemisphere from which half of the year has daylight saving.
+        var now = new Date(), y = now.getFullYear();
+        var hr = q.has('hour') ? parseFloat(q.get('hour')) : now.getHours() + now.getMinutes() / 60;
+        var doy = Math.floor((now - new Date(y, 0, 0)) / 864e5);
+        var jan = new Date(y, 0, 1).getTimezoneOffset(), jul = new Date(y, 6, 1).getTimezoneOffset();
+        var south = jan < jul, dst = jan !== jul && now.getTimezoneOffset() === Math.min(jan, jul);
+        var R = Math.PI / 180, lat = (south ? -45 : 45) * R, dec = 23.44 * R * Math.sin(2 * Math.PI * (doy - 81) / 365);
+        var noon = 12.2 + (dst ? 1 : 0), ha = (hr - noon) * 15 * R;
+        var el = Math.asin(Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(ha)) / R;
+        var morning = hr < noon;
+
+        // [sun elevation, horizon, middle, zenith, light, light intensity, ambient, ground]
+        var EVE = [
+          [-90, '#0d1530', '#0a1126', '#05081a', '#a9b8e0', 0, '#1a2444', '#0a0d18'],
+          [-13, '#141d3d', '#0e1630', '#070b1f', '#a9b8e0', 0, '#1d2848', '#0c1020'],
+          [-7, '#4c4774', '#283262', '#111a3a', '#d690a4', 0.5, '#3d4778', '#2a2440'],
+          [-2.5, '#e6a189', '#b48fa4', '#3e4b7c', '#ff8d6b', 1.7, '#7378a4', '#5a4050'],
+          [1.5, '#f6b987', '#c8acb4', '#5a77ad', '#ffa25f', 2.6, '#8f98bf', '#7a6050'],
+          [7, '#f4d3a8', '#d2d0d4', '#7598c9', '#ffc98c', 3.0, '#a7b5d3', '#8c7a66'],
+          [18, '#e4ecf1', '#b9d0e7', '#719dd2', '#fff1dd', 3.2, '#b4c8e3', '#8d8a80'],
+          [40, '#dae8f3', '#a8c9ea', '#5f95d4', '#ffffff', 3.4, '#b8cde8', '#8f9086'],
+        ];
+        var MORN = [
+          [-90, '#0d1530', '#0a1126', '#05081a', '#a9b8e0', 0, '#1a2444', '#0a0d18'],
+          [-13, '#141d3d', '#0e1630', '#070b1f', '#a9b8e0', 0, '#1d2848', '#0c1020'],
+          [-7, '#5e5182', '#30386a', '#131c40', '#e0a0b8', 0.5, '#434d80', '#2c2644'],
+          [-2.5, '#f0b5b0', '#a99abd', '#46548a', '#ff9c8a', 1.7, '#7f84b0', '#5c4458'],
+          [1.5, '#f8c6b3', '#c6bccf', '#6479b1', '#ffb18f', 2.6, '#949fc6', '#7a6458'],
+          [7, '#f3ddcc', '#cfd6e2', '#82a3d2', '#ffd7b3', 3.0, '#a9b8d6', '#8c7e70'],
+          [18, '#e4ecf1', '#b9d0e7', '#719dd2', '#fff3e4', 3.2, '#b4c8e3', '#8d8a80'],
+          [40, '#dae8f3', '#a8c9ea', '#5f95d4', '#ffffff', 3.4, '#b8cde8', '#8f9086'],
+        ];
+        var K = morning ? MORN : EVE;
+        function hx(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+        function mix(p, q2, t) { return [p[0] + (q2[0] - p[0]) * t, p[1] + (q2[1] - p[1]) * t, p[2] + (q2[2] - p[2]) * t]; }
+        function str(c) { return '#' + c.map(function (v) { v = Math.round(Math.max(0, Math.min(255, v))); return (v < 16 ? '0' : '') + v.toString(16); }).join(''); }
+        var i = 0;
+        while (i < K.length - 2 && el > K[i + 1][0]) i++;
+        var k0 = K[i], k1 = K[i + 1], t = Math.max(0, Math.min(1, (el - k0[0]) / (k1[0] - k0[0])));
+        t = t * t * (3 - 2 * t);
+        function at(n) { return mix(hx(k0[n]), hx(k1[n]), t); }
+        var hor = at(1), mid = at(2), zen = at(3);
+        // a few prints of the same hour: clear, hazy, or with a deeper zenith
+        if (variant === 1) { zen = mix(zen, mid, 0.3); mid = mix(mid, hor, 0.22); }
+        if (variant === 2) { zen = mix(zen, [zen[0] * 0.8, zen[1] * 0.84, zen[2] * 0.95], 0.8); }
+        var stops = [hor, mix(hor, mid, 0.55), mid, mix(mid, zen, 0.5), zen].map(str);
+
+        var night = Math.max(0, Math.min(1, (-el - 7) / 6));
+        var lightEl = el > -9 ? Math.max(el, -5) : 34;
+        var lightCol = el > -9 ? str(at(4)) : '#a9b8e0';
+        var lightI = el > -9 ? k0[5] + (k1[5] - k0[5]) * t : 0.4;
+        if (el <= -9) lightI = 0.4;
+        else if (el < -7) lightI = Math.max(lightI, 0.4);
+
+        // ink: whichever of dark or light reads best over where the text sits
+        function lum(c) { c = c.map(function (v) { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }
+        var zone = [hor, mix(hor, mid, 0.55), mid, mix(mid, zen, 0.3)].map(lum);
+        var DARK = [0.012, 0.6], minD = 99, minL = 99;
+        zone.forEach(function (L) { minD = Math.min(minD, (L + 0.05) / (0.016 + 0.05)); minL = Math.min(minL, (0.86 + 0.05) / (L + 0.05)); });
+        var dark = minD >= minL;
+        d.dataset.ink = dark ? 'dark' : 'light';
+        var st = d.style;
+        stops.forEach(function (c, n) { st.setProperty('--g' + n, c); });
+        window.__sky = {
+          stops: stops, lightEl: lightEl, lightCol: lightCol, lightI: lightI,
+          amb: str(at(6)), ambI: 0.75 + 0.65 * (1 - night), ground: str(at(7)),
+          stars: night * 0.9, glowCol: lightCol, glowI: el > -7 && el < 14 ? 0.35 * (1 - Math.abs(el - 2) / 12) : 0,
+          exposure: 0.95 + 0.25 * night, el: el,
+        };
+        var c = document.createElement('canvas');
+        if (c.getContext('webgl2') || c.getContext('webgl')) d.classList.add('art');
+      })();
+    </script>
+    <style is:global>
+      :root {
+        --g0: #dae8f3; --g1: #c3d8ee; --g2: #a8c9ea; --g3: #83afdf; --g4: #5f95d4;
+        --ink: #1b2533; --soft: #4b5869; --line: rgba(27, 37, 51, .3);
+        color-scheme: light;
+      }
+      [data-ink='light'] { --ink: #eef1f7; --soft: #b5bdd0; --line: rgba(238, 241, 247, .32); color-scheme: dark; }
+
+      * { box-sizing: border-box; }
+      html { background: var(--g2); -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0; min-height: 100vh; color: var(--ink);
+        background: linear-gradient(to top, var(--g0) 0%, var(--g1) 22%, var(--g2) 48%, var(--g3) 74%, var(--g4) 100%) fixed;
+        font-family: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+        font-size: 16px; line-height: 1.55; letter-spacing: 0.002em;
+        -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+        overflow-x: hidden;
+      }
+      canvas#art {
+        position: fixed; inset: 0; width: 100vw; height: 100vh; display: block;
+        opacity: 0; transition: opacity 3s ease;
+      }
+      canvas#art.on { opacity: 1; }
+
+      main {
+        position: relative; z-index: 1;
+        width: min(25rem, calc(100vw - 56px));
+        margin-left: clamp(28px, 9vw, 150px);
+        min-height: 100vh; padding: 14vh 0 10vh;
+        display: flex; flex-direction: column; justify-content: center;
+      }
+      .art[data-comp='right'] main { justify-content: flex-end; width: min(25rem, 34vw); }
+      .art[data-comp='left'] main { justify-content: flex-end; width: min(25rem, 34vw); margin-left: auto; margin-right: clamp(28px, 9vw, 150px); }
+      .art[data-comp='above'] main { margin: 0 auto; justify-content: flex-start; padding-top: max(56vh, 380px); }
+
+      h1 { font-weight: 500; font-size: 1.32rem; line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 0.9rem; }
+      p, ul { margin: 0 0 0.9rem; }
+      ul { list-style: none; padding: 0; }
+      li { margin: 0 0 0.32rem; padding-left: 1rem; position: relative; }
+      li::before { content: ''; position: absolute; left: 0.1rem; top: 0.78em; width: 0.32rem; height: 1px; background: var(--soft); }
+      a { color: inherit; text-decoration: underline; text-decoration-color: var(--line); text-decoration-thickness: 1px; text-underline-offset: 0.2em; transition: text-decoration-color .2s; }
+      a:hover, a:focus-visible { text-decoration-color: currentColor; }
+      a:focus-visible, button:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; border-radius: 2px; }
+      .contact { margin-top: 1.2rem; margin-bottom: 0; }
+
+      .corner {
+        position: fixed; z-index: 2; right: 16px; bottom: 12px;
+        font-size: 12px; letter-spacing: .02em; display: flex; gap: 14px; align-items: baseline;
+      }
+      .art[data-comp='left'] .corner { right: auto; left: 16px; }
+      .corner a, .corner button {
+        color: var(--ink); opacity: .24; text-decoration: none; transition: opacity .3s;
+        font: inherit; background: none; border: 0; padding: 4px 0; cursor: pointer;
+      }
+      .corner a:hover, .corner a:focus-visible, .corner button:hover, .corner button:focus-visible { opacity: .75; }
+
+      @media (max-width: 759px) and (max-aspect-ratio: 105/100) {
+        main, .art[data-comp] main { width: auto; margin: 0 24px; min-height: 0; display: block; padding: 48px 0 64px; }
+        .art[data-comp] main { padding-top: max(300px, 46vh); }
+        h1 { font-size: 1.3rem; }
+        .corner, .art[data-comp='left'] .corner { position: absolute; left: auto; right: 16px; top: 12px; bottom: auto; }
+      }
+      @media (min-width: 1600px) { body { font-size: 17px; } }
+    </style>
+  </head>
+  <body>
+    <canvas id="art" aria-hidden="true"></canvas>
+    <main>
+      <h1>Ben Firshman</h1>
+
+      <p>I'm working on <a href="https://replicate.com">Replicate</a>. Some other stuff I've done:</p>
+
+      <ul>
+        <li><a href="https://github.com/replicate/cog">Cog</a>, containers for machine learning.</li>
+        <li><a href="https://clig.dev">Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+        <li><a href="https://github.com/docker/compose">Docker Compose</a> and <a href="https://github.com/docker/machine">Docker Machine</a>.</li>
+        <li><a href="https://github.com/bfirsh/jsnes">JSNES</a>, one of the first JavaScript emulators.</li>
+        <li><a href="https://github.com/whalebrew/whalebrew">Whalebrew</a>, a Docker package manager.</li>
+        <li><a href="https://www.arxiv-vanity.com/">arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+        <li>I worked on <a href="https://gov.uk">GOV.UK</a>, <a href="https://www.youtube.com/watch?v=53ZJdJNsBto">The Guardian's iPad app</a>, <a href="https://www.thisismyjam.com">This Is My Jam</a>, <a href="https://en.wikipedia.org/wiki/Lanyrd">Lanyrd</a>, and <a href="https://spacelog.org">Spacelog</a>.</li>
+        <li>I worked on many parts of <a href="https://www.djangoproject.com/">Django</a>, including class-based views, feeds, and search.</li>
+        <li>I helped start the <a href="https://ukhas.org.uk/">UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+      </ul>
+
+      <p class="contact">Email me at <a href="mailto:ben@firshman.com">ben@firshman.com</a>.<br />
+        I'm also on <a href="https://x.com/bfirsh">X</a>, <a href="https://github.com/bfirsh">GitHub</a>, and <a href="https://www.linkedin.com/in/bfirsh/">LinkedIn</a>.</p>
+    </main>
+
+    <div class="corner">
+      <button type="button" id="edition" hidden></button>
+      <a href="/ideas">ideas</a>
+    </div>
+
+    <script>
+      import { startCloud, type Sky } from '../../components/ideas/cloud/scene';
+
+      const d = document.documentElement;
+      const seed = parseInt(d.dataset.seed || '1', 10);
+      const ed = document.getElementById('edition') as HTMLButtonElement;
+      const label = `No. ${seed}`;
+      ed.textContent = label;
+      ed.title = 'Copy a link to this edition';
+      ed.hidden = false;
+      ed.addEventListener('click', async () => {
+        const url = new URL(location.href);
+        url.searchParams.set('seed', String(seed));
+        history.replaceState(null, '', url);
+        try { await navigator.clipboard.writeText(url.toString()); ed.textContent = 'Link copied'; }
+        catch { ed.textContent = label; }
+        setTimeout(() => (ed.textContent = label), 1600);
+      });
+
+      const sky = (window as unknown as { __sky?: Sky }).__sky;
+      if (d.classList.contains('art') && sky) {
+        const canvas = document.getElementById('art') as HTMLCanvasElement;
+        try {
+          startCloud(canvas, {
+            seed,
+            comp: (d.dataset.comp as 'right' | 'left' | 'above') || 'right',
+            sky,
+            reduced: matchMedia('(prefers-reduced-motion: reduce)').matches,
+          });
+        } catch (e) {
+          console.error(e);
+          d.classList.remove('art');
+          canvas.remove();
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,165 @@
+---
+// Erode: plain text beside a voxel monolith that weathers into a dune and re-forms.
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman works on Replicate. Before that: Cog, Command Line Interface Guidelines, Docker Compose, JSNES, and more." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet" />
+    <script is:inline>
+      (function () {
+        var d = document.documentElement, q = new URLSearchParams(location.search);
+        var s = parseInt(q.get('seed') || '', 10);
+        if (!(s > 0 && s < 100000)) s = 1 + Math.floor(Math.random() * 99999);
+        var a = (s * 2654435761) >>> 0;
+        function r() { a = (a + 0x6d2b79f5) | 0; var t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+        d.dataset.seed = s;
+        d.dataset.pal = String(Math.min(3, Math.floor(r() * 4)));
+        d.dataset.flip = r() < 0.5 ? '1' : '0';
+        var c = document.createElement('canvas');
+        if (c.getContext('webgl2') || c.getContext('webgl')) d.classList.add('art');
+      })();
+    </script>
+    <style is:global>
+      :root {
+        --top: #f7f1e9; --hor: #efdfcd; --flo: #ead6c0; --ink: #3a2219; --soft: #7d5747; --line: rgba(58, 34, 25, .28);
+        color-scheme: light;
+      }
+      [data-pal='1'] { --top: #f6f2ea; --hor: #ede2cf; --flo: #e7d9c1; --ink: #33281a; --soft: #77623f; --line: rgba(51, 40, 26, .28); }
+      [data-pal='2'] { --top: #f5f0f0; --hor: #eddfdc; --flo: #e8d6d2; --ink: #3a2328; --soft: #7d555c; --line: rgba(58, 35, 40, .28); }
+      [data-pal='3'] { --top: #34353a; --hor: #202124; --flo: #1a1b1d; --ink: #e8e5de; --soft: #a19d95; --line: rgba(232, 229, 222, .3); color-scheme: dark; }
+
+      * { box-sizing: border-box; }
+      html { background: var(--hor); -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0; min-height: 100vh; color: var(--ink);
+        background: linear-gradient(to top, var(--flo) 0%, var(--hor) 38%, var(--top) 100%) fixed;
+        font-family: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+        font-optical-sizing: auto;
+        font-size: 18px; line-height: 1.5;
+        -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+        overflow-x: hidden;
+      }
+      canvas#art {
+        position: fixed; inset: 0; width: 100vw; height: 100vh; display: block;
+        opacity: 0; transition: opacity 2.4s ease;
+      }
+      canvas#art.on { opacity: 1; }
+
+      main {
+        position: relative; z-index: 1;
+        width: min(27rem, 36vw);
+        margin-left: clamp(28px, 8vw, 136px);
+        min-height: 100vh;
+        display: flex; flex-direction: column; justify-content: center;
+        padding: 12vh 0;
+      }
+      [data-flip='1'].art main { margin-left: auto; margin-right: clamp(28px, 8vw, 136px); }
+      html:not(.art) main { width: min(30rem, calc(100vw - 56px)); }
+
+      h1 {
+        font-weight: 500; font-size: 2rem; line-height: 1.1; letter-spacing: -0.012em;
+        margin: 0 0 1.1rem;
+      }
+      p, ul { margin: 0 0 1rem; }
+      ul { list-style: none; padding: 0; }
+      li { margin: 0 0 0.42rem; padding-left: 1.05rem; position: relative; }
+      li::before { content: ''; position: absolute; left: 0.1rem; top: 0.72em; width: 0.36rem; height: 1px; background: var(--soft); }
+      a { color: inherit; text-decoration: underline; text-decoration-color: var(--line); text-decoration-thickness: 1px; text-underline-offset: 0.18em; transition: text-decoration-color .2s; }
+      a:hover, a:focus-visible { text-decoration-color: currentColor; }
+      a:focus-visible, button:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; border-radius: 2px; }
+      .contact { margin-top: 1.4rem; color: var(--ink); }
+
+      .corner {
+        position: fixed; z-index: 2; right: 16px; bottom: 12px;
+        font-size: 12px; letter-spacing: .02em; display: flex; gap: 14px; align-items: baseline;
+      }
+      [data-flip='0'].art .corner { right: auto; left: 16px; }
+      .corner a, .corner button {
+        color: var(--ink); opacity: .22; text-decoration: none; transition: opacity .3s;
+        font: inherit; background: none; border: 0; padding: 4px 0; cursor: pointer;
+      }
+      .corner a:hover, .corner a:focus-visible, .corner button:hover, .corner button:focus-visible { opacity: .75; }
+
+      @media (max-width: 759px) and (max-aspect-ratio: 105/100) {
+        body { font-size: 17px; }
+        main { width: auto; margin: 0 24px; min-height: 0; padding: 40px 0 72px; display: block; }
+        .art main { padding-top: max(340px, 58vh); margin: 0 24px; }
+        [data-flip='1'].art main { margin: 0 24px; }
+        h1 { font-size: 1.8rem; }
+        .corner, [data-flip='0'].art .corner { left: auto; right: 16px; position: absolute; top: 12px; bottom: auto; }
+      }
+      @media (min-width: 1600px) { body { font-size: 19px; } }
+    </style>
+  </head>
+  <body>
+    <canvas id="art" aria-hidden="true"></canvas>
+    <main>
+      <h1>Ben Firshman</h1>
+
+      <p>I'm working on <a href="https://replicate.com">Replicate</a>. Some other stuff I've done:</p>
+
+      <ul>
+        <li><a href="https://github.com/replicate/cog">Cog</a>, containers for machine learning.</li>
+        <li><a href="https://clig.dev">Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+        <li><a href="https://github.com/docker/compose">Docker Compose</a> and <a href="https://github.com/docker/machine">Docker Machine</a>.</li>
+        <li><a href="https://github.com/bfirsh/jsnes">JSNES</a>, one of the first JavaScript emulators.</li>
+        <li><a href="https://github.com/whalebrew/whalebrew">Whalebrew</a>, a Docker package manager.</li>
+        <li><a href="https://www.arxiv-vanity.com/">arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+        <li>I worked on <a href="https://gov.uk">GOV.UK</a>, <a href="https://www.youtube.com/watch?v=53ZJdJNsBto">The Guardian's iPad app</a>, <a href="https://www.thisismyjam.com">This Is My Jam</a>, <a href="https://en.wikipedia.org/wiki/Lanyrd">Lanyrd</a>, and <a href="https://spacelog.org">Spacelog</a>.</li>
+        <li>I worked on many parts of <a href="https://www.djangoproject.com/">Django</a>, including class-based views, feeds, and search.</li>
+        <li>I helped start the <a href="https://ukhas.org.uk/">UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+      </ul>
+
+      <p class="contact">Email me at <a href="mailto:ben@firshman.com">ben@firshman.com</a>.<br />
+        I'm also on <a href="https://x.com/bfirsh">X</a>, <a href="https://github.com/bfirsh">GitHub</a>, and <a href="https://www.linkedin.com/in/bfirsh/">LinkedIn</a>.</p>
+    </main>
+
+    <div class="corner">
+      <button type="button" id="edition" hidden></button>
+      <a href="/ideas">ideas</a>
+    </div>
+
+    <script>
+      import { startErode } from '../../components/ideas/erode/scene';
+
+      const d = document.documentElement;
+      const seed = parseInt(d.dataset.seed || '1', 10);
+      const ed = document.getElementById('edition') as HTMLButtonElement;
+      const label = `No. ${seed}`;
+      ed.textContent = label;
+      ed.title = 'Copy a link to this edition';
+      ed.hidden = false;
+      ed.addEventListener('click', async () => {
+        const url = new URL(location.href);
+        url.searchParams.set('seed', String(seed));
+        history.replaceState(null, '', url);
+        try { await navigator.clipboard.writeText(url.toString()); ed.textContent = 'Link copied'; }
+        catch { ed.textContent = label; }
+        setTimeout(() => (ed.textContent = label), 1600);
+      });
+
+      if (d.classList.contains('art')) {
+        const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const canvas = document.getElementById('art') as HTMLCanvasElement;
+        try {
+          startErode(canvas, {
+            seed,
+            pal: parseInt(d.dataset.pal || '0', 10),
+            flip: d.dataset.flip === '1',
+            reduced,
+          });
+        } catch (e) {
+          console.error(e);
+          d.classList.remove('art');
+          canvas.remove();
+        }
+      }
+    </script>
+  </body>
+</html>
