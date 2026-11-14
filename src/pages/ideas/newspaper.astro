@@ -1,0 +1,583 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name, profileImage } from '../../data/bio';
+
+const p = Object.fromEntries(projects.map((x) => [x.slug, x]));
+const host = (u: string) => u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+
+type Story = { slug: string; kicker: string; head: string; dek: string; body: string; wide?: boolean };
+const stories: Story[] = [
+  {
+    slug: 'compose', wide: true, kicker: 'Containers',
+    head: 'Composer’s Work Performed Daily in Countless Terminals',
+    dek: 'Multi-container apps now defined in a single file; YAML, briefly, beloved',
+    body: 'Docker Compose, which began life as a small tool called Fig, lets developers define and run multi-container apps with one command. Critics praised its restraint. Audiences have been typing “up” ever since, and occasionally “down”.',
+  },
+  {
+    slug: 'cog', kicker: 'Machine learning',
+    head: 'Local Cog Found to Be Vital Part of Machine',
+    dek: 'Containers, but for machine learning',
+    body: 'The open-source tool packs models into containers so they run the same everywhere. It is the engine under Replicate, see front page, which is this page.',
+  },
+  {
+    slug: 'jsnes', kicker: 'Games',
+    head: 'Plumber Discovered Living Inside Web Browser',
+    dek: 'One of the first JavaScript emulators; productivity falls',
+    body: 'JSNES runs Nintendo games in a web page, long before anyone agreed that was a reasonable thing for a web page to do.',
+  },
+  {
+    slug: 'machine', kicker: 'Infrastructure',
+    head: 'Machine Provisions Hosts “Anywhere”',
+    dek: 'Anywhere unavailable for comment',
+    body: 'Docker Machine provisions Docker hosts on your laptop, in the cloud, or wherever else you happen to point it.',
+  },
+  {
+    slug: 'whalebrew', kicker: 'Wildlife',
+    head: 'Whale Sighted in Package Manager',
+    dek: 'Docker images installed like ordinary commands',
+    body: 'Whalebrew, a Docker package manager, has been spotted surfacing in terminals. Experts advise remaining calm and typing the command as normal.',
+  },
+  {
+    slug: 'arxiv-vanity', kicker: 'Science',
+    head: 'Scientific Papers Get Makeover, Finally Fit on Phones',
+    dek: 'PDFs stunned by own reflection',
+    body: 'arXiv Vanity rendered papers from arXiv as responsive web pages, sparing a generation of researchers from pinching and zooming.',
+  },
+  {
+    slug: 'django', kicker: 'Python',
+    head: 'Views Go Class-Based in Python Shake-Up',
+    dek: 'Feeds and search also affected',
+    body: 'Mr. Firshman worked on many parts of Django, the web framework, including class-based views, feeds and search. Function-based views are said to be fine about it.',
+  },
+  {
+    slug: 'ukhas', wide: true, kicker: 'Near space',
+    head: 'Britons Reach Edge of Space With Balloon, Camera and Admirable Optimism',
+    dek: 'Amateur society takes off; “it went up,” confirms everyone',
+    body: 'Mr. Firshman helped start the UK High Altitude Society, a group for amateur near-space exploration. Members send balloons to the edge of the atmosphere and then, the hard part, go and find them again.',
+  },
+];
+
+// crossword: 1 Down WHALEBREW (col 3), 2 Across REPLICATE (row 3), sharing the L
+const across = 'REPLICATE';
+const down = 'WHALEBREW';
+const cells: { r: number; c: number; n?: number }[] = [];
+for (let r = 0; r < 9; r++) cells.push({ r, c: 3, n: r === 0 ? 1 : undefined });
+for (let c = 0; c < 9; c++) if (c !== 3) cells.push({ r: 3, c, n: c === 0 ? 2 : undefined });
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — The Firshman Times</title>
+    <meta name="description" content="The Firshman Times: all the latest on Ben Firshman, Replicate, and a balloon that went quite high." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Libre+Franklin:wght@500;700;800&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=UnifrakturMaguntia&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="paper">
+      <nav class="topline">
+        <a href="/ideas">← all ideas</a>
+        <span>Late edition · Every edition is late</span>
+      </nav>
+
+      <header class="mast">
+        <div class="ear ear-l">
+          <strong>Late City Edition</strong>
+          <span>Printed whenever the containers finish building</span>
+        </div>
+        <h1><span class="the">The</span> Firshman Times</h1>
+        <div class="ear ear-r">
+          <svg viewBox="0 0 64 40" aria-hidden="true"><path d="M16 32a10 10 0 0 1 1-20 14 14 0 0 1 27 3 9 9 0 0 1 2 17z" fill="none" stroke="currentColor" stroke-width="2.4" /><rect x="22" y="22" width="18" height="9" fill="currentColor" /><path d="M26 22v9M30 22v9M34 22v9" stroke="#f3eee2" stroke-width="1.2" /></svg>
+          <span>Cloudy, chance of containers</span>
+        </div>
+      </header>
+
+      <div class="dateline">
+        <span>Vol. I · No. 1</span>
+        <time id="today">Published daily, more or less</time>
+        <span>Price: free · Est. whenever</span>
+      </div>
+
+      <nav class="inside" aria-label="Inside this edition">
+        <strong>Inside:</strong>
+        <a href="#weather">Weather, A1</a>
+        <a href="#opinion">Opinion, A1</a>
+        <a href="#crossword">Crossword, A1</a>
+        <a href="#news">Containers, B2</a>
+        <a href="#brief">In brief, B4</a>
+        <a href="#classifieds">Classifieds, back page</a>
+        <span>Sport: none</span>
+      </nav>
+
+      <main class="front">
+        <article class="lead" aria-labelledby="lead-head">
+          <p class="kicker">Exclusive · Artificial intelligence</p>
+          <h2 id="lead-head">Man Puts AI Models in the Cloud, Lets Anyone Run Them</h2>
+          <p class="dek">{name}’s company, <a href={now.url}>{now.name}</a>, offers a cloud API for running AI models. Observers confirm it is, in fact, an API.</p>
+          <div class="lead-grid">
+            <figure class="photo">
+              <div class="halftone">
+                <img id="portrait" src={profileImage} alt={`Portrait of ${name}`} width="512" height="512" />
+                <canvas id="halftone" width="512" height="512" aria-hidden="true"></canvas>
+              </div>
+              <figcaption><strong>{name}</strong>, co-founder of Replicate, photographed in what sources describe as a good mood. <span class="credit">Photograph: the Times’ photographer, who is also the printer.</span></figcaption>
+            </figure>
+            <div class="body cols">
+              <p class="byline">By Our Containers Correspondent</p>
+              <p class="dropcap"><span class="loc">THE INTERNET —</span> {name} is working on <a href={now.url}>{now.name}</a>, which lets people {now.blurb}, the Times can exclusively reveal, having read it on his homepage.</p>
+              <p>The service builds on <a href={p.cog.url}>Cog</a>, an open-source tool for putting machine learning models into containers, which insiders describe as “containers, for machine learning”, and outsiders describe in much the same way.</p>
+              <p>It is not Mr. Firshman’s first brush with containers. He made <a href={p.compose.url}>Docker Compose</a> (see page B2), and is understood to have been near a container at almost every point since.</p>
+              <p>“You just call the API,” Mr. Firshman did not tell the Times, which did not ask. Asked to confirm, a spokesperson pointed to a code sample and said nothing further, which the Times took as a yes.</p>
+              <p>Readers wishing to run an AI model, or simply to check the facts in this report, may do so at <a href={now.url}>{host(now.url)}</a>.</p>
+              <p class="cont"><a href="#news">Continued on page B2 →</a></p>
+            </div>
+          </div>
+          <section class="markets" aria-labelledby="mk-h">
+            <h3 id="mk-h">Markets</h3>
+            <dl>
+              <div><dt>Containers</dt><dd class="up">▲ still going up</dd></div>
+              <div><dt>GPUs</dt><dd class="up">▲ always</dd></div>
+              <div><dt>YAML</dt><dd class="flat">◆ 2 spaces</dd></div>
+              <div><dt>Function-based views</dt><dd class="down">▼ classy</dd></div>
+              <div><dt>Weather balloons</dt><dd class="up">▲ 30 km, ish</dd></div>
+            </dl>
+          </section>
+        </article>
+
+        <aside class="rail" aria-label="Sidebar">
+          <section class="box weather" id="weather" aria-labelledby="weather-h">
+            <h3 id="weather-h">Weather</h3>
+            <div class="wx">
+              <svg viewBox="0 0 64 40" aria-hidden="true"><path d="M16 32a10 10 0 0 1 1-20 14 14 0 0 1 27 3 9 9 0 0 1 2 17z" fill="none" stroke="currentColor" stroke-width="2" /><rect x="22" y="22" width="18" height="9" fill="currentColor" /><path d="M26 22v9M30 22v9M34 22v9" stroke="#f3eee2" stroke-width="1.2" /></svg>
+              <p><strong>Outlook:</strong> cloudy, with a chance of containers.</p>
+            </div>
+            <dl>
+              <div><dt>High</dt><dd>200 OK</dd></div>
+              <div><dt>Low</dt><dd>Latency</dd></div>
+              <div><dt>Tomorrow</dt><dd>More cloud</dd></div>
+            </dl>
+          </section>
+
+          <section class="opinion" id="opinion" aria-labelledby="op-h">
+            <p class="kicker">Opinion</p>
+            <h3 id="op-h">Your Command Line Is Rude. Here’s How to Fix It.</h3>
+            <p>Too many programs answer a simple <code>--help</code> with a wall of text, or worse, silence. The <a href={p.clig.url}>Command Line Interface Guidelines</a>, which Mr. Firshman co-wrote, are {p.clig.blurb}. Read them. Your users have suffered enough.</p>
+          </section>
+
+          <section class="box crossword" id="crossword" aria-labelledby="xw-h">
+            <h3 id="xw-h">Crossword</h3>
+            <div class="grid" role="group" aria-label="Crossword grid">
+              {cells.map((cell) => (
+                <label class="cell" style={`grid-row:${cell.r + 1};grid-column:${cell.c + 1}`} data-r={cell.r} data-c={cell.c}>
+                  {cell.n && <span class="n">{cell.n}</span>}
+                  <input maxlength="1" autocomplete="off" autocapitalize="characters" spellcheck="false"
+                    aria-label={`Row ${cell.r + 1}, column ${cell.c + 1}`} data-r={cell.r} data-c={cell.c} />
+                </label>
+              ))}
+            </div>
+            <ol class="clues">
+              <li><b>1 Down</b> Docker package manager, a marine microbrewery by the sound of it (9)</li>
+              <li><b>2 Across</b> Copy, or run AI models with a cloud API (9)</li>
+            </ol>
+            <p class="solved" id="solved" aria-live="polite"></p>
+            <details>
+              <summary>Answers, upside down</summary>
+              <p class="upside">1 <a href={p.whalebrew.url}>WHALEBREW</a> · 2 <a href={now.url}>REPLICATE</a></p>
+            </details>
+          </section>
+        </aside>
+
+        <section class="news" id="news" aria-label="More news">
+          {stories.map((s) => (
+            <article class:list={['story', { wide: s.wide }]}>
+              <p class="kicker">{s.kicker}</p>
+              <h3><a href={p[s.slug].url}>{s.head}</a></h3>
+              <p class="dek">{s.dek}</p>
+              <p class="body">{s.body}</p>
+              <p class="more"><a href={p[s.slug].url}>{p[s.slug].name} · {host(p[s.slug].url)} →</a></p>
+            </article>
+          ))}
+          <section class="story wide brief" id="brief" aria-labelledby="brief-h">
+            <p class="kicker">In brief</p>
+            <h3 id="brief-h">Also Worked On</h3>
+            <ul>
+              {alsoWorkedOn.map((a) => (
+                <li><a href={a.url}>{a.name}</a> <span>{
+                  a.name === 'GOV.UK' ? 'Government website found to be usable. Nation baffled.' :
+                  a.name.startsWith('The Guardian') ? 'Newspaper fits on tablet. This one, sadly, still does not.' :
+                  a.name === 'This Is My Jam' ? 'One song at a time. Readers advised to choose carefully.' :
+                  a.name === 'Lanyrd' ? 'Conferences, organised. Lanyards, presumably also.' :
+                  'Apollo transcripts, readable at last. Houston relieved.'
+                }</span></li>
+              ))}
+            </ul>
+          </section>
+        </section>
+      </main>
+
+      <section class="classifieds" id="classifieds" aria-labelledby="cl-h">
+        <h2 id="cl-h">Classifieds</h2>
+        <div class="ads">
+          <div class="ad big">
+            <h3>Situations wanted</h3>
+            <p>Interesting problems sought by experienced container wrangler. Will reply. Write to:</p>
+            <p class="contact"><a href={`mailto:${email}`}>{email}</a></p>
+          </div>
+          {socials.map((s) => (
+            <div class="ad">
+              <h3>{s.name === 'X' ? 'Personal' : s.name === 'GitHub' ? 'For free' : 'Professional'}</h3>
+              <p>{s.name === 'X' ? 'Man, keen on command lines, seeks followers. GSOH.' : s.name === 'GitHub' ? 'Open source software, lightly used, good home. Collect from' : 'Yes, he is on LinkedIn. Connections considered.'}</p>
+              <p class="contact"><a href={s.url}>{s.name} {s.handle.startsWith('@') ? s.handle : `/${s.handle}`}</a></p>
+            </div>
+          ))}
+          <div class="ad">
+            <h3>Lost</h3>
+            <p>One weather balloon, last seen heading up. Finder keeps the view. <a href={p.ukhas.url}>UKHAS</a>.</p>
+          </div>
+          <div class="ad">
+            <h3>Notices</h3>
+            <p>Correspondence may be encrypted. <a href="/pgp.pub.txt">PGP key</a> available on request, or just by clicking.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="colophon">
+        <span>The Firshman Times is printed on recycled pixels.</span>
+        <span>Corrections: none yet. Give it time.</span>
+        <a href="/ideas">← all ideas</a>
+      </footer>
+    </div>
+
+    <style is:global>
+      :root {
+        color-scheme: light;
+        --paper: #f3eee2;
+        --ink: #17150f;
+        --rule: rgba(23, 21, 15, 0.85);
+        --hair: rgba(23, 21, 15, 0.28);
+        --serif: 'Libre Caslon Text', Georgia, serif;
+        --display: 'Playfair Display', Georgia, serif;
+        --sans: 'Libre Franklin', 'Helvetica Neue', Arial, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0; color: var(--ink); background: #d9d2c2;
+        font-family: var(--serif); font-size: 15px; line-height: 1.5;
+      }
+      a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 2px; text-decoration-color: var(--hair); }
+      a:hover { text-decoration-color: var(--ink); }
+      a:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+      .paper {
+        position: relative; max-width: 1320px; margin: 0 auto; padding: 14px 40px 40px;
+        background-color: var(--paper);
+        background-image:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .25 0 0 0 0 .15 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+          linear-gradient(180deg, transparent 49.6%, rgba(0, 0, 0, 0.05) 49.9%, rgba(255, 255, 255, 0.35) 50.1%, transparent 50.4%),
+          linear-gradient(90deg, rgba(120, 90, 40, 0.07), transparent 6%, transparent 94%, rgba(120, 90, 40, 0.07));
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 30px 60px -30px rgba(40, 30, 10, 0.45);
+      }
+
+      .topline {
+        display: flex; justify-content: space-between; gap: 12px; font: 500 11px/1.4 var(--sans);
+        letter-spacing: 0.08em; text-transform: uppercase; color: rgba(23, 21, 15, 0.65); padding-bottom: 8px;
+      }
+      .topline a { text-decoration: none; }
+      .topline a:hover { text-decoration: underline; }
+
+      .mast {
+        display: grid; grid-template-columns: 170px minmax(0, 1fr) 170px; align-items: center; gap: 20px;
+        padding: 6px 0 10px;
+      }
+      h1 {
+        margin: 0; text-align: center; font-family: 'UnifrakturMaguntia', var(--display); font-weight: 400;
+        font-size: clamp(42px, 6.7vw, 104px); line-height: 1; letter-spacing: 0.005em; white-space: nowrap;
+      }
+      .ear {
+        border: 1px solid var(--rule); padding: 8px 10px; font: 500 11px/1.35 var(--sans); text-align: center;
+        display: grid; gap: 4px; justify-items: center;
+      }
+      .ear strong { font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; font-size: 11px; }
+      .ear svg { width: 46px; height: 30px; }
+
+      .dateline {
+        display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+        border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+        box-shadow: 0 3px 0 -1px var(--paper), 0 4px 0 -1px var(--rule);
+        padding: 6px 2px; margin-bottom: 4px;
+        font: 700 11px/1.3 var(--sans); letter-spacing: 0.1em; text-transform: uppercase;
+      }
+      .inside {
+        display: flex; flex-wrap: wrap; gap: 4px 18px; justify-content: center; padding: 10px 0 12px; margin-top: 6px;
+        font: italic 400 13px/1.4 var(--serif); border-bottom: 1px solid var(--hair);
+      }
+      .inside strong { font: 800 11px/1.6 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; font-style: normal; }
+      .inside a { text-decoration: none; }
+      .inside a:hover { text-decoration: underline; }
+      .inside span { opacity: 0.6; }
+
+      .front { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 28px; padding-top: 20px; }
+      .kicker { margin: 0 0 6px; font: 800 11px/1.3 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; }
+
+      .lead { grid-column: 1 / span 9; padding-bottom: 24px; }
+      .lead h2 {
+        margin: 0; font-family: var(--display); font-weight: 900; font-size: clamp(34px, 4.6vw, 64px);
+        line-height: 1.02; letter-spacing: -0.015em; text-wrap: balance;
+      }
+      .lead > .dek {
+        margin: 12px 0 18px; font: italic 400 20px/1.35 var(--serif); max-width: 46em; text-wrap: pretty;
+        padding-bottom: 16px; border-bottom: 1px solid var(--hair);
+      }
+      .lead-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 24px; }
+      .photo { margin: 0; }
+      .halftone { position: relative; aspect-ratio: 1; background: var(--paper); overflow: hidden; border: 1px solid var(--hair); }
+      .halftone img, .halftone canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      .halftone img { filter: grayscale(1) contrast(1.25) sepia(0.15); mix-blend-mode: multiply; }
+      .halftone canvas { opacity: 0; transition: opacity 0.6s; }
+      .halftone.ready canvas { opacity: 1; }
+      .halftone.ready img { opacity: 0; }
+      figcaption { margin-top: 8px; font: 400 12px/1.4 var(--sans); }
+      .credit { display: block; margin-top: 2px; opacity: 0.6; font-size: 11px; }
+
+      .cols { column-count: 2; column-gap: 24px; column-rule: 1px solid var(--hair); }
+      .body p { margin: 0 0 10px; text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
+      .byline { font: 700 11px/1.3 var(--sans) !important; letter-spacing: 0.1em; text-transform: uppercase; text-align: left !important; }
+      .loc { font: 800 12px var(--sans); letter-spacing: 0.06em; }
+      .dropcap::first-letter {
+        float: left; font-family: var(--display); font-weight: 900; font-size: 64px; line-height: 0.8; padding: 6px 8px 0 0;
+      }
+      .cont { font: italic 13px var(--serif); text-align: right !important; }
+      .markets { margin-top: 22px; border-top: 3px double var(--rule); padding-top: 10px; }
+      .markets h3 { margin: 0 0 8px; font: 800 11px/1.3 var(--sans); letter-spacing: 0.18em; text-transform: uppercase; }
+      .markets dl { margin: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .markets div { padding: 0 12px; border-left: 1px solid var(--hair); }
+      .markets div:first-child { border-left: 0; padding-left: 0; }
+      .markets dt { font: 700 11px/1.3 var(--sans); letter-spacing: 0.04em; text-transform: uppercase; }
+      .markets dd { margin: 2px 0 0; font: 400 15px/1.3 var(--serif); font-variant-numeric: tabular-nums; }
+
+      .rail { grid-column: 10 / span 3; border-left: 1px solid var(--hair); padding-left: 24px; display: grid; gap: 22px; align-content: start; padding-bottom: 24px; }
+      .box { border: 1px solid var(--rule); padding: 12px 14px 14px; }
+      .box h3 {
+        margin: -12px -14px 12px; padding: 6px 14px; background: var(--ink); color: var(--paper);
+        font: 800 12px/1.3 var(--sans); letter-spacing: 0.18em; text-transform: uppercase;
+      }
+      .wx { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: center; }
+      .wx p { margin: 0; font-size: 15px; line-height: 1.35; }
+      .weather dl { margin: 12px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--hair); padding-top: 8px; }
+      .weather dt { font: 800 10px var(--sans); letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; }
+      .weather dd { margin: 0; font: 700 14px/1.3 var(--serif); }
+
+      .opinion { border-top: 3px solid var(--ink); padding-top: 10px; }
+      .opinion h3 { margin: 0 0 8px; font: italic 700 24px/1.12 var(--display); }
+      .opinion p:last-child { margin: 0; text-align: justify; hyphens: auto; }
+      code { font-size: 0.9em; }
+
+      .crossword .grid {
+        display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); grid-template-rows: repeat(9, auto); gap: 0;
+        width: 100%; max-width: 270px; margin: 0 auto 10px;
+      }
+      .cell { position: relative; aspect-ratio: 1; min-width: 0; border: 1px solid var(--ink); margin: 0 -1px -1px 0; background: #fbf8f0; }
+      .cell .n { position: absolute; top: 1px; left: 2px; font: 700 8px/1 var(--sans); pointer-events: none; }
+      .cell input {
+        width: 100%; min-width: 0; height: 100%; border: 0; padding: 4px 0 0; display: block; margin: 0; background: transparent; text-align: center;
+        font: 700 16px var(--sans); text-transform: uppercase; color: var(--ink); caret-color: var(--ink); border-radius: 0;
+      }
+      .cell input:focus { outline: none; background: rgba(23, 21, 15, 0.1); }
+      .cell.hl { background: #efe6c8; }
+      .cell.done { background: var(--ink); }
+      .cell.done input, .cell.done .n { color: var(--paper); }
+      .clues { list-style: none; padding: 0; margin: 0; font-size: 13px; line-height: 1.4; display: grid; gap: 6px; }
+      .clues b { font: 800 11px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; margin-right: 4px; }
+      .solved { margin: 8px 0 0; font: italic 13px var(--serif); min-height: 0; }
+      .solved:empty { display: none; }
+      details { margin-top: 10px; font: 500 11px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; }
+      summary { cursor: pointer; opacity: 0.7; }
+      .upside { transform: rotate(180deg); text-align: center; margin: 8px 0 0; font-weight: 700; }
+
+      .news {
+        grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+        border-top: 3px double var(--rule); padding-top: 18px;
+      }
+      .story { padding: 0 20px 22px; border-left: 1px solid var(--hair); }
+      .story h3 { margin: 0 0 6px; font: 700 23px/1.12 var(--display); text-wrap: balance; }
+      .story h3 a { text-decoration: none; }
+      .story h3 a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+      .story .dek { margin: 0 0 8px; font: italic 15px/1.35 var(--serif); opacity: 0.85; }
+      .story .body { margin: 0 0 8px; text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
+      .story .more { margin: 0; font: 700 11px/1.4 var(--sans); letter-spacing: 0.04em; }
+      .story.wide { grid-column: span 2; }
+      .story.wide h3 { font-size: 32px; font-weight: 900; }
+      .story.wide .body { column-count: 2; column-gap: 20px; }
+      .news > :nth-child(1), .news > :nth-child(4), .news > :nth-child(8) { border-left: 0; padding-left: 0; }
+      .news > :nth-child(3), .news > :nth-child(7), .news > :nth-child(9) { padding-right: 0; }
+      .news > :nth-child(n + 4) { border-top: 1px solid var(--hair); padding-top: 18px; }
+      .brief ul { list-style: none; margin: 0; padding: 0; column-count: 2; column-gap: 20px; }
+      .brief li { break-inside: avoid; margin-bottom: 8px; line-height: 1.35; }
+      .brief li a { font: 800 12px var(--sans); letter-spacing: 0.04em; text-transform: uppercase; }
+      .brief li span { display: block; font-size: 14px; }
+
+      .classifieds { border-top: 3px solid var(--ink); margin-top: 8px; padding-top: 10px; }
+      .classifieds h2 {
+        margin: 0 0 12px; font: 900 30px/1 var(--display); letter-spacing: 0.02em; text-transform: uppercase;
+        display: flex; align-items: center; gap: 14px;
+      }
+      .classifieds h2::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+      .ads { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+      .ad { border: 1px solid var(--ink); padding: 8px 10px 10px; font: 400 12.5px/1.4 var(--sans); }
+      .ad.big { grid-row: span 1; border-width: 2px; }
+      .ad h3 { margin: 0 0 4px; font: 800 11px var(--sans); letter-spacing: 0.14em; text-transform: uppercase; border-bottom: 1px solid var(--hair); padding-bottom: 4px; }
+      .ad p { margin: 0 0 4px; }
+      .ad .contact { font-weight: 800; margin-top: 6px; overflow-wrap: anywhere; }
+      .ad.big .contact { font: 900 17px/1.2 var(--display); }
+
+      .colophon {
+        margin-top: 24px; border-top: 1px solid var(--rule); padding-top: 8px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+        font: 500 11px/1.4 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.75;
+      }
+
+      @media (max-width: 1100px) {
+        .paper { padding: 12px 24px 32px; }
+        .mast { grid-template-columns: 140px 1fr 140px; }
+        .lead { grid-column: 1 / span 8; }
+        .rail { grid-column: 9 / span 4; }
+        .ads { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .news { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .story.wide { grid-column: span 2; padding-left: 0; padding-right: 0; border-left: 0; }
+        .news > .story { border-top: 1px solid var(--hair); padding-top: 18px; }
+        .news > :first-child { border-top: 0; padding-top: 0; }
+        .news > .story:not(.wide):nth-child(even) { border-left: 0; padding-left: 0; }
+        .news > .story:not(.wide):nth-child(odd) { padding-right: 0; }
+      }
+      @media (max-width: 760px) {
+        body { background: var(--paper); }
+        .paper { padding: 10px 16px 28px; box-shadow: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .25 0 0 0 0 .15 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+        .topline span { display: none; }
+        .mast { grid-template-columns: 1fr; padding: 2px 0 6px; }
+        .ear { display: none; }
+        h1 { font-size: clamp(28px, 9.6vw, 60px); }
+        .dateline { justify-content: center; text-align: center; font-size: 10px; gap: 2px 10px; }
+        .dateline time { order: -1; width: 100%; }
+        .inside { justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; scrollbar-width: none; margin: 6px -16px 0; padding: 10px 16px; }
+        .inside::-webkit-scrollbar { display: none; }
+        .front { display: block; padding-top: 16px; }
+        .lead > .dek { font-size: 17px; }
+        .lead-grid { grid-template-columns: 1fr; }
+        .cols { column-count: 1; }
+        .body p { text-align: left; }
+        .rail { border-left: 0; padding-left: 0; border-top: 3px double var(--rule); padding-top: 18px; }
+        .news { display: block; }
+        .news > .story, .story.wide { padding: 18px 0; border-left: 0; border-top: 1px solid var(--hair); }
+        .story.wide h3 { font-size: 26px; }
+        .story.wide .body, .brief ul { column-count: 1; }
+        .story .body { text-align: left; }
+        .ads { grid-template-columns: 1fr 1fr; }
+        .ad.big, .ad:last-child { grid-column: span 2; }
+        .opinion p:last-child { text-align: left; }
+        .markets dl { grid-template-columns: 1fr 1fr; gap: 8px 0; }
+        .markets div:nth-child(odd) { border-left: 0; padding-left: 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .halftone canvas { transition: none; }
+      }
+    </style>
+
+    <script>
+      // Dateline: today's real date, in the reader's own timezone.
+      const t = document.getElementById('today')!;
+      const d = new Date();
+      t.textContent = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      t.setAttribute('datetime', d.toISOString().slice(0, 10));
+
+      // Halftone: redraw the portrait as dots of ink on a 45° screen.
+      const img = document.getElementById('portrait') as HTMLImageElement;
+      const canvas = document.getElementById('halftone') as HTMLCanvasElement;
+      function halftone() {
+        const size = 512;
+        const src = document.createElement('canvas');
+        src.width = src.height = size;
+        const sctx = src.getContext('2d', { willReadFrequently: true })!;
+        sctx.drawImage(img, 0, 0, size, size);
+        let data: Uint8ClampedArray;
+        try { data = sctx.getImageData(0, 0, size, size).data; } catch { return; }
+        const ctx = canvas.getContext('2d')!;
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        canvas.width = canvas.height = size * dpr;
+        ctx.scale(dpr, dpr);
+        ctx.fillStyle = '#f3eee2';
+        ctx.fillRect(0, 0, size, size);
+        ctx.fillStyle = '#17150f';
+        const step = 7;
+        const ang = Math.PI / 4;
+        const cos = Math.cos(ang), sin = Math.sin(ang);
+        const reach = size * 1.5;
+        for (let gy = -reach; gy < reach; gy += step) {
+          for (let gx = -reach; gx < reach; gx += step) {
+            const x = gx * cos - gy * sin + size / 2;
+            const y = gx * sin + gy * cos + size / 2;
+            if (x < -step || y < -step || x > size + step || y > size + step) continue;
+            const sx = Math.min(size - 1, Math.max(0, Math.round(x)));
+            const sy = Math.min(size - 1, Math.max(0, Math.round(y)));
+            const i = (sy * size + sx) * 4;
+            const lum = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) / 255;
+            const dark = Math.pow(1 - Math.min(1, lum * 1.08), 0.9);
+            const r = (step * 0.72) * Math.sqrt(dark);
+            if (r < 0.35) continue;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        canvas.parentElement!.classList.add('ready');
+      }
+      if (img.complete && img.naturalWidth) halftone(); else img.addEventListener('load', halftone);
+
+      // Crossword
+      const ACROSS = 'REPLICATE', DOWN = 'WHALEBREW';
+      const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.crossword input'));
+      const at = (r: number, c: number) => inputs.find((i) => +i.dataset.r! === r && +i.dataset.c! === c);
+      let dir: 'across' | 'down' = 'down';
+      const word = (w: 'across' | 'down') => w === 'across'
+        ? Array.from({ length: 9 }, (_, c) => at(3, c)!)
+        : Array.from({ length: 9 }, (_, r) => at(r, 3)!);
+      function highlight(el: HTMLInputElement) {
+        inputs.forEach((i) => i.parentElement!.classList.remove('hl'));
+        const r = +el.dataset.r!, c = +el.dataset.c!;
+        if (r === 3 && c !== 3) dir = 'across';
+        else if (c === 3 && r !== 3) dir = 'down';
+        word(dir).forEach((i) => i.parentElement!.classList.add('hl'));
+      }
+      function check() {
+        const a = word('across').map((i) => i.value.toUpperCase()).join('') === ACROSS;
+        const d = word('down').map((i) => i.value.toUpperCase()).join('') === DOWN;
+        word('across').forEach((i) => i.parentElement!.classList.toggle('done', a));
+        word('down').forEach((i) => { if (d) i.parentElement!.classList.add('done'); else if (!(a && i === at(3, 3))) i.parentElement!.classList.remove('done'); });
+        const msg = document.getElementById('solved')!;
+        msg.textContent = a && d ? 'Solved. Prize: the satisfaction. Runner-up prize: also the satisfaction.' : a ? 'Correct! Now go and run a model.' : d ? 'Correct! Mind the whale.' : '';
+      }
+      inputs.forEach((el) => {
+        el.addEventListener('focus', () => highlight(el));
+        el.addEventListener('click', () => {
+          if (+el.dataset.r! === 3 && +el.dataset.c! === 3) { dir = dir === 'across' ? 'down' : 'across'; word(dir); }
+          inputs.forEach((i) => i.parentElement!.classList.remove('hl'));
+          word(dir).forEach((i) => i.parentElement!.classList.add('hl'));
+        });
+        el.addEventListener('input', () => {
+          el.value = el.value.slice(-1).toUpperCase();
+          check();
+          if (!el.value) return;
+          const w = word(dir);
+          const k = w.indexOf(el);
+          if (k >= 0 && k < w.length - 1) w[k + 1].focus();
+        });
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !el.value) {
+            const w = word(dir); const k = w.indexOf(el);
+            if (k > 0) { e.preventDefault(); w[k - 1].focus(); w[k - 1].value = ''; check(); }
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
