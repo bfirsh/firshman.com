@@ -1,0 +1,451 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+
+const P = Object.fromEntries(projects.map((p) => [p.slug, p]));
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const host = (u: string) => u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+
+type Card = { id: string; title: string; blurb: string; url: string; next: string; extra?: { name: string; url: string; blurb: string } };
+const cards: Card[] = [
+  { id: 'home', title: name, blurb: `Working on ${now.name}, which lets you ${now.blurb}. This is my desk. Keep going.`, url: now.url, next: 'on the laptop, a terminal' },
+  { id: 'clig', title: P.clig.name, blurb: cap(P.clig.blurb) + '.', url: P.clig.url, next: 'in the cursor, a ship' },
+  { id: 'compose', title: P.compose.name, blurb: cap(P.compose.blurb) + '.', url: P.compose.url, next: 'in a porthole, a whale', extra: { name: P.machine.name, url: P.machine.url, blurb: P.machine.blurb } },
+  { id: 'whalebrew', title: P.whalebrew.name, blurb: cap(P.whalebrew.blurb) + '.', url: P.whalebrew.url, next: 'in its eye, a cartridge' },
+  { id: 'jsnes', title: P.jsnes.name, blurb: cap(P.jsnes.blurb) + '.', url: P.jsnes.url, next: 'on the label, the sky' },
+  { id: 'ukhas', title: P.ukhas.name, blurb: cap(P.ukhas.blurb) + '.', url: P.ukhas.url, next: 'on the payload, a paper' },
+  { id: 'arxiv-vanity', title: P['arxiv-vanity'].name, blurb: cap(P['arxiv-vanity'].blurb) + '.', url: P['arxiv-vanity'].url, next: 'in figure 1, a cog' },
+  { id: 'cog', title: P.cog.name, blurb: cap(P.cog.blurb) + '.', url: P.cog.url, next: 'in the hub, a guitar' },
+  { id: 'django', title: P.django.name, blurb: cap(P.django.blurb) + '. (Wrong Django, right guitar.)', url: P.django.url, next: 'in the sound hole, where we started' },
+];
+const pad2 = (n: number) => String(n).padStart(2, '0');
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman — Infinite zoom</title>
+    <meta name="description" content="One endless zoom through Ben Firshman's projects: a desk, a terminal, a container ship, a whale, a cartridge, a balloon, a paper, a cog, a guitar, and back to the desk." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <h1 class="sr">{name}: an infinite zoom through things he has made</h1>
+    <canvas id="zoom" role="img" aria-label="An illustrated, endlessly zooming picture. Each project hides inside the previous one."></canvas>
+
+    <header class="top">
+      <a href="/ideas" class="chip">← all ideas</a>
+      <span class="grow"></span>
+      <button type="button" class="chip js-only" id="pause" aria-pressed="false">Pause</button>
+      <button type="button" class="chip js-only" id="listbtn" aria-haspopup="dialog">List view</button>
+    </header>
+
+    <div class="meter js-only" aria-hidden="true">
+      <span class="ml">zoom</span>
+      <span class="mv">10<sup id="exp">0.0</sup>×</span>
+      <span class="ml" id="loop">loop 1</span>
+    </div>
+
+    <section class="hud js-only" aria-label="Current scene">
+      {cards.map((c, i) => (
+        <article class="card" data-id={c.id} hidden={i !== 0}>
+          <p class="kick"><span class="n">{pad2(i + 1)}/{pad2(cards.length)}</span> {c.next} <span aria-hidden="true">↘</span></p>
+          <h2>{c.title}</h2>
+          <p class="blurb">{c.blurb}{c.extra && <> Also <a href={c.extra.url}>{c.extra.name}</a>, to {c.extra.blurb}.</>}</p>
+          <a class="go" href={c.url}>{host(c.url)} <span aria-hidden="true">↗</span></a>
+        </article>
+      ))}
+      <p class="contact"><a href={`mailto:${email}`}>{email}</a>{socials.map((s) => <> · <a href={s.url}>{s.name}</a></>)}</p>
+      <div class="steps" id="steps" hidden>
+        <button type="button" class="chip" id="prev">← Back out</button>
+        <button type="button" class="chip" id="next">Zoom in →</button>
+      </div>
+    </section>
+
+    <p class="hint js-only" id="hint" aria-hidden="true">scroll, pinch or hold to zoom</p>
+
+    <dialog id="list" class="list" aria-labelledby="list-title">
+      <form method="dialog"><button class="close" aria-label="Close list view">Close ✕</button></form>
+      <div class="list-body">
+        <h2 id="list-title">{name}</h2>
+        <p>I’m working on <a href={now.url}>{now.name}</a>. Some other stuff I’ve done:</p>
+        <ul>
+          {projects.map((p) => <li><a href={p.url}>{p.name}</a>, {p.blurb}.</li>)}
+          <li>I also worked on {alsoWorkedOn.map((a, i) => <>{i > 0 && ', '}<a href={a.url}>{a.name}</a></>)}.</li>
+        </ul>
+        <p>Email me at <a href={`mailto:${email}`}>{email}</a>. I’m also on {socials.map((s, i) => <>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>)}.</p>
+      </div>
+    </dialog>
+
+    <noscript>
+      <div class="nojs">
+        <h2>{name}</h2>
+        <p>This page is an infinite zoom, which needs JavaScript. Here’s the plain version.</p>
+        <p>I’m working on <a href={now.url}>{now.name}</a>.</p>
+        <ul>
+          {projects.map((p) => <li><a href={p.url}>{p.name}</a>, {p.blurb}.</li>)}
+          {alsoWorkedOn.map((a) => <li><a href={a.url}>{a.name}</a></li>)}
+        </ul>
+        <p><a href={`mailto:${email}`}>{email}</a> · {socials.map((s, i) => <>{i > 0 && ' · '}<a href={s.url}>{s.name}</a></>)}</p>
+      </div>
+      <style>.js-only { display: none !important; }</style>
+    </noscript>
+
+    <style is:global>
+      :root {
+        color-scheme: light;
+        --ink: #1f1b2e;
+        --cream: #f6eedf;
+        --paper: #fffaf0;
+        --yellow: #f9c74f;
+        --red: #ef553b;
+        --sans: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: var(--cream); color: var(--ink); font-family: var(--sans); }
+      body { overscroll-behavior: none; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      #zoom { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: zoom-in; transition: opacity .22s ease; }
+      #zoom.held { cursor: progress; }
+      a { color: inherit; }
+
+      .chip {
+        font: 500 12px/1 var(--mono); color: var(--ink); background: var(--paper); text-decoration: none;
+        border: 2px solid var(--ink); border-radius: 999px; padding: 7px 11px; cursor: pointer;
+        box-shadow: 2px 2px 0 var(--ink); transition: transform .12s, box-shadow .12s, background .12s;
+      }
+      .chip:hover, .chip:focus-visible { background: var(--yellow); outline: none; transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+      .chip[aria-pressed='true'] { background: var(--yellow); }
+      .top { position: fixed; z-index: 3; top: 0; left: 0; right: 0; display: flex; gap: 8px; padding: max(14px, env(safe-area-inset-top)) 16px 0; pointer-events: none; }
+      .top > * { pointer-events: auto; }
+      .grow { flex: 1; }
+
+      .meter {
+        position: fixed; z-index: 2; right: 18px; bottom: 18px; display: grid; justify-items: end; gap: 2px;
+        background: var(--ink); color: var(--paper); border-radius: 10px; padding: 10px 14px 9px; font-family: var(--mono);
+      }
+      .ml { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .6; }
+      .mv { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+      .mv sup { font-size: 13px; color: var(--yellow); margin-left: 1px; display: inline-block; min-width: 4.4ch; text-align: left; }
+
+      .hud { position: fixed; z-index: 2; left: 18px; bottom: 18px; width: min(400px, calc(100vw - 36px)); }
+      .card {
+        background: var(--paper); border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 5px 5px 0 var(--ink);
+        padding: 14px 16px 16px; animation: pop .35s cubic-bezier(.2,.9,.3,1.3);
+      }
+      @keyframes pop { from { transform: translateY(8px) scale(.97); opacity: 0; } }
+      .kick { font: 500 11px/1.3 var(--mono); margin: 0 0 6px; color: #6b6378; }
+      .kick .n { color: var(--ink); background: var(--yellow); border-radius: 4px; padding: 1px 5px; margin-right: 4px; font-weight: 700; }
+      .card h2 { font-size: clamp(26px, 3.2vw, 38px); line-height: .98; letter-spacing: -.02em; font-weight: 800; margin: 0 0 8px; text-wrap: balance; }
+      .blurb { margin: 0 0 12px; font-size: 15px; line-height: 1.38; font-weight: 500; }
+      .blurb a { text-underline-offset: 2px; }
+      .go {
+        display: inline-flex; gap: 6px; align-items: center; font: 600 14px/1 var(--sans); text-decoration: none;
+        background: var(--ink); color: var(--paper); padding: 9px 13px; border-radius: 999px;
+      }
+      .go:hover, .go:focus-visible { background: var(--red); outline: none; }
+      .contact { display: inline-block; margin: 10px 0 0; padding: 3px 9px; font: 500 11.5px/1.5 var(--mono); background: var(--paper); border: 2px solid var(--ink); border-radius: 999px; }
+      .contact a { text-underline-offset: 2px; text-decoration-thickness: 1px; }
+      .contact a:hover { background: var(--yellow); }
+      .steps { display: flex; gap: 8px; margin-top: 10px; }
+      .steps[hidden] { display: none; }
+
+      .hint {
+        position: fixed; z-index: 2; left: 50%; top: 64px; transform: translateX(-50%); margin: 0;
+        font: 500 12px/1 var(--mono); background: var(--ink); color: var(--paper); padding: 8px 12px; border-radius: 999px;
+        transition: opacity .6s; pointer-events: none; white-space: nowrap;
+      }
+      .hint.gone { opacity: 0; }
+
+      .list { border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 6px 6px 0 var(--ink); background: var(--paper); color: var(--ink); width: min(620px, calc(100vw - 40px)); max-height: calc(100vh - 60px); padding: 0; }
+      .list::backdrop { background: rgba(31,27,46,.55); }
+      .list-body { padding: 4px 24px 24px; line-height: 1.45; font-weight: 500; }
+      .list h2 { font-size: 30px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 8px; }
+      .list ul { padding-left: 1.1em; }
+      .list li { margin: 4px 0; }
+      .close { float: right; margin: 14px 14px 0 0; font: 500 12px/1 var(--mono); background: none; border: 2px solid var(--ink); border-radius: 999px; padding: 6px 10px; cursor: pointer; color: var(--ink); }
+      .nojs { position: fixed; inset: 0; overflow: auto; padding: 24px; background: var(--cream); font-weight: 500; line-height: 1.5; }
+
+      @media (max-width: 640px) {
+        .hud { left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: auto; }
+        .card { padding: 12px 14px 14px; box-shadow: 4px 4px 0 var(--ink); }
+        .card h2 { font-size: 26px; }
+        .blurb { font-size: 14px; margin-bottom: 10px; }
+        .meter { top: 58px; bottom: auto; right: 12px; padding: 7px 10px 6px; }
+        .mv { font-size: 17px; }
+        .mv sup { font-size: 11px; }
+        .hint { top: auto; bottom: 236px; }
+        .top { padding: max(12px, env(safe-area-inset-top)) 12px 0; }
+        .contact { font-size: 11px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .card { animation: none; }
+        #zoom { cursor: default; }
+      }
+    </style>
+
+    <script>
+      import { SCENES, portalPath, type Portal } from '../../components/ideas/zoom/scenes';
+
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const canvas = document.getElementById('zoom') as HTMLCanvasElement;
+      const ctx = canvas.getContext('2d')!;
+      const n = SCENES.length;
+      let lens: number[] = [];
+      let starts: number[] = [];
+      let LOOP = 1;
+
+      // ---------------------------------------------------------------- state
+      let L = 0, Lt = 0; // log-zoom, and where it's heading
+      let paused = false;
+      let lastInput = -1e9;
+      let time = 0;
+      let W = 0, H = 0, dpr = 1;
+
+      function locate(l: number) {
+        const loops = Math.floor(l / LOOP);
+        let r = l - loops * LOOP, k = 0;
+        while (k < n - 1 && r >= lens[k]) { r -= lens[k]; k++; }
+        return { k, u: Math.min(1, r / lens[k]), loops };
+      }
+      const ease = (u: number) => u * u * (3 - 2 * u);
+
+      const RIM = 3; // portals have an outlined rim; keep it just off screen on arrival
+      // is the whole screen inside this portal, given the current transform?
+      function covers(p: Portal) {
+        const m = ctx.getTransform().inverse();
+        for (const [x, y] of [[0, 0], [W, 0], [0, H], [W, H]]) {
+          const lx = m.a * x + m.c * y + m.e - p.x, ly = m.b * x + m.d * y + m.f - p.y;
+          if (p.circle) { if (Math.hypot(lx, ly) > p.w / 2 - RIM) return false; }
+          else if (Math.abs(lx) > p.w / 2 - p.r * 0.3 - RIM || Math.abs(ly) > p.h / 2 - p.r * 0.3 - RIM) return false;
+        }
+        return true;
+      }
+      function onScreen(p: Portal) {
+        const m = ctx.getTransform();
+        const k = Math.hypot(m.a, m.b);
+        const sx = m.a * p.x + m.c * p.y + m.e, sy = m.b * p.x + m.d * p.y + m.f;
+        const hw = (p.w / 2) * k, hh = (p.h / 2) * k;
+        return { visible: sx + hw > 0 && sx - hw < W && sy + hh > 0 && sy - hh < H, px: Math.min(hw, hh) * 2 };
+      }
+      function chain(i: number, depth: number, t: number) {
+        const sc = SCENES[i % n];
+        const p = sc.portal;
+        const inside = covers(p);
+        if (!inside) sc.draw(ctx, t);
+        const o = onScreen(p);
+        if (o.visible && o.px > 0.6 && depth < 8) {
+          ctx.save();
+          ctx.clip(portalPath(p));
+          ctx.translate(p.x, p.y);
+          ctx.scale(p.s, p.s);
+          chain(i + 1, depth + 1, t);
+          ctx.restore();
+        }
+        sc.over?.(ctx, t, o.px / Math.min(W, H));
+      }
+
+      function render(t: number) {
+        const { k, u } = locate(L);
+        const p = SCENES[k].portal;
+        const Z = Math.exp(u * lens[k]);
+        const e = ease(u);
+        const cx = p.x * (1 - (1 - e) / Z), cy = p.y * (1 - (1 - e) / Z);
+        const { unit, ox, oy } = frameOf();
+        const a = Z * unit;
+        ctx.setTransform(a, 0, 0, a, ox - cx * a, oy - cy * a);
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        // start one level up, in case the parent's frame is still on screen
+        const parent = (k - 1 + n) % n;
+        const pp = SCENES[parent].portal;
+        ctx.save();
+        ctx.scale(1 / pp.s, 1 / pp.s);
+        ctx.translate(-pp.x, -pp.y);
+        chain(parent, 0, t);
+        ctx.restore();
+        return { k, u, Z };
+      }
+
+      // ---------------------------------------------------------------- HUD
+      const cards = [...document.querySelectorAll<HTMLElement>('.card')];
+      const expEl = document.getElementById('exp')!;
+      const loopEl = document.getElementById('loop')!;
+      const hint = document.getElementById('hint')!;
+      let shown = 0;
+      function hud(k: number, u: number, Z: number) {
+        const p = SCENES[k].portal;
+        const frac = (Math.min(p.w, p.h) * Z) / 1000;
+        const cur = frac > 0.55 ? (k + 1) % n : k;
+        if (cur !== shown) {
+          cards[shown].hidden = true;
+          cards[cur].hidden = false;
+          shown = cur;
+        }
+        expEl.textContent = (L / Math.LN10).toFixed(1);
+        loopEl.textContent = `loop ${Math.floor((L + 1e-6) / LOOP) + 1}`;
+      }
+
+      // ---------------------------------------------------------------- size
+      const frameOf = () => ({ unit: Math.min(W, H) / 1000, ox: W / 2, oy: H * (W < H ? 0.42 : 0.47) });
+      // Size every portal so that, the moment you arrive in a scene, it already fills this screen.
+      function fitPortals() {
+        const { unit, ox, oy } = frameOf();
+        const hx = Math.max(ox, W - ox) / unit, hy = Math.max(oy, H - oy) / unit;
+        for (const sc of SCENES) {
+          const p = sc.portal;
+          p.s = 0.985 * (p.circle ? (p.w / 2 - RIM) / Math.hypot(hx, hy) : Math.min((p.w - p.r * 0.6 - 2 * RIM) / (2 * hx), (p.h - p.r * 0.6 - 2 * RIM) / (2 * hy)));
+        }
+        lens = SCENES.map((s) => -Math.log(s.portal.s));
+        starts = [];
+        lens.reduce((acc, l, i) => ((starts[i] = acc), acc + l), 0);
+        LOOP = lens.reduce((a, b) => a + b, 0);
+      }
+      function resize() {
+        const before = W ? locate(L) : null;
+        dpr = Math.min(2, window.devicePixelRatio || 1);
+        W = Math.round(innerWidth * dpr); H = Math.round(innerHeight * dpr);
+        canvas.width = W; canvas.height = H;
+        fitPortals();
+        // keep our place in the journey
+        if (before) { L = Lt = before.loops * LOOP + starts[before.k] + before.u * lens[before.k]; slide = before.loops * n + before.k; }
+        if (reduce) draw();
+      }
+      addEventListener('resize', resize);
+
+      // ---------------------------------------------------------------- input
+      function touched() {
+        lastInput = time;
+        hint.classList.add('gone');
+      }
+      function nudge(d: number) {
+        if (reduce) return step(Math.sign(d));
+        Lt += d;
+        touched();
+      }
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const unit = e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? innerHeight : 1;
+        const d = Math.max(-120, Math.min(120, e.deltaY * unit));
+        if (reduce) { wheelStep(d); return; }
+        // scrolling down goes deeper; ctrl+wheel is a trackpad pinch, where spreading goes deeper
+        nudge(e.ctrlKey ? -d * 0.012 : d * 0.0035);
+      }, { passive: false });
+
+      const pts = new Map<number, { x: number; y: number; x0: number; y0: number; t0: number }>();
+      let pinch = 0;
+      canvas.addEventListener('pointerdown', (e) => {
+        canvas.setPointerCapture(e.pointerId);
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: time });
+        if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); }
+        touched();
+      });
+      canvas.addEventListener('pointermove', (e) => {
+        const q = pts.get(e.pointerId);
+        if (!q) return;
+        const dy = e.clientY - q.y;
+        q.x = e.clientX; q.y = e.clientY;
+        if (pts.size === 2) {
+          const [a, b] = [...pts.values()];
+          const d = Math.hypot(a.x - b.x, a.y - b.y);
+          if (pinch > 0 && d > 0) nudge(Math.log(d / pinch));
+          pinch = d;
+        } else if (pts.size === 1 && Math.hypot(q.x - q.x0, q.y - q.y0) > 8) {
+          nudge(-dy * 0.008); // drag up to go in
+        }
+      });
+      const up = (e: PointerEvent) => {
+        const q = pts.get(e.pointerId);
+        pts.delete(e.pointerId);
+        if (pts.size < 2) pinch = 0;
+        if (reduce && q && Math.hypot(q.x - q.x0, q.y - q.y0) > 40) step(q.y < q.y0 ? 1 : -1);
+        else if (reduce && q && time - q.t0 < 0.4) step(1);
+        canvas.classList.remove('held');
+      };
+      canvas.addEventListener('pointerup', up);
+      canvas.addEventListener('pointercancel', up);
+      addEventListener('keydown', (e) => {
+        if (dlg.open || e.metaKey || e.ctrlKey || e.altKey) return;
+        const inMap: Record<string, number> = { ArrowUp: 1, ArrowRight: 1, PageDown: 1, '+': 1, '=': 1, ArrowDown: -1, ArrowLeft: -1, PageUp: -1, '-': -1 };
+        if (e.key in inMap) { e.preventDefault(); reduce ? step(inMap[e.key]) : nudge(inMap[e.key] * 0.7); }
+        if (e.key === ' ' && !(e.target as HTMLElement).closest('a, button')) { e.preventDefault(); reduce ? step(1) : nudge(0.7); }
+      });
+
+      // ---------------------------------------------------------------- buttons
+      const dlg = document.getElementById('list') as HTMLDialogElement;
+      document.getElementById('listbtn')!.addEventListener('click', () => dlg.showModal());
+      dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+      const pauseBtn = document.getElementById('pause') as HTMLButtonElement;
+      pauseBtn.addEventListener('click', () => {
+        paused = !paused;
+        pauseBtn.setAttribute('aria-pressed', String(paused));
+        pauseBtn.textContent = paused ? 'Play' : 'Pause';
+      });
+
+      // ---------------------------------------------------------------- reduced motion: a slideshow
+      let slide = 0, wheelAcc = 0, wheelAt = 0;
+      function draw() {
+        const r = render(0);
+        hud(r.k, r.u, r.Z);
+      }
+      function step(d: number) {
+        slide += d;
+        canvas.style.opacity = '0';
+        setTimeout(() => {
+          L = Lt = Math.floor(slide / n) * LOOP + starts[((slide % n) + n) % n];
+          draw();
+          canvas.style.opacity = '1';
+        }, 200);
+        touched();
+      }
+      function wheelStep(d: number) {
+        const nowT = performance.now();
+        if (nowT - wheelAt < 700) return;
+        wheelAcc += d;
+        if (Math.abs(wheelAcc) > 40) { step(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; wheelAt = nowT; }
+      }
+      if (reduce) {
+        document.getElementById('steps')!.hidden = false;
+        document.getElementById('prev')!.addEventListener('click', () => step(-1));
+        document.getElementById('next')!.addEventListener('click', () => step(1));
+        pauseBtn.hidden = true;
+        hint.textContent = 'tap, scroll or use the arrows to go deeper';
+      }
+
+      // ---------------------------------------------------------------- loop
+      const fast = new URLSearchParams(location.search).get('at');
+      resize();
+      // ?at=3 jumps to scene 3 (for screenshots); otherwise start at the desk, already drifting in
+      if (fast) { const f = parseFloat(fast); L = Lt = starts[Math.floor(f) % n] + (f % 1) * lens[Math.floor(f) % n]; }
+      lastInput = fast ? 1e9 : -1.8;
+      let last = performance.now(), raf = 0;
+      function frame(nowT: number) {
+        const dt = Math.min(0.05, (nowT - last) / 1000);
+        last = nowT;
+        time += dt;
+        // hold to zoom
+        if (pts.size === 1) {
+          const q = [...pts.values()][0];
+          if (Math.hypot(q.x - q.x0, q.y - q.y0) < 8 && time - q.t0 > 0.18) { Lt += dt * 1.1; touched(); canvas.classList.add('held'); }
+        }
+        // autoplay, after a few quiet seconds
+        if (!paused && !fast && time - lastInput > 2.5) Lt += dt * 0.26 * Math.min(1, (time - lastInput - 2.5) / 1.5);
+        L += (Lt - L) * (1 - Math.exp(-7 * dt));
+        const r = render(time);
+        hud(r.k, r.u, r.Z);
+        raf = requestAnimationFrame(frame);
+      }
+      function start() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }
+      function stop() { cancelAnimationFrame(raf); raf = 0; }
+      if (reduce) {
+        draw();
+        document.fonts?.ready.then(draw);
+      } else {
+        start();
+        document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+      }
+      setTimeout(() => hint.classList.add('gone'), 7000);
+    </script>
+  </body>
+</html>

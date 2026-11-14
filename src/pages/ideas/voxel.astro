@@ -1,0 +1,660 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+
+const P = Object.fromEntries(projects.map((p) => [p.slug, p]));
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const host = (u: string) => u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+
+type Scene = { id: string; note: string; title: string; blurb?: string; url?: string; label?: string };
+const scenes: Scene[] = [
+  { id: 'compose', note: 'four containers, composed', title: P.compose.name, blurb: cap(P.compose.blurb), url: P.compose.url },
+  { id: 'whalebrew', note: 'a whale, obviously', title: P.whalebrew.name, blurb: cap(P.whalebrew.blurb), url: P.whalebrew.url },
+  { id: 'cog', note: 'a cog. You saw that coming', title: P.cog.name, blurb: cap(P.cog.blurb), url: P.cog.url },
+  { id: 'jsnes', note: 'player one, press start', title: P.jsnes.name, blurb: cap(P.jsnes.blurb), url: P.jsnes.url },
+  { id: 'ukhas', note: 'not to scale. Neither is the sky', title: P.ukhas.name, blurb: cap(P.ukhas.blurb), url: P.ukhas.url },
+  { id: 'clig', note: 'the cursor is waiting for you', title: P.clig.name, blurb: cap(P.clig.blurb), url: P.clig.url },
+  { id: 'arxiv-vanity', note: 'some light reading', title: P['arxiv-vanity'].name, blurb: cap(P['arxiv-vanity'].blurb), url: P['arxiv-vanity'].url },
+  { id: 'django', note: 'wrong Django, right guitar', title: P.django.name, blurb: cap(P.django.blurb), url: P.django.url },
+];
+const total = scenes.length + 2;
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const railItems = [{ id: 'face', label: 'Ben' }, ...scenes.map((s) => ({ id: s.id, label: s.id === 'clig' ? 'CLIG' : s.id === 'ukhas' ? 'UKHAS' : s.title })), { id: 'contact', label: 'Say hi' }];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — Voxel Ben</title>
+    <meta name="description" content="Ben Firshman, rendered as a few thousand cubes. Scroll and they explode and rebuild into each of his projects: Docker Compose, Whalebrew, Cog, JSNES and more." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <canvas id="gl" aria-hidden="true"></canvas>
+
+    <header class="top">
+      <a href="/ideas" class="back">← all ideas</a>
+      <span class="count" id="count" aria-hidden="true"></span>
+      <button type="button" class="listbtn" id="listbtn" aria-haspopup="dialog">List view</button>
+    </header>
+
+    <nav class="rail" aria-label="Shapes">
+      <ol>
+        {railItems.map((r, i) => (
+          <li><a href={`#s-${r.id}`} data-i={i} aria-current={i === 0 ? 'step' : undefined}><span class="tick"></span><span class="lab">{r.label}</span></a></li>
+        ))}
+      </ol>
+    </nav>
+
+    <main id="story">
+      <section class="scene" id="s-face" data-shape="face">
+        <div class="cap">
+          <p class="note"><span class="fig">fig. 01</span> the author, in <span id="nface">a few thousand</span> cubes</p>
+          <h1>{name}</h1>
+          <p class="blurb">I’m working on <a href={now.url}>{now.name}</a>, which lets you {now.blurb}. Scroll down and I’ll rebuild myself into some other things I’ve made.</p>
+          <p class="hint" aria-hidden="true"><span class="arrow">↓</span> scroll <span class="sep">·</span> <span class="tap">click</span> to shake me</p>
+        </div>
+      </section>
+
+      {scenes.map((s, i) => (
+        <section class="scene" id={`s-${s.id}`} data-shape={s.id}>
+          <div class="cap">
+            <p class="note"><span class="fig">fig. {pad2(i + 2)}</span> {s.note}</p>
+            <h2><a href={s.url}>{s.title}</a></h2>
+            <p class="blurb">{s.blurb}.{s.id === 'compose' && <> Also <a href={P.machine.url}>{P.machine.name}</a>, to {P.machine.blurb}.</>}</p>
+            <a class="go" href={s.url}>{host(s.url!)} <span aria-hidden="true">↗</span></a>
+          </div>
+        </section>
+      ))}
+
+      <section class="scene" id="s-contact" data-shape="contact">
+        <div class="cap">
+          <p class="note"><span class="fig">fig. {pad2(total)}</span> two letters and a bang</p>
+          <h2>Say hi</h2>
+          <p class="blurb"><a class="mail" href={`mailto:${email}`}>{email}</a></p>
+          <p class="socials">
+            {socials.map((s) => <a href={s.url}>{s.name} <span class="h">{s.handle}</span></a>)}
+          </p>
+          <p class="also">Also worked on {alsoWorkedOn.map((a, i) => <>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>)}.</p>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="list" class="list" aria-labelledby="list-title">
+      <div class="list-in">
+        <form method="dialog"><button class="close" aria-label="Close list view">Close ✕</button></form>
+        <h2 id="list-title">{name}</h2>
+        <p>I’m working on <a href={now.url}>{now.name}</a>. Some other stuff I’ve done:</p>
+        <ul>
+          {projects.map((p) => <li><a href={p.url}>{p.name}</a>, {p.blurb}.</li>)}
+          <li>I also worked on {alsoWorkedOn.map((a, i) => <>{i > 0 && ', '}<a href={a.url}>{a.name}</a></>)}.</li>
+        </ul>
+        <p>Email me at <a href={`mailto:${email}`}>{email}</a>. I’m also on {socials.map((s, i) => <>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>)}.</p>
+      </div>
+    </dialog>
+
+    <style is:global>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0b0c;
+        --fg: #f4f2ee;
+        --dim: #8d8b86;
+        --acc: #ffd400;
+        --sans: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      html { scroll-snap-type: y mandatory; background: var(--bg); }
+      html, body { margin: 0; overflow-x: hidden; }
+      body { background: var(--bg); color: var(--fg); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+      #gl { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100lvh; display: block; z-index: 0; touch-action: pan-y; }
+      a { color: inherit; }
+      ::selection { background: var(--acc); color: #000; }
+
+      .top {
+        position: fixed; z-index: 5; top: 0; left: 0; right: 0;
+        display: flex; align-items: center; gap: 1rem; padding: 18px 22px;
+        font: 500 12px/1 var(--mono); letter-spacing: .02em; pointer-events: none;
+      }
+      .top > * { pointer-events: auto; }
+      .back { text-decoration: none; color: var(--fg); opacity: .75; }
+      .back:hover, .back:focus-visible { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
+      .count { margin-left: auto; color: var(--dim); pointer-events: none; }
+      .listbtn {
+        font: inherit; color: var(--fg); background: transparent; border: 1px solid #3a3936;
+        border-radius: 999px; padding: 7px 12px; cursor: pointer;
+      }
+      .listbtn:hover, .listbtn:focus-visible { border-color: var(--fg); outline: none; }
+
+      .rail { position: fixed; z-index: 4; right: 18px; top: 50%; transform: translateY(-50%); }
+      .rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+      .rail a { position: relative; display: flex; align-items: center; justify-content: flex-end; width: 40px; height: 18px; text-decoration: none; color: var(--dim); font: 500 11px/1 var(--mono); }
+      .rail .lab { position: absolute; right: 46px; top: 50%; margin-top: -6px; }
+      .rail .tick { width: 14px; height: 2px; background: #4a4844; transition: width .35s cubic-bezier(.2,.8,.2,1), background .35s; flex: none; }
+      .rail .lab { opacity: 0; translate: 6px 0; transition: opacity .25s, transform .25s; white-space: nowrap; }
+      .rail a:hover .lab, .rail a:focus-visible .lab, .rail a[aria-current] .lab { opacity: 1; translate: 0 0; }
+      .rail a[aria-current] { color: var(--fg); }
+      .rail a[aria-current] .tick { width: 34px; background: var(--acc); }
+      .rail a:hover .tick { background: var(--fg); }
+      .rail a:focus-visible { outline: none; }
+      .rail a:focus-visible .tick { background: var(--fg); width: 34px; }
+
+      #story { position: relative; z-index: 2; }
+      .scene { height: 100vh; height: 100svh; scroll-snap-align: start; scroll-snap-stop: always; position: relative; }
+      .cap {
+        position: absolute; left: clamp(20px, 4vw, 64px); bottom: clamp(28px, 7vh, 80px);
+        width: min(46vw, 640px);
+      }
+      .note { font: 500 12px/1.4 var(--mono); color: var(--dim); margin: 0 0 14px; letter-spacing: .01em; }
+      .fig { color: var(--acc); margin-right: .6em; }
+      .cap h1, .cap h2 {
+        font-weight: 900; font-size: clamp(2.6rem, 6.2vw, 7rem); line-height: .88; letter-spacing: -.045em;
+        margin: 0 0 18px; text-wrap: balance;
+      }
+      .cap h2 a { text-decoration: none; }
+      .cap h2 a:hover, .cap h2 a:focus-visible { text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .08em; outline: none; }
+      .blurb { font-size: clamp(1.05rem, 1.35vw, 1.3rem); font-weight: 500; line-height: 1.35; margin: 0 0 14px; max-width: 34ch; color: #d9d6cf; }
+      .blurb a, .also a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
+      .blurb a:hover, .also a:hover { color: var(--acc); }
+      .go {
+        display: inline-flex; gap: .5em; align-items: center; font: 600 15px/1 var(--sans);
+        color: #000; background: var(--fg); padding: 11px 16px; border-radius: 999px; text-decoration: none;
+        transition: background .2s, transform .2s;
+      }
+      .go:hover, .go:focus-visible { background: var(--acc); transform: translateY(-2px); outline: none; }
+      .hint { font: 500 12px/1 var(--mono); color: var(--dim); margin: 22px 0 0; }
+      .hint .arrow { display: inline-block; color: var(--acc); animation: nudge 1.6s ease-in-out infinite; }
+      .hint .sep { margin: 0 .4em; }
+      @keyframes nudge { 50% { transform: translateY(4px); } }
+      .mail { font-size: clamp(1.3rem, 2.4vw, 2rem); font-weight: 800; letter-spacing: -.02em; text-decoration-thickness: 2px !important; }
+      .socials { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+      .socials a { font: 600 14px/1 var(--sans); text-decoration: none; border: 1px solid #3a3936; border-radius: 999px; padding: 9px 13px; }
+      .socials a:hover, .socials a:focus-visible { border-color: var(--acc); color: var(--acc); outline: none; }
+      .socials .h { color: var(--dim); font-weight: 500; margin-left: .25em; }
+      .also { font-size: 13px; line-height: 1.5; color: var(--dim); margin: 0; max-width: 46ch; }
+
+      /* captions slide in when their shape is built */
+      .js .cap > * { opacity: 0; transform: translateY(18px); transition: opacity .5s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+      .js .scene.on .cap > * { opacity: 1; transform: none; }
+      .js .scene.on .cap > :nth-child(2) { transition-delay: .06s; }
+      .js .scene.on .cap > :nth-child(3) { transition-delay: .12s; }
+      .js .scene.on .cap > :nth-child(4) { transition-delay: .18s; }
+      .js .scene.on .cap > :nth-child(5) { transition-delay: .24s; }
+
+      .list { border: 0; padding: 0; background: var(--fg); color: #000; width: min(680px, calc(100vw - 32px)); max-height: calc(100vh - 48px); border-radius: 4px; }
+      .list::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
+      .list-in { padding: 28px 30px 30px; font-weight: 600; line-height: 1.45; }
+      .list h2 { font-size: 2rem; font-weight: 900; letter-spacing: -.03em; margin: 0 0 .6rem; }
+      .list ul { padding-left: 1.2em; }
+      .list li { margin: .25em 0; }
+      .list a { color: #000; text-underline-offset: 3px; }
+      .close { float: right; font: 500 12px/1 var(--mono); background: none; border: 1px solid #000; border-radius: 999px; padding: 7px 11px; cursor: pointer; color: #000; }
+
+      @media (max-aspect-ratio: 1/1), (max-width: 760px) {
+        .cap { left: 20px; right: 20px; width: auto; bottom: max(22px, 4svh); }
+        .cap h1, .cap h2 { font-size: clamp(2.3rem, 11.5vw, 5rem); margin-bottom: 12px; }
+        .blurb { font-size: 1rem; max-width: none; }
+        .note { margin-bottom: 10px; }
+        .rail { right: 10px; top: 46%; }
+        .rail .lab { display: none; }
+        .rail a { width: 22px; }
+        .rail .tick { width: 8px; }
+        .rail a[aria-current] .tick { width: 20px; }
+        .rail a { height: 14px; }
+        .top { padding: 14px 16px; }
+        .go { padding: 10px 14px; font-size: 14px; }
+      }
+      @media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+        .cap h1, .cap h2 { font-size: clamp(2rem, 5vw, 4rem); }
+        .hint { display: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        .js .cap > * { transform: none; transition: opacity .3s ease; }
+        .hint .arrow { animation: none; }
+      }
+    </style>
+
+    <script>
+      import * as THREE from 'three';
+      import { SHAPES, voxelize, CURSOR, type Voxels } from '../../components/ideas/voxel/shapes';
+
+      document.documentElement.classList.add('js');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const coarse = matchMedia('(pointer: coarse)').matches;
+      if (coarse) document.querySelectorAll('.hint .tap').forEach((el) => (el.textContent = 'tap'));
+
+      // ---------------------------------------------------------------- list view
+      const dlg = document.getElementById('list') as HTMLDialogElement;
+      document.getElementById('listbtn')!.addEventListener('click', () => dlg.showModal());
+      dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+
+      // ---------------------------------------------------------------- scenes
+      const sections = [...document.querySelectorAll<HTMLElement>('.scene')];
+      const railLinks = [...document.querySelectorAll<HTMLAnchorElement>('.rail a')];
+      const ids = sections.map((s) => s.dataset.shape!);
+
+      // ---------------------------------------------------------------- face from the photo
+      function faceShape(img: HTMLImageElement): Voxels & { eye: Uint8Array } {
+        const G = 64;
+        const cv = document.createElement('canvas');
+        cv.width = cv.height = G;
+        const cx = cv.getContext('2d', { willReadFrequently: true })!;
+        cx.imageSmoothingQuality = 'high';
+        // two-step downscale for a better average
+        const mid = document.createElement('canvas');
+        mid.width = mid.height = 256;
+        mid.getContext('2d')!.drawImage(img, 0, 0, 256, 256);
+        cx.drawImage(mid, 0, 0, G, G);
+        const px = cx.getImageData(0, 0, G, G).data;
+        const isBg = (i: number) => { const r = px[i * 4], g = px[i * 4 + 1], b = px[i * 4 + 2]; return b > r + 55 && b > g + 28; };
+        // flood-fill the blue backdrop from the edges, so the blue eyes survive
+        const bg = new Uint8Array(G * G);
+        const stack: number[] = [];
+        for (let k = 0; k < G; k++) stack.push(k, (G - 1) * G + k, k * G, k * G + G - 1);
+        while (stack.length) {
+          const i = stack.pop()!;
+          if (bg[i] || !isBg(i)) continue;
+          bg[i] = 1;
+          const x = i % G, y = (i / G) | 0;
+          if (x > 0) stack.push(i - 1);
+          if (x < G - 1) stack.push(i + 1);
+          if (y > 0) stack.push(i - G);
+          if (y < G - 1) stack.push(i + G);
+        }
+        // peel off the anti-aliased blue fringe around the hair
+        for (let pass = 0; pass < 2; pass++) {
+          const peel: number[] = [];
+          for (let i = 0; i < G * G; i++) {
+            if (bg[i]) continue;
+            const x = i % G, y = (i / G) | 0;
+            const nearBg = (x > 0 && bg[i - 1]) || (x < G - 1 && bg[i + 1]) || (y > 0 && bg[i - G]) || (y < G - 1 && bg[i + G]);
+            const r = px[i * 4], g = px[i * 4 + 1], b = px[i * 4 + 2];
+            if (nearBg && b > r + 12 && y < 52) peel.push(i);
+          }
+          peel.forEach((i) => (bg[i] = 1));
+        }
+        const lumOf = (k: number) => (0.299 * px[k * 4] + 0.587 * px[k * 4 + 1] + 0.114 * px[k * 4 + 2]) / 255;
+        const depth = new Int16Array(G * G).fill(-999);
+        const col = new Uint32Array(G * G);
+        for (let j = 0; j < G; j++)
+          for (let i = 0; i < G; i++) {
+            const k = j * G + i;
+            const shoulders = j >= 53 && Math.abs(i - 31.5) <= 9 + (j - 53) * 2.6;
+            if (bg[k] && !shoulders) continue;
+            let r = px[k * 4], g = px[k * 4 + 1], b = px[k * 4 + 2];
+            // luminance, smoothed so the relief reads as a surface rather than noise
+            let lum = 0, wsum = 0;
+            for (let dj = -1; dj <= 1; dj++)
+              for (let di = -1; di <= 1; di++) {
+                const ii = i + di, jj = j + dj;
+                if (ii < 0 || jj < 0 || ii >= G || jj >= G || bg[jj * G + ii]) continue;
+                const w = di || dj ? 1 : 2;
+                lum += lumOf(jj * G + ii) * w; wsum += w;
+              }
+            lum = wsum ? lum / wsum : lumOf(k);
+            // a little more pop
+            const m = (r + g + b) / 3;
+            r = Math.max(0, Math.min(255, m + (r - m) * 1.2)); g = Math.max(0, Math.min(255, m + (g - m) * 1.2)); b = Math.max(0, Math.min(255, m + (b - m) * 1.2));
+            if (bg[k]) { r = 58; g = 74; b = 112; } // the shirt, borrowed from the backdrop
+            col[k] = ((r << 16) | (g << 8) | b) || 1;
+            const x = i - 31.5, y = 31.5 - j;
+            const nx = x / 24, ny = (y - 5) / 29;
+            const dome = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+            const nose = 3.2 * Math.exp(-((x * x) / 7 + ((y + 6) ** 2) / 16));
+            const lips = 1.2 * Math.exp(-((x * x) / 20 + ((y + 12) ** 2) / 3));
+            const glasses = j >= 27 && j <= 36 && Math.abs(x) < 17 && lumOf(k) < 0.3 ? 1.6 : 0;
+            depth[k] = shoulders && j > 55 ? Math.round(1 + dome * 3 + lum * 1.5) : Math.round(dome * 10 + lum * 2.4 + nose + lips + glasses);
+          }
+        const low = new Int16Array(G * G);
+        for (let j = 0; j < G; j++)
+          for (let i = 0; i < G; i++) {
+            const k = j * G + i;
+            if (depth[k] === -999) continue;
+            let lo = depth[k];
+            for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+              const ii = i + di, jj = j + dj;
+              const d = ii < 0 || jj < 0 || ii >= G || jj >= G || depth[jj * G + ii] === -999 ? depth[k] - 4 : depth[jj * G + ii] + 1;
+              lo = Math.min(lo, d);
+            }
+            low[k] = lo;
+          }
+        const v = voxelize({
+          id: 'face', b: [-32, 31, -32, 31, -8, 18],
+          f: (x, y, z) => {
+            const i = x + 32, j = 31 - y, k = j * G + i;
+            return depth[k] !== -999 && z <= depth[k] && z >= low[k] ? col[k] : 0;
+          },
+        });
+        // eye pixels, for blinking
+        const eye = new Uint8Array(v.n);
+        for (let n = 0; n < v.n; n++) {
+          const i = v.x[n] + 32, j = 31 - v.y[n];
+          for (const ex of [25.6, 38.2]) if (Math.abs(i - ex) <= 3 && Math.abs(j - 32) <= 1.6 && (col[j * G + i] & 0xff) > 60) eye[n] = j >= 33 ? 2 : 1;
+        }
+        return Object.assign(v, { eye });
+      }
+
+      // ---------------------------------------------------------------- three
+      const canvas = document.getElementById('gl') as HTMLCanvasElement;
+      // without WebGL (or the photo), fall back to the plain captions
+      const fallback = () => { document.documentElement.classList.remove('js'); canvas.hidden = true; };
+      let renderer: THREE.WebGLRenderer;
+      try {
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+      } catch {
+        fallback();
+        throw new Error('WebGL unavailable');
+      }
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.setClearColor(0x0b0b0c, 1);
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x0b0b0c, 260, 520);
+      const camera = new THREE.PerspectiveCamera(30, 1, 1, 1200);
+      scene.add(new THREE.HemisphereLight(0xfff6e8, 0x20222e, 1.35));
+      const key = new THREE.DirectionalLight(0xffffff, 2.3);
+      key.position.set(-50, 70, 90);
+      scene.add(key);
+      const rim = new THREE.DirectionalLight(0x8fb0ff, 1.1);
+      rim.position.set(70, -10, -60);
+      scene.add(rim);
+      const fill = new THREE.DirectionalLight(0xffe2c4, 0.45);
+      fill.position.set(60, -40, 80);
+      scene.add(fill);
+
+      const img = new Image();
+      img.onload = () => main(img);
+      img.onerror = fallback;
+      img.src = '/profile.png';
+
+      function main(img: HTMLImageElement) {
+      const face = faceShape(img);
+      const shapeVox: Record<string, Voxels> = { face };
+      for (const id of ids) if (id !== 'face') shapeVox[id] = voxelize(SHAPES[id]);
+      const N = Math.max(...Object.values(shapeVox).map((v) => v.n));
+      const nface = document.getElementById('nface');
+      if (nface) nface.textContent = N.toLocaleString('en-GB');
+
+      // per shape: target positions/colours for every voxel slot, ordered in reading order so
+      // the top-left of one shape flies to the top-left of the next
+      type Target = { p: Float32Array; c: Float32Array; tag: Uint8Array; yN: Float32Array; size: number };
+      const tmpC = new THREE.Color();
+      function targets(v: Voxels, tagOf?: (n: number) => number): Target {
+        const order = Array.from({ length: v.n }, (_, i) => i);
+        let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9, mnz = 1e9, mxz = -1e9;
+        for (let i = 0; i < v.n; i++) {
+          mnx = Math.min(mnx, v.x[i]); mxx = Math.max(mxx, v.x[i]);
+          mny = Math.min(mny, v.y[i]); mxy = Math.max(mxy, v.y[i]);
+          mnz = Math.min(mnz, v.z[i]); mxz = Math.max(mxz, v.z[i]);
+        }
+        const ox = (mnx + mxx) / 2, oy = (mny + mxy) / 2, oz = (mnz + mxz) / 2;
+        order.sort((a, b) => (v.y[b] - v.y[a]) * 4096 + (v.x[a] - v.x[b]) * 32 + (v.z[b] - v.z[a]));
+        const p = new Float32Array(N * 3), c = new Float32Array(N * 3), tag = new Uint8Array(N), yN = new Float32Array(N);
+        for (let s = 0; s < N; s++) {
+          const n = order[Math.floor((s * v.n) / N)];
+          p[s * 3] = v.x[n] - ox; p[s * 3 + 1] = v.y[n] - oy; p[s * 3 + 2] = v.z[n] - oz;
+          tmpC.setHex(v.c[n]).multiplyScalar(v.ao[n]);
+          c[s * 3] = tmpC.r; c[s * 3 + 1] = tmpC.g; c[s * 3 + 2] = tmpC.b;
+          tag[s] = tagOf ? tagOf(n) : v.c[n] === CURSOR ? 3 : 0;
+          yN[s] = (v.y[n] - mny) / Math.max(1, mxy - mny);
+        }
+        return { p, c, tag, yN, size: Math.max(mxx - mnx, mxy - mny) + 1 };
+      }
+      const T: Target[] = ids.map((id) => (id === 'face' ? targets(face, (n) => face.eye[n]) : targets(shapeVox[id])));
+
+      const count = document.getElementById('count')!;
+      count.textContent = `${N.toLocaleString('en-GB')} cubes`;
+
+      // ---------------------------------------------------------------- the instanced mesh
+      const geo = new THREE.BoxGeometry(0.9, 0.9, 0.9);
+      const mat = new THREE.MeshStandardMaterial({ roughness: 0.62, metalness: 0.0 });
+      const mesh = new THREE.InstancedMesh(geo, mat, N);
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(N * 3), 3);
+      mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+      mesh.frustumCulled = false;
+      const group = new THREE.Group();
+      group.add(mesh);
+      scene.add(group);
+
+      const pos = new Float32Array(N * 3), vel = new Float32Array(N * 3), col = new Float32Array(N * 3);
+      const rel = new Float32Array(N), stiff = new Float32Array(N), axis = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) {
+        stiff[i] = 0.75 + Math.random() * 0.5;
+        const a = Math.random() * Math.PI * 2, b = Math.acos(Math.random() * 2 - 1);
+        axis[i * 3] = Math.sin(b) * Math.cos(a); axis[i * 3 + 1] = Math.sin(b) * Math.sin(a); axis[i * 3 + 2] = Math.cos(b);
+      }
+
+      let cur = 0;
+      let clock = 0;
+      let spin = 0; // gear rotation, baked away when we leave the gear
+
+      // intro: start as a cloud and assemble
+      {
+        const t = T[0];
+        for (let i = 0; i < N; i++) {
+          if (reduce) {
+            pos[i * 3] = t.p[i * 3]; pos[i * 3 + 1] = t.p[i * 3 + 1]; pos[i * 3 + 2] = t.p[i * 3 + 2];
+          } else {
+            const a = Math.random() * Math.PI * 2, b = Math.acos(Math.random() * 2 - 1), r = 70 + Math.random() * 120;
+            pos[i * 3] = r * Math.sin(b) * Math.cos(a);
+            pos[i * 3 + 1] = r * Math.sin(b) * Math.sin(a) * 0.7;
+            pos[i * 3 + 2] = r * Math.cos(b) - 40;
+            // centre first, edges last
+            rel[i] = 0.15 + Math.random() * 0.25 + Math.hypot(t.p[i * 3], t.p[i * 3 + 1] - 4) * 0.014;
+          }
+          col[i * 3] = t.c[i * 3]; col[i * 3 + 1] = t.c[i * 3 + 1]; col[i * 3 + 2] = t.c[i * 3 + 2];
+        }
+      }
+
+      function setShape(n: number) {
+        if (n === cur) return;
+        const prev = cur;
+        cur = n;
+        // bake the gear's spin into positions so nothing jumps
+        if (spin !== 0) {
+          const c = Math.cos(spin), s = Math.sin(spin);
+          for (let i = 0; i < N; i++) {
+            const x = pos[i * 3], y = pos[i * 3 + 1];
+            pos[i * 3] = x * c - y * s; pos[i * 3 + 1] = x * s + y * c;
+            const vx = vel[i * 3], vy = vel[i * 3 + 1];
+            vel[i * 3] = vx * c - vy * s; vel[i * 3 + 1] = vx * s + vy * c;
+          }
+          spin = 0;
+        }
+        const t = T[n];
+        const down = n > prev;
+        for (let i = 0; i < N; i++) {
+          const order = down ? t.yN[i] : 1 - t.yN[i]; // build bottom-up going forward, top-down going back
+          if (reduce) { rel[i] = clock + order * 0.25; continue; }
+          const x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2];
+          const l = Math.hypot(x, y, z) || 1;
+          const f = 28 + Math.random() * 46;
+          vel[i * 3] += (x / l) * f + (Math.random() - 0.5) * 22;
+          vel[i * 3 + 1] += (y / l) * f + (Math.random() - 0.5) * 22 + (down ? 8 : -8);
+          vel[i * 3 + 2] += (z / l) * f * 0.6 + 18 + Math.random() * 30;
+          rel[i] = clock + 0.32 + order * 0.42 + Math.random() * 0.18;
+        }
+        sections.forEach((s, i) => s.classList.toggle('on', i === n));
+        railLinks.forEach((a, i) => (i === n ? a.setAttribute('aria-current', 'step') : a.removeAttribute('aria-current')));
+        cursorOn = true;
+      }
+
+      // ---------------------------------------------------------------- input
+      const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+      addEventListener('pointermove', (e) => {
+        pointer.tx = (e.clientX / innerWidth) * 2 - 1;
+        pointer.ty = (e.clientY / innerHeight) * 2 - 1;
+      }, { passive: true });
+      document.addEventListener('mouseleave', () => { pointer.tx = 0; pointer.ty = 0; });
+
+      const ray = new THREE.Raycaster();
+      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const hit = new THREE.Vector3();
+      function burst(clientX: number, clientY: number) {
+        if (reduce) return;
+        const ndc = new THREE.Vector2((clientX / innerWidth) * 2 - 1, -(clientY / innerHeight) * 2 + 1);
+        ray.setFromCamera(ndc, camera);
+        if (!ray.ray.intersectPlane(plane, hit)) return;
+        mesh.updateMatrixWorld();
+        mesh.worldToLocal(hit);
+        for (let i = 0; i < N; i++) {
+          const dx = pos[i * 3] - hit.x, dy = pos[i * 3 + 1] - hit.y, dz = pos[i * 3 + 2] - hit.z;
+          const d = Math.hypot(dx, dy, dz) || 1;
+          const f = 95 * Math.exp(-d / 16) + 6;
+          vel[i * 3] += (dx / d) * f + (Math.random() - 0.5) * f * 0.3;
+          vel[i * 3 + 1] += (dy / d) * f + (Math.random() - 0.5) * f * 0.3;
+          vel[i * 3 + 2] += Math.abs(dz / d) * f * 0.4 + f * 0.5 * Math.random();
+          rel[i] = Math.max(rel[i], clock + 0.08 + Math.random() * 0.22 * Math.min(1, f / 40));
+        }
+      }
+      addEventListener('click', (e) => {
+        const el = e.target as HTMLElement;
+        if (el.closest('a, button, dialog, input, .rail')) return;
+        burst(e.clientX, e.clientY);
+      });
+
+      // scroll -> which shape
+      let scrollV = 0, lastY = scrollY;
+      function onScroll() {
+        const h = sections[0].offsetHeight || innerHeight;
+        const n = Math.max(0, Math.min(sections.length - 1, Math.round(scrollY / h)));
+        setShape(n);
+      }
+      addEventListener('scroll', onScroll, { passive: true });
+
+      // ---------------------------------------------------------------- layout
+      let landscape = true;
+      function resize() {
+        const w = innerWidth, h = innerHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        landscape = w / h > 1 && w > 760;
+        const k = 2 * Math.tan((camera.fov * Math.PI) / 360);
+        const S = 66;
+        const d = landscape
+          ? Math.max(S / (0.78 * k), S / (0.52 * camera.aspect * k))
+          : Math.max(S / (0.94 * camera.aspect * k), S / (0.52 * k));
+        camera.position.set(0, 0, d);
+        camera.lookAt(0, 0, 0);
+        const fx = landscape ? 0.63 : 0.5, fy = landscape ? 0.47 : 0.33;
+        camera.setViewOffset(w, h, w * (0.5 - fx), h * (0.5 - fy), w, h);
+        camera.updateProjectionMatrix();
+      }
+      addEventListener('resize', resize);
+      resize();
+
+      // ---------------------------------------------------------------- frame
+      const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v3 = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1), sc = new THREE.Vector3();
+      const ax3 = new THREE.Vector3();
+      const colAttr = mesh.instanceColor!;
+      const colArr = colAttr.array as Float32Array;
+      let nextBlink = 2.4, blinkUntil = -1, wink = true;
+      let cursorOn = true, cursorT = 0;
+      let rotY = 0, rotX = 0, bob = 0, sway = 0;
+
+      function frame(dt: number) {
+        clock += dt;
+        const t = T[cur];
+        const K = reduce ? 14 : 70;
+        const C = reduce ? 2 * Math.sqrt(14) : 2 * 0.5 * Math.sqrt(70);
+        const sub = dt > 1 / 50 ? 2 : 1;
+        const h = dt / sub;
+        const drag = Math.exp(-2.2 * h);
+        const lerpC = 1 - Math.exp(-5 * dt);
+        // gear spins
+        if (ids[cur] === 'cog' && !reduce) spin += dt * 0.35;
+        for (let s = 0; s < sub; s++) {
+          for (let i = 0; i < N; i++) {
+            const i3 = i * 3;
+            if (clock < rel[i]) {
+              vel[i3] *= drag; vel[i3 + 1] *= drag; vel[i3 + 2] *= drag;
+            } else {
+              const k = K * stiff[i];
+              vel[i3] += (k * (t.p[i3] - pos[i3]) - C * vel[i3]) * h;
+              vel[i3 + 1] += (k * (t.p[i3 + 1] - pos[i3 + 1]) - C * vel[i3 + 1]) * h;
+              vel[i3 + 2] += (k * (t.p[i3 + 2] - pos[i3 + 2]) - C * vel[i3 + 2]) * h;
+            }
+            pos[i3] += vel[i3] * h; pos[i3 + 1] += vel[i3 + 1] * h; pos[i3 + 2] += vel[i3 + 2] * h;
+          }
+        }
+        // blinks and cursors
+        if (clock > nextBlink && ids[cur] === 'face') { blinkUntil = clock + (wink ? 0.32 : 0.14); nextBlink = clock + 2.8 + Math.random() * 3.5; }
+        const blinking = clock < blinkUntil && ids[cur] === 'face';
+        const winkNow = blinking && wink;
+        if (!blinking && blinkUntil > 0 && wink) wink = false;
+        cursorT += dt;
+        if (cursorT > 0.53) { cursorT = 0; cursorOn = !cursorOn; }
+
+        for (let i = 0; i < N; i++) {
+          const i3 = i * 3;
+          const arrived = clock >= rel[i];
+          const lc = arrived ? lerpC : lerpC * 0.25;
+          col[i3] += (t.c[i3] - col[i3]) * lc; col[i3 + 1] += (t.c[i3 + 1] - col[i3 + 1]) * lc; col[i3 + 2] += (t.c[i3 + 2] - col[i3 + 2]) * lc;
+          let r = col[i3], g = col[i3 + 1], b = col[i3 + 2];
+          let scale = 1;
+          const tag = t.tag[i];
+          // eyelids: skin over the eye, a dark lash on the lower row. The first one is a wink.
+          if (blinking && (tag === 1 || tag === 2) && (!winkNow || t.p[i3] > 0)) {
+            if (tag === 2) { r = 0.05; g = 0.035; b = 0.03; } else { r = 0.93; g = 0.68; b = 0.5; }
+          }
+          if (tag === 3 && !cursorOn) scale = 0;
+          let dist = 0;
+          if (!reduce) {
+            dist = Math.hypot(t.p[i3] - pos[i3], t.p[i3 + 1] - pos[i3 + 1], t.p[i3 + 2] - pos[i3 + 2]);
+          }
+          if (dist > 0.05) {
+            ax3.set(axis[i3], axis[i3 + 1], axis[i3 + 2]);
+            q.setFromAxisAngle(ax3, Math.min(dist * 0.09, 3));
+          } else q.identity();
+          v3.set(pos[i3], pos[i3 + 1], pos[i3 + 2]);
+          sc.set(scale, scale, scale);
+          m4.compose(v3, q, scale === 1 ? one : sc);
+          mesh.setMatrixAt(i, m4);
+          colArr[i3] = r; colArr[i3 + 1] = g; colArr[i3 + 2] = b;
+        }
+        mesh.instanceMatrix.needsUpdate = true;
+        colAttr.needsUpdate = true;
+
+        // camera-ish: the whole group turns slowly, pointer tilts it, scrolling wobbles it
+        pointer.x += (pointer.tx - pointer.x) * (1 - Math.exp(-4 * dt));
+        pointer.y += (pointer.ty - pointer.y) * (1 - Math.exp(-4 * dt));
+        const sv = scrollY - lastY; lastY = scrollY;
+        scrollV += (Math.max(-80, Math.min(80, sv)) - scrollV) * (1 - Math.exp(-8 * dt));
+        const idle = reduce ? 0 : Math.sin(clock * 0.32) * 0.42;
+        const wantY = idle + pointer.x * 0.55;
+        const wantX = pointer.y * 0.32 + (reduce ? 0 : scrollV * 0.004);
+        rotY += (wantY - rotY) * (1 - Math.exp(-3 * dt));
+        rotX += (wantX - rotX) * (1 - Math.exp(-3 * dt));
+        const id = ids[cur];
+        const bobT = !reduce && (id === 'ukhas' || id === 'whalebrew') ? Math.sin(clock * 1.1) * 1.6 : 0;
+        const swayT = !reduce && id === 'ukhas' ? Math.sin(clock * 0.8) * 0.06 : 0;
+        bob += (bobT - bob) * (1 - Math.exp(-2 * dt));
+        sway += (swayT - sway) * (1 - Math.exp(-2 * dt));
+        mesh.rotation.z = spin;
+        group.rotation.set(rotX, rotY, sway);
+        group.position.y = bob;
+      }
+
+      let last = performance.now(), running = false;
+      // ?fast: run the simulation at fixed steps regardless of frame rate (for headless screenshots)
+      const fast = new URLSearchParams(location.search).has('fast');
+      function loop(now: number) {
+        const dt = Math.min(1 / 30, (now - last) / 1000);
+        last = now;
+        if (fast) for (let k = 0; k < 8; k++) frame(1 / 30);
+        else frame(dt);
+        renderer.render(scene, camera);
+      }
+      function start() { if (running) return; running = true; last = performance.now(); renderer.setAnimationLoop(loop); }
+      function stop() { running = false; renderer.setAnimationLoop(null); }
+      document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+      sections[0].classList.add('on');
+      onScroll();
+      if (cur !== 0) { /* deep-linked: build that shape straight away */ }
+      start();
+      }
+    </script>
+  </body>
+</html>
