@@ -1,16 +1,19 @@
 ---
-import { ideas } from '../../data/ideas';
+import { ideas as allIdeas } from '../../data/ideas';
+// Only list ideas whose page exists, so the registry can run ahead of the builds.
+const pages = Object.keys(import.meta.glob('./*.astro')).map((p) => p.slice(2, -6));
+const ideas = allIdeas.filter((i) => pages.includes(i.slug));
 ---
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>20 ideas for firshman.com</title>
+    <title>Ideas for firshman.com</title>
   </head>
   <body>
     <main>
-      <h1>20 ideas for firshman.com</h1>
+      <h1>{ideas.length} ideas for firshman.com</h1>
       <p>Each one is a complete redo of the homepage, built from the same content. The <a href="/">current site</a> is unchanged.</p>
       <ol>
         {ideas.map((i) => (
