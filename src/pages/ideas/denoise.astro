@@ -1,0 +1,461 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+
+const styles = [
+  { id: 'default', prompt: 'a minimal personal homepage, bold sans-serif, black on white, highly detailed, 8k' },
+  { id: 'nasa', prompt: 'a minimal personal homepage, in the style of a 1970s NASA manual, typewriter, mission orange, scanned' },
+  { id: 'phosphor', prompt: 'a minimal personal homepage, green phosphor terminal, 80 columns, scanlines, 1983' },
+  { id: 'swiss', prompt: 'a minimal personal homepage, Swiss international typographic style, red, grid, Helvetica, poster' },
+  { id: 'web96', prompt: 'a minimal personal homepage, as it would have looked in 1996, Times New Roman, grey background, under construction' },
+  { id: 'riso', prompt: 'a minimal personal homepage, two-colour risograph print, pink and blue, slightly misregistered, zine' },
+  { id: 'broadsheet', prompt: 'a minimal personal homepage, Victorian broadsheet, letterpress, sepia, extremely serious' },
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — Denoise</title>
+    <meta name="description" content="Ben Firshman's homepage, sampled from pure noise in 50 steps. Hover to add noise back." />
+    <script is:inline>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('noisy');
+      document.documentElement.classList.add('js');
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Jost:wght@500;700&family=VT323&family=Inter+Tight:wght@500;800&family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <main id="content">
+      <p class="kicker" aria-hidden="true"></p>
+      <h1>{name}</h1>
+
+      <p>I'm working on <a href={now.url}>{now.name}</a>. Some other stuff I've done:</p>
+
+      <ul>
+        {projects.map((p) => (
+          <li><a href={p.url}>{p.name}</a>, {p.blurb}.</li>
+        ))}
+        <li>I also worked on {alsoWorkedOn.map((a, i) => (
+          <>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>
+        ))}.</li>
+      </ul>
+
+      <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+        I'm also on {socials.map((s, i) => (<>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>))}.</p>
+
+      <hr />
+    </main>
+
+    <canvas id="noise" aria-hidden="true"></canvas>
+
+    <aside class="panel" aria-label="Sampler">
+      <div class="row">
+        <span class="label">prompt</span>
+        <p class="field" id="prompt">{styles[0].prompt}</p>
+      </div>
+      <div class="row meta">
+        <span><span class="label">seed</span> <b id="seed">1337</b></span>
+        <span><span class="label">steps</span> <b>50</b></span>
+        <span class="hide-xs"><span class="label">scheduler</span> <b>DDIM</b></span>
+        <span class="status" id="status" data-s="succeeded">succeeded</span>
+      </div>
+      <pre class="tqdm" id="tqdm" aria-live="off"> 100%|██████████| 50/50 [00:00&lt;00:00]</pre>
+      <div class="actions">
+        <button type="button" id="rerun" class="js-only">↻ Re-run with new seed</button>
+        <a href="/ideas" class="back">← all ideas</a>
+      </div>
+      <p class="tip js-only" id="tip">Tip: move your cursor over the page to add noise. It heals.</p>
+      <p class="sr-only" aria-live="polite" id="announce"></p>
+    </aside>
+
+    <script type="application/json" id="styles" set:html={JSON.stringify(styles)}></script>
+
+    <script>
+      const root = document.documentElement;
+      const STYLES = JSON.parse(document.getElementById('styles')!.textContent || '[]') as { id: string; prompt: string }[];
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const canvas = document.getElementById('noise') as HTMLCanvasElement;
+      const ctx = canvas.getContext('2d')!;
+      const content = document.getElementById('content') as HTMLElement;
+      const promptEl = document.getElementById('prompt')!;
+      const seedEl = document.getElementById('seed')!;
+      const statusEl = document.getElementById('status')!;
+      const tqdm = document.getElementById('tqdm')!;
+      const announce = document.getElementById('announce')!;
+      const rerunBtn = document.getElementById('rerun') as HTMLButtonElement;
+      document.querySelectorAll('.js-only').forEach((el) => el.classList.add('js-ready'));
+      if (window.matchMedia('(hover: none)').matches) document.getElementById('tip')!.textContent = 'Tip: drag a finger across the page to add noise. It heals.';
+
+      // ------------------------------------------------------------ noise buffer
+      const RES = 2;     // css px per noise pixel
+      const CELL = 5;    // noise px per brush cell
+      let W = 0, H = 0, gw = 0, gh = 0;
+      let img: ImageData, u32: Uint32Array, grid: Float32Array;
+      function resize() {
+        W = Math.ceil(window.innerWidth / RES); H = Math.ceil(window.innerHeight / RES);
+        canvas.width = W; canvas.height = H;
+        img = ctx.createImageData(W, H);
+        u32 = new Uint32Array(img.data.buffer);
+        gw = Math.ceil(W / CELL); gh = Math.ceil(H / CELL);
+        grid = new Float32Array(gw * gh);
+        dirty = true;
+      }
+      let dirty = true;
+      let rng = 1;
+      let level = reduce ? 0 : 1; // global noise level, 1 = pure noise
+      let brushActive = false;
+
+      function paint() {
+        let s = rng | 1;
+        let any = false;
+        const L = level;
+        for (let y = 0; y < H; y++) {
+          const row = ((y / CELL) | 0) * gw;
+          const off = y * W;
+          for (let x = 0; x < W; x++) {
+            let a = grid[row + ((x / CELL) | 0)];
+            if (L > a) a = L;
+            if (a < 0.02) { u32[off + x] = 0; continue; }
+            any = true;
+            s ^= s << 13; s ^= s >>> 17; s ^= s << 5;
+            // quantise alpha a little so healing reads as discrete steps
+            const al = Math.min(255, ((a * 12) | 0) * 22 + 10);
+            u32[off + x] = (al << 24) | (s & 0xffffff);
+          }
+        }
+        rng = s;
+        ctx.putImageData(img, 0, 0);
+        return any;
+      }
+
+      // ------------------------------------------------------------ sampler
+      const STEPS = 50;
+      let seed = 1337;
+      let styleIdx = 0;
+      let running = false;
+      function bar(i: number) {
+        const pct = Math.round((i / STEPS) * 100);
+        const fill = (i / STEPS) * 10;
+        const blocks = '█'.repeat(Math.floor(fill)) + (fill % 1 >= 0.5 && i < STEPS ? '▌' : '');
+        const t = (i / 14).toFixed(0).padStart(2, '0');
+        const rem = ((STEPS - i) / 14).toFixed(0).padStart(2, '0');
+        return `${String(pct).padStart(4)}%|${blocks.padEnd(10)}| ${String(i).padStart(2)}/${STEPS} [00:${t}<00:${rem}, 14.2it/s]`;
+      }
+      function setBlur(L: number) {
+        const b = Math.pow(L, 1.3) * 22;
+        content.style.filter = L > 0.003 ? `blur(${b.toFixed(2)}px) saturate(${(1 - L * 0.7).toFixed(2)})` : '';
+      }
+      function setStatus(s: string) { statusEl.textContent = s; statusEl.dataset.s = s; }
+
+      function denoise(onDone?: () => void) {
+        running = true;
+        rerunBtn.disabled = true;
+        setStatus('processing');
+        let i = 0;
+        const stepMs = 70;
+        let last = performance.now();
+        function tick(now: number) {
+          if (now - last >= stepMs) {
+            last = now;
+            i++;
+            const t = i / STEPS;
+            // cosine-ish schedule: lots of noise early, details resolve late
+            level = Math.pow(1 - t, 1.6) * (1 - 0.08 * Math.sin(t * Math.PI));
+            setBlur(level);
+            tqdm.textContent = bar(i);
+            dirty = true;
+          }
+          if (i < STEPS) requestAnimationFrame(tick);
+          else {
+            level = 0; setBlur(0); dirty = true;
+            running = false; rerunBtn.disabled = false;
+            setStatus('succeeded');
+            announce.textContent = 'Image resolved.';
+            onDone?.();
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+
+      function renoiseThen(fn: () => void) {
+        // diffuse forward: add noise quickly, swap the style under cover, then sample again
+        setStatus('starting');
+        const t0 = performance.now();
+        function tick(now: number) {
+          const t = Math.min(1, (now - t0) / 450);
+          level = t * t;
+          setBlur(level);
+          dirty = true;
+          if (t < 1) requestAnimationFrame(tick);
+          else { fn(); setTimeout(() => denoise(), 120); }
+        }
+        requestAnimationFrame(tick);
+      }
+
+      function applyStyle(i: number) {
+        styleIdx = i;
+        const st = STYLES[i];
+        root.dataset.style = st.id;
+        promptEl.textContent = st.prompt;
+      }
+
+      rerunBtn.addEventListener('click', () => {
+        if (running) return;
+        seed = Math.floor(Math.random() * 90000) + 10000;
+        const next = (styleIdx + 1) % STYLES.length;
+        if (reduce) {
+          seedEl.textContent = String(seed);
+          applyStyle(next);
+          tqdm.textContent = bar(STEPS);
+          announce.textContent = `Re-ran with seed ${seed}: ${STYLES[next].prompt}`;
+          return;
+        }
+        running = true; rerunBtn.disabled = true;
+        seedEl.textContent = String(seed);
+        rng = seed;
+        tqdm.textContent = bar(0);
+        renoiseThen(() => {
+          applyStyle(next);
+          announce.textContent = `Re-running with seed ${seed}: ${STYLES[next].prompt}`;
+        });
+      });
+
+      // ------------------------------------------------------------ brush
+      let lastPt: { x: number; y: number } | null = null;
+      function stamp(cx: number, cy: number) {
+        const R = 70 / (RES * CELL);
+        const gx = cx / (RES * CELL), gy = cy / (RES * CELL);
+        const x0 = Math.max(0, Math.floor(gx - R)), x1 = Math.min(gw - 1, Math.ceil(gx + R));
+        const y0 = Math.max(0, Math.floor(gy - R)), y1 = Math.min(gh - 1, Math.ceil(gy + R));
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+          const d = Math.hypot(x + 0.5 - gx, y + 0.5 - gy) / R;
+          if (d < 1) {
+            const k = y * gw + x;
+            grid[k] = Math.min(1, grid[k] + (1 - d) * (1 - d) * 0.55);
+          }
+        }
+        brushActive = true;
+      }
+      window.addEventListener('pointermove', (e) => {
+        if (reduce || running || level > 0) return;
+        if ((e.target as HTMLElement).closest?.('.panel')) { lastPt = null; return; }
+        const p = { x: e.clientX, y: e.clientY };
+        if (lastPt) {
+          const d = Math.hypot(p.x - lastPt.x, p.y - lastPt.y);
+          const n = Math.min(12, Math.ceil(d / 24));
+          for (let i = 1; i <= n; i++) stamp(lastPt.x + ((p.x - lastPt.x) * i) / n, lastPt.y + ((p.y - lastPt.y) * i) / n);
+        } else stamp(p.x, p.y);
+        lastPt = p;
+      }, { passive: true });
+      document.addEventListener('pointerleave', () => { lastPt = null; });
+      window.addEventListener('pointerup', () => { lastPt = null; });
+
+      // ------------------------------------------------------------ frame loop
+      let frame = 0;
+      function loop() {
+        frame++;
+        if (brushActive) {
+          let any = false;
+          for (let k = 0; k < grid.length; k++) {
+            const v = grid[k];
+            if (v > 0) { const nv = v * 0.955 - 0.004; grid[k] = nv > 0 ? nv : 0; any = true; }
+          }
+          brushActive = any;
+          dirty = true;
+        }
+        if (dirty && (frame % 2 === 0 || !brushActive)) {
+          dirty = false;
+          const any = paint();
+          canvas.classList.toggle('idle', !any);
+        }
+        requestAnimationFrame(loop);
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+      if (reduce) {
+        level = 0; setBlur(0);
+        tqdm.textContent = bar(STEPS);
+        setStatus('succeeded');
+      } else {
+        rng = seed;
+        setBlur(1);
+        tqdm.textContent = bar(0);
+        setStatus('starting');
+        setTimeout(() => denoise(), 450);
+      }
+      root.classList.remove('noisy');
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  /* ---------------- the default "output": Ben's actual homepage style ---------------- */
+  :root {
+    --bg: #fff; --fg: #000; --link: #000; --accent: #000;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --h-font: var(--font);
+    --weight: 600; --h-weight: 600;
+    --size: 20px; --size-lg: 32px;
+    --panel-bg: rgba(255,255,255,.92); --panel-fg: #111; --panel-line: #e5e5e5;
+  }
+  html { font-size: var(--size); line-height: 1.4; font-weight: var(--weight); text-wrap: pretty; -webkit-text-size-adjust: 100%; }
+  @media (min-width: 768px) { html { font-size: var(--size-lg); } }
+  body { margin: 0; font-family: var(--font); color: var(--fg); background: var(--bg); transition: background-color .01s; }
+  ::selection { background: var(--fg); color: var(--bg); }
+  a, a:hover, a:active { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:focus-visible { background: var(--fg); outline: .333em solid var(--fg); color: var(--bg); }
+  main { margin: 1rem; padding-bottom: 11rem; will-change: filter; }
+  @media (min-width: 768px) { main { max-width: 768px; padding-bottom: 4rem; } }
+  h1 { font-size: 1rem; font-weight: var(--h-weight); font-family: var(--h-font); }
+  hr { height: 4px; background: var(--fg); border: 0; }
+  h1, p, hr, ul { margin-bottom: 2rem; }
+  ul { padding-left: 1.2em; }
+  .kicker { display: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* before first paint, keep things noisy so there's no flash of the answer */
+  html.noisy main { filter: blur(22px); }
+  html.noisy body { background: #777; }
+
+  #noise {
+    position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 5;
+    pointer-events: none; image-rendering: pixelated;
+  }
+  #noise.idle { visibility: hidden; }
+  html:not(.js) #noise { display: none; }
+
+  /* ---------------- sampler panel ---------------- */
+  .panel {
+    position: fixed; right: 16px; bottom: 16px; z-index: 10; width: 400px;
+    font: 400 12px/1.45 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--panel-fg); background: var(--panel-bg);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border: 1px solid var(--panel-line); border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.12);
+    padding: 12px 14px;
+  }
+  .panel .row { display: grid; gap: 4px; margin-bottom: 8px; }
+  .panel .label { color: #888; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; }
+  .panel .field {
+    margin: 0; padding: 7px 9px; border: 1px solid var(--panel-line); border-radius: 6px;
+    background: rgba(127,127,127,.06); font-size: 12px;
+  }
+  .panel .meta { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+  .panel .meta b { font-weight: 600; }
+  .status { margin-left: auto; font-size: 11px; padding: 1px 8px; border-radius: 99px; background: #eee; color: #333; }
+  .status[data-s="processing"], .status[data-s="starting"] { background: #fff1c2; color: #6b4e00; }
+  .status[data-s="succeeded"] { background: #d9f5df; color: #145a24; }
+  .tqdm { margin: 0 0 10px; font: inherit; font-size: 11.5px; white-space: pre; overflow: hidden; text-overflow: clip; }
+  .actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .panel button {
+    font: inherit; font-weight: 600; font-size: 12px; cursor: pointer;
+    background: #111; color: #fff; border: 0; border-radius: 6px; padding: 8px 12px;
+  }
+  .panel button:disabled { opacity: .45; cursor: progress; }
+  .panel .back { color: inherit; opacity: .65; font-size: 12px; text-decoration: none; }
+  .panel .back:hover { opacity: 1; }
+  .panel a:focus-visible, .panel button:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; background: inherit; color: inherit; }
+  .tip { margin: 8px 0 0; color: #888; font-size: 11px; }
+  .js-only { display: none; }
+  .js-only.js-ready { display: revert; }
+  @media (max-width: 600px) {
+    .panel { left: 8px; right: 8px; bottom: 8px; width: auto; padding: 10px 12px; font-size: 11px; }
+    .panel .field { font-size: 11px; padding: 6px 8px; }
+    .hide-xs { display: none; }
+    .tqdm { font-size: 10px; }
+    .tip { display: none !important; }
+  }
+
+  /* ---------------- alternate samples ---------------- */
+
+  /* 1970s NASA manual */
+  [data-style="nasa"] {
+    --bg: #f1e9d2; --fg: #1d2433; --link: #1d2433; --accent: #e0531f;
+    --font: 'Courier Prime', 'Courier New', monospace; --h-font: 'Jost', Futura, sans-serif;
+    --weight: 400; --h-weight: 700; --size: 17px; --size-lg: 24px;
+  }
+  [data-style="nasa"] body { background-image: repeating-linear-gradient(0deg, transparent 0 31px, rgba(29,36,51,.05) 31px 32px); }
+  [data-style="nasa"] main { border-left: 6px solid var(--accent); padding-left: 1.2rem; margin-top: 2rem; }
+  [data-style="nasa"] .kicker { display: block; font: 700 .55rem/1 'Jost', sans-serif; letter-spacing: .3em; color: var(--accent); margin: 0 0 .6rem; }
+  [data-style="nasa"] .kicker::before { content: 'SECTION 1.0 — PERSONNEL — NOT FOR FLIGHT'; }
+  [data-style="nasa"] h1 { font-size: 2.2rem; text-transform: uppercase; letter-spacing: .06em; line-height: 1; border-bottom: 3px double var(--fg); padding-bottom: .5rem; }
+  [data-style="nasa"] ul { list-style: none; padding: 0; counter-reset: n; }
+  [data-style="nasa"] li { counter-increment: n; padding-left: 3.2em; text-indent: -3.2em; margin-bottom: .4rem; }
+  [data-style="nasa"] li::before { content: '1.' counter(n) '  '; color: var(--accent); font-weight: 700; display: inline-block; width: 3.2em; text-indent: 0; }
+  [data-style="nasa"] hr { background: var(--accent); height: 6px; }
+
+  /* green phosphor */
+  [data-style="phosphor"] {
+    --bg: #031a09; --fg: #39ff7a; --link: #39ff7a;
+    --font: 'VT323', ui-monospace, monospace; --h-font: 'VT323', monospace;
+    --weight: 400; --h-weight: 400; --size: 24px; --size-lg: 34px;
+  }
+  [data-style="phosphor"] body { text-shadow: 0 0 6px rgba(57,255,122,.55); background-image: repeating-linear-gradient(0deg, rgba(0,0,0,.25) 0 1px, transparent 1px 3px); }
+  [data-style="phosphor"] h1::before { content: 'C:\\> '; opacity: .6; }
+  [data-style="phosphor"] h1::after { content: '█'; animation: blink 1s steps(1) infinite; margin-left: .1em; }
+  [data-style="phosphor"] ul { list-style: none; padding: 0; }
+  [data-style="phosphor"] li::before { content: '> '; }
+  [data-style="phosphor"] hr { height: 0; border-top: 2px dashed var(--fg); background: none; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Swiss */
+  [data-style="swiss"] {
+    --bg: #e3000f; --fg: #fff; --link: #fff;
+    --font: 'Inter Tight', Helvetica, Arial, sans-serif; --h-font: 'Inter Tight', Helvetica, sans-serif;
+    --weight: 500; --h-weight: 800; --size: 19px; --size-lg: 26px;
+  }
+  [data-style="swiss"] h1 { font-size: clamp(3rem, 14vw, 5.2rem); line-height: .86; letter-spacing: -.045em; margin-top: 1rem; }
+  [data-style="swiss"] ul { list-style: none; padding: 0; border-top: 3px solid var(--fg); }
+  [data-style="swiss"] li { border-bottom: 1px solid rgba(255,255,255,.5); padding: .35rem 0; }
+  [data-style="swiss"] a { text-decoration-thickness: 2px; }
+
+  /* 1996 */
+  [data-style="web96"] {
+    --bg: #c0c0c0; --fg: #000; --link: #0000ee;
+    --font: 'Times New Roman', Times, serif; --h-font: 'Times New Roman', Times, serif;
+    --weight: 400; --h-weight: 700; --size: 19px; --size-lg: 22px;
+  }
+  [data-style="web96"] h1 { font-size: 2rem; text-align: center; }
+  [data-style="web96"] .kicker { display: block; text-align: center; font: 700 .8rem 'Times New Roman', serif; color: #000; background: repeating-linear-gradient(45deg, #ff0 0 12px, #000 12px 24px); padding: .3rem; }
+  [data-style="web96"] .kicker::before { content: '🚧 UNDER CONSTRUCTION 🚧'; background: #ff0; padding: 0 .5rem; }
+  [data-style="web96"] a:visited { color: #551a8b; }
+  [data-style="web96"] hr { height: 2px; border-top: 1px solid #808080; border-bottom: 1px solid #fff; background: none; }
+  [data-style="web96"] main::after { content: 'You are visitor #000042. Best viewed in Netscape Navigator at 800×600.'; display: block; text-align: center; font-size: .75rem; font-style: italic; }
+
+  /* risograph */
+  [data-style="riso"] {
+    --bg: #fbf3e8; --fg: #2340b5; --link: #2340b5;
+    --font: 'Space Grotesk', sans-serif; --h-font: 'Space Grotesk', sans-serif;
+    --weight: 500; --h-weight: 700; --size: 20px; --size-lg: 28px;
+  }
+  [data-style="riso"] body { background-image: radial-gradient(rgba(255,72,176,.18) 1px, transparent 1.4px); background-size: 6px 6px; }
+  [data-style="riso"] h1 { font-size: 3rem; line-height: .95; color: #ff48b0; mix-blend-mode: multiply; text-shadow: 3px 2px 0 rgba(35,64,181,.85); }
+  [data-style="riso"] main { text-shadow: 1.5px 1px 0 rgba(255,72,176,.55); }
+  [data-style="riso"] hr { background: #ff48b0; transform: rotate(-1deg); }
+
+  /* broadsheet */
+  [data-style="broadsheet"] {
+    --bg: #efe4cc; --fg: #2b2116; --link: #2b2116;
+    --font: 'Playfair Display', Georgia, serif; --h-font: 'Playfair Display', Georgia, serif;
+    --weight: 400; --h-weight: 900; --size: 19px; --size-lg: 25px;
+  }
+  [data-style="broadsheet"] main { margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
+  [data-style="broadsheet"] .kicker { display: block; text-align: center; font-style: italic; border-top: 1px solid; border-bottom: 1px solid; padding: .3rem 0; font-size: .7rem; }
+  [data-style="broadsheet"] .kicker::before { content: 'Price One Penny  ·  Established Whenever  ·  Extremely Serious'; }
+  [data-style="broadsheet"] h1 { font-size: clamp(2.2rem, 9vw, 3.4rem); text-align: center; line-height: 1; border-bottom: 4px double var(--fg); padding-bottom: .5rem; text-transform: uppercase; letter-spacing: .02em; }
+  [data-style="broadsheet"] ul { list-style: none; padding: 0; }
+  [data-style="broadsheet"] li { margin-bottom: .45rem; }
+  [data-style="broadsheet"] li::before { content: '☞ '; }
+
+  [data-style="phosphor"], [data-style="swiss"] { --panel-bg: rgba(10,10,10,.85); --panel-fg: #eee; --panel-line: #333; }
+  [data-style="phosphor"] .panel button, [data-style="swiss"] .panel button { background: #fff; color: #111; }
+  [data-style="phosphor"] .panel { text-shadow: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-style="phosphor"] h1::after { animation: none; }
+  }
+</style>

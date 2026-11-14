@@ -1,0 +1,1080 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+
+// Walk the career left to right: early stuff first, Replicate right before the flag.
+const eraOrder = { early: 0, middle: 1, recent: 2 } as const;
+const ordered = [...projects].sort((a, b) => eraOrder[a.era] - eraOrder[b.era]);
+
+const gameData = {
+  name,
+  email,
+  now,
+  socials,
+  alsoWorkedOn,
+  projects: ordered.map((p) => ({ slug: p.slug, name: p.name, url: p.url, blurb: p.blurb, era: p.era, tags: p.tags })),
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — World 1-1</title>
+    <meta name="description" content="Ben Firshman's homepage as a tiny pixel platformer. Walk right, bump the blocks, find the projects." />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="back" href="/ideas">← all ideas</a>
+      <div class="topbar-right">
+        <button type="button" class="chip" id="sound-toggle" aria-pressed="false" hidden>♪ Sound: off</button>
+        <a class="chip" href="#walkthrough">Skip the level ↓</a>
+      </div>
+    </header>
+
+    <section class="stage" aria-label="Playable level. The same links are in the walkthrough below.">
+      <div class="screen" id="screen">
+        <canvas id="game" width="320" height="208" aria-hidden="true"></canvas>
+        <div class="layer" id="layer" aria-hidden="false"></div>
+        <div class="hud" aria-hidden="true">
+          <div><span class="hud-k">BEN</span><span class="hud-v">× 1</span></div>
+          <div><span class="hud-k">FOUND</span><span class="hud-v" id="hud-found">0/0</span></div>
+          <div><span class="hud-k">BUGS FIXED</span><span class="hud-v" id="hud-bugs">0</span></div>
+          <div><span class="hud-k">WORLD</span><span class="hud-v">1-1</span></div>
+        </div>
+        <div class="noscript-card" id="noscript-card">
+          <p class="ps">WORLD 1-1</p>
+          <p>This level needs JavaScript to run. The walkthrough below has every link.</p>
+        </div>
+        <div class="clear-panel" id="clear-panel" hidden role="dialog" aria-labelledby="clear-title">
+          <p class="ps clear-title" id="clear-title">COURSE CLEAR!</p>
+          <p class="clear-stats" id="clear-stats"></p>
+          <p class="clear-now">Currently working on <a href={now.url}>{now.name}</a>, to {now.blurb}.</p>
+          <p class="clear-mail"><a href={`mailto:${email}`}>{email}</a></p>
+          <p class="clear-socials">
+            {socials.map((s, i) => (<><a href={s.url}>{s.name}</a>{i < socials.length - 1 ? ' · ' : ''}</>))}
+          </p>
+          <div class="clear-actions">
+            <button type="button" class="pix-btn" id="replay">Play again</button>
+            <a class="pix-btn ghost" href="#walkthrough">Walkthrough ↓</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="pad" id="pad" aria-hidden="true">
+        <div class="pad-dir">
+          <button type="button" class="pad-btn" data-key="left" tabindex="-1" aria-label="Walk left">◀</button>
+          <button type="button" class="pad-btn" data-key="right" tabindex="-1" aria-label="Walk right">▶</button>
+        </div>
+                <button type="button" class="pad-btn pad-jump" data-key="jump" tabindex="-1" aria-label="Jump">JUMP</button>
+      </div>
+      <p class="keys-hint" id="keys-hint">← → or A D to walk · Space to jump · Bump the blocks from below</p>
+      <div class="sr-only" aria-live="polite" id="announcer"></div>
+    </section>
+
+    <main class="walkthrough" id="walkthrough">
+      <p class="ps eyebrow">Walkthrough</p>
+      <h1>{name}</h1>
+      <p class="lede">I'm working on <a href={now.url}>{now.name}</a>. It's the block right before the flag. Here's everything else in the level:</p>
+
+      <ol class="levels">
+        {ordered.map((p, i) => (
+          <li>
+            <span class="lvl ps" aria-hidden="true">1-{i + 1}</span>
+            <span><a href={p.url}>{p.name}</a>, {p.blurb}.</span>
+          </li>
+        ))}
+        <li>
+          <span class="lvl ps" aria-hidden="true">BONUS</span>
+          <span>I also worked on {alsoWorkedOn.map((a, i) => (
+            <>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>
+          ))}. That block takes five hits.</span>
+        </li>
+      </ol>
+
+      <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+        I'm also on {socials.map((s, i) => (<>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>))}.</p>
+      <hr />
+      <p class="fine">No plumbers were harmed. All sprites drawn by hand, from arrays, in this page's source.</p>
+    </main>
+
+    <script type="application/json" id="game-data" set:html={JSON.stringify(gameData)}></script>
+
+    <script>
+      type Proj = { slug: string; name: string; url: string; blurb: string; era: string; tags: string[] };
+      type Link = { name: string; url: string };
+      const DATA = JSON.parse(document.getElementById('game-data')!.textContent || '{}') as {
+        name: string; email: string; now: Link & { blurb: string };
+        socials: (Link & { handle: string })[]; alsoWorkedOn: Link[]; projects: Proj[];
+      };
+
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.getElementById('noscript-card')!.remove();
+
+      // ---------------------------------------------------------------- palette & sprites
+      const C = {
+        sky: '#f4f2ea', hill: '#e6e2d5', hill2: '#dcd7c7', cloud: '#ffffff', cloudLine: '#d6d1c1',
+        ink: '#111111', ground: '#1b1b1b', groundHi: '#333333', groundTop: '#2b2b2b',
+        block: '#ffcc33', blockHi: '#fff0b3', blockLo: '#d79b00', used: '#c9c4b4', usedLo: '#a49f8f',
+        now: '#111111',
+      };
+      const SPR_PAL: Record<string, string> = {
+        H: '#2a1c12', S: '#f0c08a', E: '#111111', T: '#111111', J: '#3b5b92', R: '#e4572e', W: '#ffffff',
+        K: '#1d1036', P: '#8b5cf6', X: '#111111', Y: '#ffcc33', G: '#9a9583', L: '#ffffff',
+      };
+
+      const BEN_TOP = [
+        '...HHHHH....',
+        '..HHHHHHHH..',
+        '.HHHHHHHHH..',
+        '.HHSSSSSSS..',
+        '.HSSSSESSE..',
+        '.HSSSSSSSS..',
+        '..SSSSSSS...',
+      ];
+      const BEN_BODY = [
+        '...TTTTT....',
+        '..TTTTTTT...',
+        '.TTTTTTTTT..',
+        '.STTTTTTTS..',
+        '.S.TTTTT.S..',
+      ];
+      const LEGS_STAND = ['...JJJJJ....', '...JJ.JJ....', '...JJ.JJ....', '..RRR.RRR...'];
+      const LEGS_A = ['...JJJJJ....', '..JJ...JJ...', '.JJ.....JJ..', '.RR.....RRR.'];
+      const LEGS_B = ['...JJJJ.....', '....JJJ.....', '....JJ......', '...RRRR.....'];
+      const BEN_JUMP_BODY = [
+        '...TTTTT..S.',
+        '..TTTTTTTTS.',
+        '.STTTTTTTT..',
+        '.STTTTTTT...',
+        '...TTTTT....',
+      ];
+      const LEGS_JUMP = ['...JJJJJ....', '..JJ..JJJ...', '.JJ.....RR..', '.RR.........'];
+      const BUG_A = [
+        '....KKKK....',
+        '..KKPPPPKK..',
+        '.KPPPPPPPPK.',
+        '.KPPPPPWKPK.',
+        'KPPPPPPPPPPK',
+        '.KKKKKKKKKK.',
+        '.K.K....K.K.',
+        'K...K..K...K',
+      ];
+      const BUG_B = [
+        '....KKKK....',
+        '..KKPPPPKK..',
+        '.KPPPPPPPPK.',
+        '.KPPPPPWKPK.',
+        'KPPPPPPPPPPK',
+        '.KKKKKKKKKK.',
+        '..K.K..K.K..',
+        '..K..KK..K..',
+      ];
+      const BUG_FLAT = ['............', '............', '............', '............', '............', '..KKKKKKKK..', '.KPPPPPPPPK.', 'KKKKKKKKKKKK'];
+      const GLYPH_Q = [
+        '..XXXX..',
+        '.XX..XX.',
+        '.....XX.',
+        '....XX..',
+        '...XX...',
+        '...XX...',
+        '........',
+        '...XX...',
+      ];
+      const GLYPH_WHALE = [
+        '......X.X.',
+        '.......X..',
+        'X..XXXXXX.',
+        'XXXXXXXXXX',
+        '.XXXXX.XXX',
+        '..XXXXXXX.',
+        '....XXXX..',
+        '..........',
+      ];
+      const GLYPH_STAR = [
+        '...XX...',
+        '...XX...',
+        'XXXXXXXX',
+        '.XXXXXX.',
+        '..XXXX..',
+        '.XX..XX.',
+        'XX....XX',
+        '........',
+      ];
+      const POP_BOX = [
+        'XXXXXXXX',
+        'XYXYXYXX',
+        'XYXYXYXX',
+        'XYXYXYXX',
+        'XXXXXXXX',
+      ];
+      const WHALE_CLOUD = [
+        '....................LL.L......',
+        '.....................L........',
+        '..........LLLLLLLLLLLLLL......',
+        '.......LLLLLLLLLLLLLLLLLLL....',
+        '.....LLLLLLLLLLLLLLLLLLLLLL...',
+        '....LLLLLLLLLLLLLLLLLLLGLLLL..',
+        'LL.LLLLLLLLLLLLLLLLLLLLLLLLL..',
+        'LLLLLLLLLLLLLLLLLLLLLLLLLLLL..',
+        '.LLLLLLLLLLLLLLLLLLLLLLLLLL...',
+        '...LLLLLLLLLLLLLLLLLLLLLLL....',
+        '......LLLLLLLLLLLLLLLLLL......',
+      ];
+
+      function makeSprite(rows: string[], pal = SPR_PAL, flip = false) {
+        const h = rows.length, w = rows[0].length;
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        const g = cv.getContext('2d')!;
+        rows.forEach((row, y) => {
+          for (let x = 0; x < w; x++) {
+            const ch = row[x];
+            if (ch === '.' || !pal[ch]) continue;
+            g.fillStyle = pal[ch];
+            g.fillRect(flip ? w - 1 - x : x, y, 1, 1);
+          }
+        });
+        return cv;
+      }
+      const ben = (top: string[], body: string[], legs: string[]) => [...top, ...body, ...legs];
+      const BEN_FRAMES = {
+        stand: ben(BEN_TOP, BEN_BODY, LEGS_STAND),
+        walkA: ben(BEN_TOP, BEN_BODY, LEGS_A),
+        walkB: ben(BEN_TOP, BEN_BODY, LEGS_B),
+        jump: ben(BEN_TOP, BEN_JUMP_BODY, LEGS_JUMP),
+      };
+      const sprites: Record<string, HTMLCanvasElement> = {};
+      for (const [k, rows] of Object.entries(BEN_FRAMES)) {
+        sprites[k + 'R'] = makeSprite(rows);
+        sprites[k + 'L'] = makeSprite(rows, SPR_PAL, true);
+      }
+      sprites.bugA = makeSprite(BUG_A); sprites.bugB = makeSprite(BUG_B); sprites.bugFlat = makeSprite(BUG_FLAT);
+      sprites.bugAL = makeSprite(BUG_A, SPR_PAL, true); sprites.bugBL = makeSprite(BUG_B, SPR_PAL, true);
+      sprites.q = makeSprite(GLYPH_Q); sprites.whale = makeSprite(GLYPH_WHALE);
+      sprites.star = makeSprite(GLYPH_STAR, { X: '#ffcc33' });
+      sprites.pop = makeSprite(POP_BOX);
+      sprites.whaleCloud = makeSprite(WHALE_CLOUD, { L: '#ffffff', G: '#c9c4b4' });
+
+      // ---------------------------------------------------------------- level
+      const T = 16, ROWS = 13, GROUND = 11, BLOCK_ROW = 7;
+      const EMPTY = 0, DIRT = 1, CRATE = 2, BLOCK = 3, USED = 4, STONE = 5;
+      const solid = (t: number) => t !== EMPTY;
+
+      type Item =
+        | { kind: 'project'; p: Proj }
+        | { kind: 'also' }
+        | { kind: 'now' };
+      const items: Item[] = DATA.projects.map((p) => ({ kind: 'project', p }) as Item);
+      items.push({ kind: 'also' }, { kind: 'now' });
+
+      const SEG = 13, START = 22;
+      const cols = START + items.length * SEG + 30;
+      const tiles = new Uint8Array(cols * ROWS);
+      const setT = (c: number, r: number, v: number) => { if (c >= 0 && c < cols && r >= 0 && r < ROWS) tiles[r * cols + c] = v; };
+      const getT = (c: number, r: number) => {
+        if (c < 0 || c >= cols) return STONE; // invisible walls at the ends
+        if (r < 0 || r >= ROWS) return EMPTY;
+        return tiles[r * cols + c];
+      };
+      for (let c = 0; c < cols; c++) { setT(c, GROUND, DIRT); setT(c, GROUND + 1, DIRT); }
+
+      type Block = { c: number; r: number; item: Item; used: boolean; hits: number; bump: number; sign?: HTMLElement; signList?: HTMLElement };
+      const blocks = new Map<number, Block>();
+      type Crate = { c: number; r: number; w: number; color: string };
+      const crates: Crate[] = [];
+      type Bug = { x: number; y: number; vx: number; vy: number; alive: boolean; flat: number };
+      const bugs: Bug[] = [];
+      type Deco = { kind: string; x: number; y: number };
+      const decos: Deco[] = [];
+      type Anchor = { el: HTMLElement; wx: number; wy: number; w?: number };
+      const anchors: Anchor[] = [];
+
+      const CRATE_COLORS = ['#e4572e', '#2e86ab', '#3bb273', '#f2a541', '#2e86ab', '#e4572e'];
+      function addCrateStack(c: number, w: number, h: number, ci: number) {
+        for (let r = 0; r < h; r++) {
+          const ww = r === h - 1 && h > 1 && w > 2 ? w - 1 : w;
+          crates.push({ c: c + (w - ww), r: GROUND - 1 - r, w: ww, color: CRATE_COLORS[(ci + r) % CRATE_COLORS.length] });
+          for (let i = 0; i < ww; i++) setT(c + (w - ww) + i, GROUND - 1 - r, CRATE);
+        }
+      }
+      function addPit(c: number, w: number) {
+        for (let i = 0; i < w; i++) { setT(c + i, GROUND, EMPTY); setT(c + i, GROUND + 1, EMPTY); }
+        const lbl = document.createElement('div');
+        lbl.className = 'pit-label ps';
+        lbl.textContent = '/dev/null';
+        anchor(lbl, c * T + (w * T) / 2, (GROUND + 1) * T + 4);
+      }
+      function addBug(c: number) { bugs.push({ x: c * T, y: (GROUND - 1) * T + 8, vx: -0.35, vy: 0, alive: true, flat: 0 }); }
+
+      const layer = document.getElementById('layer')!;
+      function anchor(el: HTMLElement, wx: number, wy: number) {
+        // The wrapper carries the camera transform; the child is free to scale/translate itself.
+        const wrap = document.createElement('div');
+        wrap.appendChild(el);
+        layer.appendChild(wrap);
+        const a: Anchor = { el: wrap, wx, wy };
+        anchors.push(a);
+        return a;
+      }
+
+      // Title, painted on the sky of the first screen.
+      const title = document.createElement('div');
+      title.className = 'world-title';
+      title.innerHTML = `<p class="ps wt-world">FIRSHMAN.COM PRESENTS</p><p class="ps wt-name">${DATA.name.toUpperCase()}</p><p class="wt-sub">A short level about some things I've made.<br>Walk right. Bump the blocks.</p>`;
+      anchor(title, 2 * T, 2 * T);
+
+      const eraPosts: Record<string, string> = { early: 'EARLY', middle: 'MIDDLE', recent: 'RECENT' };
+      let lastEra = '';
+      const obstacles = ['stack', 'pit', 'bug', 'steps', 'pit', 'stack+bug', 'gap+bug', 'steps', 'pit', 'stack', 'bug'];
+      items.forEach((item, i) => {
+        const base = START + i * SEG;
+        const era = item.kind === 'project' ? item.p.era : 'recent';
+        if (item.kind === 'project' && era !== lastEra) {
+          decos.push({ kind: 'post', x: (base - 2) * T, y: (GROUND - 2) * T });
+          const lbl = document.createElement('div');
+          lbl.className = 'post-label ps';
+          lbl.textContent = eraPosts[era] || era.toUpperCase();
+          anchor(lbl, (base - 2) * T + 8, (GROUND - 2) * T + 1);
+          lastEra = era;
+        }
+        const bc = base + 2;
+        setT(bc, BLOCK_ROW, BLOCK);
+        blocks.set(BLOCK_ROW * cols + bc, { c: bc, r: BLOCK_ROW, item, used: false, hits: 0, bump: 0 });
+        if (item.kind === 'project' && item.p.slug === 'ukhas') decos.push({ kind: 'balloon', x: (bc + 4) * T, y: 3 * T });
+        if (item.kind === 'project' && item.p.slug === 'compose') decos.push({ kind: 'whaleCloud', x: (bc + 3) * T, y: 1 * T });
+        const ob = obstacles[i % obstacles.length];
+        const oc = base + 7;
+        if (ob === 'stack') addCrateStack(oc, 3, 2, i);
+        else if (ob === 'pit') addPit(oc, 2);
+        else if (ob === 'bug') { addCrateStack(oc + 3, 2, 1, i); addBug(oc + 1); }
+        else if (ob === 'steps') { addCrateStack(oc - 1, 2, 1, i); addCrateStack(oc + 1, 2, 2, i + 1); addCrateStack(oc + 3, 1, 3, i + 2); }
+        else if (ob === 'stack+bug') { addCrateStack(oc + 2, 3, 1, i); addBug(oc); }
+        else if (ob === 'gap+bug') { addPit(oc, 2); addBug(oc + 4); addCrateStack(oc + 5, 1, 1, i); }
+      });
+      const flagC = START + items.length * SEG + 6;
+            const mailC = flagC + 5;
+      const endPost = document.createElement('div');
+      endPost.className = 'post-label ps';
+      endPost.textContent = 'INBOX';
+      decos.push({ kind: 'post', x: (mailC + 4) * T, y: (GROUND - 2) * T });
+      anchor(endPost, (mailC + 4) * T + 8, (GROUND - 2) * T + 1);
+
+      const total = blocks.size;
+      const hudFound = document.getElementById('hud-found')!;
+      const hudBugs = document.getElementById('hud-bugs')!;
+      const announcer = document.getElementById('announcer')!;
+      let found = 0, bugsFixed = 0;
+      hudFound.textContent = `0/${total}`;
+
+      // ---------------------------------------------------------------- canvas sizing
+      const screen = document.getElementById('screen')!;
+      const canvas = document.getElementById('game') as HTMLCanvasElement;
+      const ctx = canvas.getContext('2d')!;
+      let scale = 3, viewW = 320;
+      function resize() {
+        const W = screen.clientWidth;
+        const availH = Math.min(window.innerHeight * 0.74, 760);
+        scale = Math.max(1, Math.min(5, Math.floor(availH / (ROWS * T)), Math.floor(W / 190)));
+        viewW = Math.ceil(W / scale);
+        canvas.width = viewW; canvas.height = ROWS * T;
+        canvas.style.width = viewW * scale + 'px';
+        canvas.style.height = ROWS * T * scale + 'px';
+        screen.style.height = ROWS * T * scale + 'px';
+        screen.style.setProperty('--s', String(scale));
+        ctx.imageSmoothingEnabled = false;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      // ---------------------------------------------------------------- input
+      const keys = { left: false, right: false, jump: false };
+      let jumpPressed = false;
+      const KEYMAP: Record<string, keyof typeof keys> = {
+        ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
+        Space: 'jump', ArrowUp: 'jump', KeyW: 'jump', KeyZ: 'jump',
+      };
+      function gameHasFocus() {
+        const a = document.activeElement;
+        if (a && a !== document.body && a.tagName !== 'CANVAS') return false;
+        const r = screen.getBoundingClientRect();
+        return r.bottom > 80 && r.top < window.innerHeight - 80;
+      }
+      window.addEventListener('keydown', (e) => {
+        const k = KEYMAP[e.code];
+        if (!k || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (!gameHasFocus()) return;
+        e.preventDefault();
+        if (k === 'jump' && !keys.jump) jumpPressed = true;
+        keys[k] = true;
+        started = true;
+      });
+      window.addEventListener('keyup', (e) => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+      window.addEventListener('blur', () => { keys.left = keys.right = keys.jump = false; });
+      document.querySelectorAll<HTMLButtonElement>('.pad-btn').forEach((btn) => {
+        const k = btn.dataset.key as keyof typeof keys;
+        const down = (e: PointerEvent) => { e.preventDefault(); btn.setPointerCapture?.(e.pointerId); if (k === 'jump' && !keys.jump) jumpPressed = true; keys[k] = true; btn.classList.add('on'); started = true; };
+        const up = () => { keys[k] = false; btn.classList.remove('on'); };
+        btn.addEventListener('pointerdown', down);
+        btn.addEventListener('pointerup', up);
+        btn.addEventListener('pointercancel', up);
+        btn.addEventListener('lostpointercapture', up);
+        btn.addEventListener('contextmenu', (e) => e.preventDefault());
+      });
+
+      // ---------------------------------------------------------------- sound (opt-in)
+      let audio: AudioContext | null = null;
+      let soundOn = false;
+      const soundBtn = document.getElementById('sound-toggle') as HTMLButtonElement;
+      soundBtn.hidden = false;
+      soundBtn.addEventListener('click', () => {
+        soundOn = !soundOn;
+        if (soundOn && !audio) { try { audio = new AudioContext(); } catch { audio = null; } }
+        soundBtn.setAttribute('aria-pressed', String(soundOn));
+        soundBtn.textContent = soundOn ? '♪ Sound: on' : '♪ Sound: off';
+        if (soundOn) blip([660, 990], 0.06);
+        soundBtn.blur();
+      });
+      function blip(freqs: number[], dur = 0.08, type: OscillatorType = 'square') {
+        if (!soundOn || !audio) return;
+        const t0 = audio.currentTime;
+        freqs.forEach((f, i) => {
+          const o = audio!.createOscillator(), g = audio!.createGain();
+          o.type = type; o.frequency.value = f;
+          g.gain.setValueAtTime(0.0001, t0 + i * dur);
+          g.gain.exponentialRampToValueAtTime(0.05, t0 + i * dur + 0.01);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + (i + 1) * dur);
+          o.connect(g).connect(audio!.destination);
+          o.start(t0 + i * dur); o.stop(t0 + (i + 1) * dur + 0.02);
+        });
+      }
+
+      // ---------------------------------------------------------------- popups & signs
+      function popup(text: string, wx: number, wy: number, cls = '') {
+        const el = document.createElement('div');
+        el.className = 'popup ps ' + cls;
+        el.textContent = text;
+        const a = anchor(el, wx, wy);
+        setTimeout(() => { a.el.remove(); anchors.splice(anchors.indexOf(a), 1); }, 1300);
+      }
+      function esc(s: string) { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!); }
+      function revealSign(b: Block) {
+        const el = document.createElement('div');
+        el.className = 'sign';
+        const it = b.item;
+        if (it.kind === 'project') {
+          el.innerHTML = `<p class="sign-kicker ps">${esc(it.p.tags.map((t) => '#' + t).join(' '))}</p><a class="sign-name" href="${esc(it.p.url)}">${esc(it.p.name)}</a><p class="sign-blurb">${esc(it.p.blurb)}</p>`;
+          announcer.textContent = `Found ${it.p.name}: ${it.p.blurb}.`;
+        } else if (it.kind === 'now') {
+          el.classList.add('sign-now');
+          el.innerHTML = `<p class="sign-kicker ps">NOW PLAYING</p><a class="sign-name" href="${esc(DATA.now.url)}">${esc(DATA.now.name)}</a><p class="sign-blurb">${esc(DATA.now.blurb)}. The thing I'm working on now.</p>`;
+          announcer.textContent = `Found ${DATA.now.name}, which Ben is working on now.`;
+        } else {
+          el.classList.add('sign-also');
+          el.innerHTML = `<p class="sign-kicker ps">ALSO WORKED ON</p><ul class="sign-list"></ul><p class="sign-blurb sign-more">keep bumping…</p>`;
+          b.signList = el.querySelector('ul')!;
+        }
+        b.sign = el;
+        const a = anchor(el, b.c * T + T / 2, b.r * T - 6);
+        a.w = 1;
+        requestAnimationFrame(() => el.classList.add('in'));
+      }
+
+      // ---------------------------------------------------------------- entities
+      const P = { x: 4 * T, y: (GROUND - 1) * T, vx: 0, vy: 0, w: 10, h: 16, onGround: false, face: 1, coyote: 0, jumpBuf: 0, anim: 0, hurt: 0, safeX: 4 * T, cut: false };
+      let camX = 0;
+      let state: 'play' | 'clear' = 'play';
+      let clearT = 0;
+      let flagY = 2 * T + 2;
+      let started = false;
+      let frame = 0;
+      type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string; s?: HTMLCanvasElement };
+      const parts: Particle[] = [];
+
+      const G = 0.3, JUMP = 5.9, MAXV = 1.7, MAXFALL = 6;
+      function tileAt(px: number, py: number) { return getT(Math.floor(px / T), Math.floor(py / T)); }
+
+      function bumpBlock(c: number, r: number) {
+        const b = blocks.get(r * cols + c);
+        if (!b) { blip([110], 0.05); return; }
+        b.bump = 10;
+        if (b.used) { blip([120], 0.05); return; }
+        parts.push({ x: c * T + 4, y: r * T - 6, vx: 0, vy: -2.4, life: 26, color: '', s: sprites.pop });
+        if (b.item.kind === 'also') {
+          if (!b.sign) revealSign(b);
+          const a = DATA.alsoWorkedOn[b.hits];
+          const li = document.createElement('li');
+          li.innerHTML = `<a href="${esc(a.url)}">${esc(a.name)}</a>`;
+          b.signList!.appendChild(li);
+          announcer.textContent = `Also worked on ${a.name}.`;
+          b.hits++;
+          blip([520 + b.hits * 80], 0.06);
+          if (b.hits >= DATA.alsoWorkedOn.length) {
+            b.used = true; setT(c, r, USED); found++;
+            b.sign!.querySelector('.sign-more')?.remove();
+          }
+        } else {
+          b.used = true; setT(c, r, USED); found++;
+          revealSign(b);
+          blip([523, 784, 1046], 0.06);
+        }
+        hudFound.textContent = `${found}/${total}`;
+      }
+
+      function stepPlayer() {
+        const ctl = state === 'play';
+        const L = ctl && keys.left, R = ctl && keys.right;
+        const acc = P.onGround ? 0.22 : 0.16;
+        if (state === 'clear') {
+          P.vx = P.x < mailC * T ? 1.1 : 0;
+        } else if (L !== R) {
+          P.vx += (R ? 1 : -1) * acc;
+          P.face = R ? 1 : -1;
+        } else {
+          P.vx *= P.onGround ? 0.72 : 0.94;
+          if (Math.abs(P.vx) < 0.05) P.vx = 0;
+        }
+        if (P.hurt > 40) P.vx = P.vx; // knockback keeps its momentum briefly
+        P.vx = Math.max(-MAXV * 1.6, Math.min(MAXV * 1.6, P.vx));
+        if (P.hurt <= 40) P.vx = Math.max(-MAXV, Math.min(MAXV, P.vx));
+
+        if (jumpPressed && ctl) P.jumpBuf = 7;
+        jumpPressed = false;
+        P.coyote = P.onGround ? 6 : P.coyote - 1;
+        if (P.jumpBuf > 0 && P.coyote > 0) {
+          P.vy = -JUMP; P.coyote = 0; P.jumpBuf = 0; P.onGround = false; P.cut = false;
+          blip([300, 450], 0.045);
+        }
+        P.jumpBuf--;
+        if (!keys.jump && P.vy < -2.2 && !P.cut) { P.vy = -2.2; P.cut = true; }
+        P.vy = Math.min(MAXFALL, P.vy + G);
+
+        // horizontal
+        P.x += P.vx;
+        if (P.vx > 0) {
+          if (solid(tileAt(P.x + P.w, P.y + 1)) || solid(tileAt(P.x + P.w, P.y + P.h - 1)) || solid(tileAt(P.x + P.w, P.y + P.h / 2))) {
+            P.x = Math.floor((P.x + P.w) / T) * T - P.w - 0.01; P.vx = 0;
+          }
+        } else if (P.vx < 0) {
+          if (solid(tileAt(P.x, P.y + 1)) || solid(tileAt(P.x, P.y + P.h - 1)) || solid(tileAt(P.x, P.y + P.h / 2))) {
+            P.x = Math.floor(P.x / T) * T + T; P.vx = 0;
+          }
+        }
+        // vertical
+        const wasGround = P.onGround;
+        P.y += P.vy;
+        P.onGround = false;
+        if (P.vy > 0) {
+          if (solid(tileAt(P.x + 1, P.y + P.h)) || solid(tileAt(P.x + P.w - 1, P.y + P.h))) {
+            P.y = Math.floor((P.y + P.h) / T) * T - P.h; P.vy = 0; P.onGround = true;
+            if (!wasGround) for (let i = 0; i < 4; i++) parts.push({ x: P.x + P.w / 2, y: P.y + P.h - 1, vx: (i - 1.5) * 0.4, vy: -0.3 - Math.random() * 0.3, life: 12, color: C.hill2 });
+          }
+        } else if (P.vy < 0) {
+          const lx = P.x + 1, rx = P.x + P.w - 1, ty = P.y;
+          const hitL = solid(tileAt(lx, ty)), hitR = solid(tileAt(rx, ty));
+          if (hitL || hitR) {
+            const r = Math.floor(ty / T);
+            const cx = P.x + P.w / 2;
+            let c = Math.floor(cx / T);
+            if (!solid(getT(c, r))) c = hitL ? Math.floor(lx / T) : Math.floor(rx / T);
+            P.y = r * T + T; P.vy = 0.5;
+            bumpBlock(c, r);
+          }
+        }
+        if (P.onGround) {
+          const c = Math.floor((P.x + P.w / 2) / T);
+          if (solid(getT(c - 1, GROUND)) && solid(getT(c + 1, GROUND)) && solid(getT(c, GROUND))) P.safeX = P.x;
+        }
+        if (P.y > ROWS * T + 48) {
+          popup('CORE DUMPED. RESPAWNING…', P.safeX, (GROUND - 4) * T, 'warn');
+          P.x = P.safeX - 8; P.y = 2 * T; P.vx = 0; P.vy = 0; P.hurt = 60;
+          blip([200, 150, 100], 0.08);
+        }
+        if (P.hurt > 0) P.hurt--;
+        if (Math.abs(P.vx) > 0.1 && P.onGround) P.anim += Math.abs(P.vx) * 0.12;
+
+        // flag
+        if (state === 'play' && P.x + P.w > flagC * T + 7) {
+          state = 'clear'; clearT = 0;
+          blip([523, 659, 784, 1046, 1318], 0.09);
+        }
+      }
+
+      function stepBugs() {
+        for (const b of bugs) {
+          if (!b.alive) { if (b.flat > 0) b.flat--; continue; }
+          if (Math.abs(b.x - P.x) > viewW + 64) continue;
+          b.vy = Math.min(MAXFALL, b.vy + G);
+          b.x += b.vx;
+          const front = b.vx > 0 ? b.x + 12 : b.x;
+          const aheadSolid = solid(tileAt(front, b.y + 4));
+          const groundAhead = solid(tileAt(front, b.y + 9));
+          if (aheadSolid || !groundAhead) { b.vx = -b.vx; b.x += b.vx * 2; }
+          b.y += b.vy;
+          if (solid(tileAt(b.x + 6, b.y + 8))) { b.y = Math.floor((b.y + 8) / T) * T - 8; b.vy = 0; }
+          // player collision
+          if (P.x < b.x + 11 && P.x + P.w > b.x + 1 && P.y < b.y + 8 && P.y + P.h > b.y + 1) {
+            if (P.vy > 0.5 && P.y + P.h - b.y < 7) {
+              b.alive = false; b.flat = 40; bugsFixed++;
+              hudBugs.textContent = String(bugsFixed);
+              P.vy = -3.8; P.cut = true;
+              popup('BUG FIXED', b.x, b.y - 18);
+              blip([880, 1320], 0.05);
+            } else if (P.hurt === 0) {
+              P.hurt = 70; P.vx = (P.x < b.x ? -1 : 1) * 2.6; P.vy = -3;
+              popup('WORKS ON MY MACHINE', P.x - 30, P.y - 26, 'warn');
+              blip([220, 160], 0.07);
+            }
+          }
+        }
+      }
+
+      function step() {
+        frame++;
+        stepPlayer();
+        stepBugs();
+        for (const b of blocks.values()) if (b.bump > 0) b.bump--;
+        for (let i = parts.length - 1; i >= 0; i--) {
+          const p = parts[i];
+          p.x += p.vx; p.y += p.vy; p.vy += p.s ? 0.12 : 0.05; p.life--;
+          if (p.life <= 0) parts.splice(i, 1);
+        }
+        if (state === 'clear') {
+          clearT++;
+          flagY = Math.min((GROUND - 2) * T, flagY + 2);
+          if (clearT === 80) showClear();
+        }
+        // camera: keep Ben a bit left of centre
+        const target = P.x - viewW * 0.4;
+        camX += (target - camX) * 0.18;
+        camX = Math.max(0, Math.min(cols * T - viewW, camX));
+      }
+
+      // ---------------------------------------------------------------- drawing
+      function rect(x: number, y: number, w: number, h: number, c: string) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
+      function drawHills(cam: number) {
+        const par = 0.35, period = 260;
+        const start = Math.floor((cam * par) / period) - 1;
+        for (let i = start; i < start + Math.ceil(viewW / period) + 3; i++) {
+          const hx = Math.round(i * period - cam * par);
+          const hh = 40 + ((i * 37) % 3) * 14;
+          const base = GROUND * T;
+          for (let s = 0; s < hh; s += 4) {
+            const half = Math.round((hh - s) * 1.3);
+            rect(hx + 90 - half, base - s - 4, half * 2, 4, i % 2 ? C.hill : C.hill2);
+          }
+        }
+      }
+      function drawCloud(x: number, y: number, w: number) {
+        rect(x + 6, y, w - 12, 4, C.cloudLine);
+        rect(x + 2, y + 4, w - 4, 4, C.cloud);
+        rect(x, y + 8, w, 6, C.cloud);
+        rect(x + 6, y + 1, w - 12, 3, C.cloud);
+        rect(x, y + 14, w, 2, C.cloudLine);
+      }
+      function drawClouds(cam: number) {
+        const par = 0.18, period = 150, drift = reduceMotion ? 0 : frame * 0.04;
+        const start = Math.floor((cam * par - drift) / period) - 1;
+        for (let i = start; i < start + Math.ceil(viewW / period) + 3; i++) {
+          const x = Math.round(i * period - cam * par + drift);
+          const y = 18 + ((i * 53) % 4) * 10;
+          drawCloud(x, y, 28 + ((i * 17) % 3) * 12);
+        }
+      }
+      function drawDirt(x: number, y: number, top: boolean) {
+        rect(x, y, T, T, C.ground);
+        if (top) { rect(x, y, T, 2, C.groundTop); rect(x, y + 2, T, 1, C.ink); }
+        const c = Math.floor((x + camX) / T);
+        const ox = (c % 2) * 8;
+        rect(x + ((ox + 3) % 16), y + 6, 2, 1, C.groundHi);
+        rect(x + ((ox + 11) % 16), y + 11, 2, 1, C.groundHi);
+        rect(x + ((ox + 7) % 16), y + 14, 1, 1, C.groundHi);
+      }
+      function drawBlock(x: number, y: number, b: Block | undefined, used: boolean) {
+        rect(x, y, T, T, C.ink);
+        if (used) {
+          rect(x + 1, y + 1, T - 2, T - 2, C.used);
+          rect(x + 1, y + T - 3, T - 2, 2, C.usedLo);
+          rect(x + 3, y + 3, 1, 1, C.usedLo); rect(x + T - 4, y + 3, 1, 1, C.usedLo);
+          rect(x + 3, y + T - 5, 1, 1, C.ink); rect(x + T - 4, y + T - 5, 1, 1, C.ink);
+          return;
+        }
+        const isNow = b?.item.kind === 'now';
+        rect(x + 1, y + 1, T - 2, T - 2, isNow ? '#222' : C.block);
+        rect(x + 1, y + 1, T - 2, 1, isNow ? '#555' : C.blockHi);
+        rect(x + 1, y + 1, 1, T - 2, isNow ? '#555' : C.blockHi);
+        rect(x + 1, y + T - 2, T - 2, 1, isNow ? '#000' : C.blockLo);
+        rect(x + T - 2, y + 1, 1, T - 2, isNow ? '#000' : C.blockLo);
+        const rv = isNow ? '#ffcc33' : C.ink;
+        rect(x + 2, y + 2, 1, 1, rv); rect(x + T - 3, y + 2, 1, 1, rv);
+        rect(x + 2, y + T - 3, 1, 1, rv); rect(x + T - 3, y + T - 3, 1, 1, rv);
+        if (isNow) { ctx.drawImage(sprites.star, x + 4, y + 4); return; }
+        const showWhale = Math.floor((frame + (b ? b.c * 7 : 0)) / 50) % 3 === 2;
+        if (showWhale) ctx.drawImage(sprites.whale, x + 3, y + 4);
+        else ctx.drawImage(sprites.q, x + 4, y + 4 + (reduceMotion ? 0 : Math.floor(frame / 20) % 2 ? 0 : 0));
+      }
+      function drawCrate(cr: Crate) {
+        const x = Math.round(cr.c * T - camX), y = cr.r * T, w = cr.w * T;
+        if (x > viewW || x + w < 0) return;
+        rect(x, y, w, T, C.ink);
+        rect(x + 1, y + 1, w - 2, T - 2, cr.color);
+        ctx.globalAlpha = 0.28;
+        for (let i = 3; i < w - 3; i += 3) rect(x + i, y + 3, 1, T - 6, '#000');
+        ctx.globalAlpha = 1;
+        rect(x + 1, y + 1, w - 2, 1, 'rgba(255,255,255,.35)');
+        rect(x + 1, y + 2, w - 2, 1, C.ink);
+        rect(x + 1, y + T - 3, w - 2, 1, C.ink);
+        // door end
+        rect(x + w - 6, y + 4, 1, T - 8, C.ink);
+        rect(x + w - 4, y + 6, 1, 3, '#fff');
+      }
+      function drawBalloon(d: Deco) {
+        const bob = reduceMotion ? 0 : Math.round(Math.sin(frame / 50) * 3);
+        const x = Math.round(d.x - camX * 0.85), y = d.y + bob;
+        if (x < -40 || x > viewW + 40) return;
+        const R = [4, 7, 9, 10, 11, 11, 11, 11, 10, 9, 8, 6, 4, 2];
+        R.forEach((r, i) => { rect(x - r, y + i, r * 2, 1, i < 2 ? '#fff' : i % 5 === 0 ? '#f0eee6' : '#ffffff'); });
+        R.forEach((r, i) => { rect(x - r - 1, y + i, 1, 1, C.cloudLine); rect(x + r, y + i, 1, 1, C.cloudLine); });
+        rect(x - 3, y - 1, 6, 1, C.cloudLine);
+        rect(x - 4, y + 3, 2, 2, '#e8e5da');
+        rect(x, y + 14, 1, 16, '#9a9583');
+        rect(x - 2, y + 30, 5, 4, '#e4572e');
+        rect(x - 2, y + 30, 5, 1, '#111');
+      }
+      function drawPost(d: Deco) {
+        const x = Math.round(d.x - camX), y = d.y;
+        if (x < -40 || x > viewW + 40) return;
+        rect(x + 7, y + 8, 2, 24, C.ink);
+        rect(x - 10, y, 36, 11, C.ink);
+        rect(x - 9, y + 1, 34, 9, '#fffdf6');
+      }
+      function drawFlag() {
+        const x = Math.round(flagC * T - camX);
+        if (x < -60 || x > viewW + 60) return;
+        rect(x + 7, 2 * T, 2, (GROUND - 3) * T + 8, C.ink);
+        rect(x + 5, 2 * T - 4, 6, 5, C.ink);
+        rect(x + 6, 2 * T - 3, 2, 1, '#fff');
+        // flag cloth with an @
+        const fy = Math.round(flagY);
+        rect(x - 13, fy, 20, 14, C.ink);
+        rect(x - 12, fy + 1, 18, 12, '#fffdf6');
+        const at = ['.XXXXX.', 'X.....X', 'X.XXX.X', 'X.X.X.X', 'X.XXXXX', 'X......', '.XXXXX.'];
+        at.forEach((row, ry) => { for (let rx = 0; rx < 7; rx++) if (row[rx] === 'X') rect(x - 9 + rx, fy + 3 + ry, 1, 1, C.ink); });
+        // stone base
+        const bx = x, by = (GROUND - 1) * T;
+        rect(bx, by, T, T, C.ink);
+        rect(bx + 1, by + 1, T - 2, T - 2, '#8f8a7a');
+        rect(bx + 1, by + 1, T - 2, 1, '#bdb8a6');
+        // mailbox
+        const mx = Math.round(mailC * T - camX) + 22, my = (GROUND - 1) * T - 6;
+        rect(mx + 6, my + 8, 3, 14, C.ink);
+        rect(mx, my, 16, 10, C.ink);
+        rect(mx + 1, my + 1, 14, 8, '#e4572e');
+        rect(mx + 3, my + 3, 8, 1, '#fff');
+        rect(mx + 15, my - 5, 1, 6, C.ink);
+        rect(mx + 15, my - 5, 4, 3, state === 'clear' && clearT > 60 ? '#ffcc33' : '#e4572e');
+      }
+      function draw() {
+        const cam = Math.round(camX);
+        rect(0, 0, viewW, ROWS * T, C.sky);
+        drawHills(cam);
+        drawClouds(cam);
+        for (const d of decos) {
+          if (d.kind === 'balloon') drawBalloon(d);
+          if (d.kind === 'whaleCloud') {
+            const x = Math.round(d.x - cam * 0.7 + (reduceMotion ? 0 : Math.sin(frame / 90) * 4));
+            if (x > -80 && x < viewW + 20) ctx.drawImage(sprites.whaleCloud, x, d.y, WHALE_CLOUD[0].length * 2, WHALE_CLOUD.length * 2);
+          }
+        }
+        for (const d of decos) if (d.kind === 'post') drawPost(d);
+        drawFlag();
+        const c0 = Math.floor(cam / T), c1 = Math.min(cols - 1, c0 + Math.ceil(viewW / T) + 1);
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = c0; c <= c1; c++) {
+            const t = getT(c, r);
+            if (t === EMPTY || t === CRATE) continue;
+            const x = c * T - cam, y = r * T;
+            if (t === DIRT) drawDirt(x, y, getT(c, r - 1) !== DIRT);
+            else if (t === BLOCK || t === USED) {
+              const b = blocks.get(r * cols + c);
+              const off = b && b.bump > 0 ? -Math.round(Math.sin((b.bump / 10) * Math.PI) * 4) : 0;
+              drawBlock(x, y + off, b, t === USED);
+            }
+          }
+        }
+        for (const cr of crates) drawCrate(cr);
+        for (const b of bugs) {
+          const x = Math.round(b.x - cam), y = Math.round(b.y);
+          if (x < -16 || x > viewW + 16) continue;
+          if (!b.alive) { if (b.flat > 0) ctx.drawImage(sprites.bugFlat, x, y); continue; }
+          const f = Math.floor(frame / 10) % 2 ? 'bugA' : 'bugB';
+          ctx.drawImage(sprites[f + (b.vx > 0 ? '' : 'L')], x, y);
+        }
+        for (const p of parts) {
+          if (p.s) { ctx.globalAlpha = Math.min(1, p.life / 10); ctx.drawImage(p.s, Math.round(p.x - cam), Math.round(p.y)); ctx.globalAlpha = 1; }
+          else rect(Math.round(p.x - cam), Math.round(p.y), 2, 2, p.color);
+        }
+        // Ben
+        if (!(P.hurt > 0 && Math.floor(P.hurt / 4) % 2)) {
+          let f = 'stand';
+          if (!P.onGround) f = 'jump';
+          else if (Math.abs(P.vx) > 0.15) f = Math.floor(P.anim) % 2 ? 'walkA' : 'walkB';
+          ctx.drawImage(sprites[f + (P.face > 0 ? 'R' : 'L')], Math.round(P.x - cam - 1), Math.round(P.y));
+        }
+        // gentle hint arrow until Ben starts walking
+        if (!started && Math.floor(frame / 30) % 2 === 0) {
+          const ax = Math.round(P.x - cam + 22), ay = Math.round(P.y + 4);
+          rect(ax, ay + 3, 5, 2, C.ink); rect(ax + 5, ay, 1, 8, C.ink); rect(ax + 6, ay + 1, 1, 6, C.ink); rect(ax + 7, ay + 2, 1, 4, C.ink); rect(ax + 8, ay + 3, 1, 2, C.ink);
+        }
+        // DOM layer follows the camera
+        for (const a of anchors) {
+          const sx = (a.wx - camX) * scale, sy = a.wy * scale;
+          a.el.style.transform = `translate(${Math.round(sx)}px, ${Math.round(sy)}px)`;
+        }
+      }
+
+      // ---------------------------------------------------------------- clear screen
+      const panel = document.getElementById('clear-panel')!;
+      function showClear() {
+        const stats = document.getElementById('clear-stats')!;
+        const secs = Math.round(playFrames / 60);
+        stats.textContent = `Found ${found}/${total} blocks. Fixed ${bugsFixed} bug${bugsFixed === 1 ? '' : 's'}. Time: ${secs}s, a personal best (probably).`;
+        panel.hidden = false;
+        announcer.textContent = 'Course clear. Contact details are shown.';
+        (panel.querySelector('.clear-mail a') as HTMLElement)?.focus({ preventScroll: true });
+      }
+      document.getElementById('replay')!.addEventListener('click', () => {
+        panel.hidden = true;
+        P.x = 4 * T; P.y = (GROUND - 1) * T; P.vx = P.vy = 0; P.safeX = P.x;
+        state = 'play'; flagY = 2 * T + 2; camX = 0; playFrames = 0;
+        (document.activeElement as HTMLElement)?.blur();
+      });
+
+      // ---------------------------------------------------------------- loop
+      let last = performance.now(), accT = 0, playFrames = 0;
+      function loop(now: number) {
+        accT += Math.min(100, now - last);
+        last = now;
+        while (accT >= 1000 / 60) { step(); if (state === 'play' && started) playFrames++; accT -= 1000 / 60; }
+        draw();
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+
+      // test hook for screenshots: ?demo=<n> walks Ben forward and bumps blocks automatically
+      const demo = new URLSearchParams(location.search).get('demo');
+      if (demo) {
+        const n = parseInt(demo, 10) || 3;
+        let bumped = 0;
+        started = true;
+        if (demo === 'end') { P.x = (flagC - 4) * T; P.safeX = P.x; camX = P.x - 100; found = total; bugsFixed = 2; keys.right = true; }
+        else {
+        const iv = setInterval(() => {
+          keys.right = true;
+          const next = [...blocks.values()].find((b) => !b.used);
+          if (next && bumped < n) {
+            const bx = next.c * T + 3;
+            if (Math.abs(P.x - bx) < 3 && P.onGround) { keys.right = false; jumpPressed = true; keys.jump = true; setTimeout(() => (keys.jump = false), 400); bumped++; }
+            else if (P.x > bx) { keys.right = false; keys.left = true; setTimeout(() => (keys.left = false), 30); }
+          } else if (bumped >= n) { keys.right = false; clearInterval(iv); }
+          // hop over obstacles
+          const ahead = solid(getT(Math.floor((P.x + 26) / T), GROUND - 1)) || !solid(getT(Math.floor((P.x + 22) / T), GROUND));
+          if (ahead && P.onGround) { jumpPressed = true; keys.jump = true; setTimeout(() => (keys.jump = false), 380); }
+        }, 16);
+        }
+      }
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --ink: #111;
+    --paper: #f4f2ea;
+    --yellow: #ffcc33;
+    --red: #e4572e;
+    --ps: 'Press Start 2P', ui-monospace, monospace;
+    --vt: 'VT323', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-weight: 600;
+    line-height: 1.4;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--ink); color: #fff; }
+  a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .ps { font-family: var(--ps); font-weight: 400; letter-spacing: 0; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center; gap: .75rem;
+    padding: .6rem 1rem; font-size: .8rem;
+    background: var(--ink); color: #fff;
+  }
+  .topbar a, .topbar button { color: #fff; }
+  .back { text-decoration: none; opacity: .75; }
+  .back:hover { opacity: 1; }
+  .topbar-right { display: flex; gap: .5rem; align-items: center; }
+  .chip {
+    font: inherit; font-size: .75rem; background: transparent; border: 1px solid rgba(255,255,255,.35);
+    border-radius: 999px; padding: .2rem .65rem; cursor: pointer; text-decoration: none; white-space: nowrap;
+  }
+  .chip[aria-pressed="true"] { background: var(--yellow); color: var(--ink); border-color: var(--yellow); }
+
+  .stage { position: relative; background: var(--ink); }
+  .screen {
+    position: relative; overflow: hidden; width: 100%;
+    height: min(74vh, 624px);
+    background: var(--paper);
+    user-select: none; -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  #game { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  .layer { position: absolute; inset: 0; pointer-events: none; }
+  .layer > * { position: absolute; left: 0; top: 0; will-change: transform; }
+
+  .hud {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; gap: .5rem;
+    padding: calc(var(--s, 3) * 3px) calc(var(--s, 3) * 5px);
+    font-family: var(--ps); font-size: clamp(7px, calc(var(--s, 3) * 3.4px), 13px);
+    pointer-events: none; color: var(--ink);
+  }
+  .hud > div { display: grid; gap: .45em; }
+  .hud-k { opacity: .55; }
+
+  .world-title { width: max-content; max-width: 80vw; }
+  .wt-world { font-size: calc(var(--s, 3) * 3.5px); margin: 0 0 calc(var(--s) * 4px); opacity: .55; }
+  .wt-name { font-size: calc(var(--s, 3) * 9px); line-height: 1.15; margin: 0; }
+  .wt-sub { font-family: var(--vt); font-size: calc(var(--s, 3) * 7px); line-height: 1.05; margin: calc(var(--s) * 4px) 0 0; }
+
+  .post-label {
+    font-size: calc(var(--s, 3) * 2.6px);
+    translate: -50% 0;
+    width: calc(var(--s, 3) * 34px);
+    text-align: center;
+    line-height: calc(var(--s, 3) * 9px);
+  }
+
+  .sign {
+    width: calc(var(--s, 3) * 84px);
+    max-width: 46vw;
+    translate: -50% -100%;
+    pointer-events: auto;
+    background: #fffdf6;
+    border: calc(var(--s, 3) * 1px) solid var(--ink);
+    box-shadow: calc(var(--s, 3) * 2px) calc(var(--s, 3) * 2px) 0 var(--ink);
+    padding: calc(var(--s, 3) * 3px) calc(var(--s, 3) * 4px) calc(var(--s, 3) * 3.5px);
+    font-family: var(--vt);
+    line-height: 1;
+    transform-origin: 50% 100%;
+    opacity: 0; scale: .2;
+    transition: opacity .2s, scale .35s cubic-bezier(.2, 1.6, .4, 1);
+  }
+  .sign.in { opacity: 1; scale: 1; }
+  .sign::after {
+    content: ''; position: absolute; left: 50%; bottom: calc(var(--s, 3) * -5px); translate: -50% 0;
+    border: calc(var(--s, 3) * 3px) solid transparent; border-top-color: var(--ink); border-bottom: 0;
+  }
+  .sign-kicker { margin: 0 0 .5em; font-size: calc(var(--s, 3) * 2.3px); opacity: .5; line-height: 1.5; }
+  .sign-name { display: block; font-family: var(--ps); font-size: calc(var(--s, 3) * 3.6px); line-height: 1.7; text-decoration-thickness: 2px; text-underline-offset: .3em; }
+  .sign-blurb { margin: .45em 0 0; font-size: calc(var(--s, 3) * 6.4px); }
+  .sign-now { background: var(--ink); color: #fff; box-shadow: calc(var(--s, 3) * 2px) calc(var(--s, 3) * 2px) 0 var(--yellow); }
+  .sign-now a { color: var(--yellow); }
+  .sign-also { background: var(--yellow); }
+  .sign-list { margin: 0; padding: 0; list-style: none; font-size: calc(var(--s, 3) * 6.4px); display: grid; gap: .1em; }
+  .sign-list li::before { content: '▸ '; }
+  .sign-more { opacity: .6; }
+
+  .pit-label { font-size: calc(var(--s, 3) * 2px); translate: -50% 0; opacity: .35; white-space: nowrap; }
+  .popup {
+    font-size: calc(var(--s, 3) * 2.6px); white-space: nowrap;
+    animation: pop-up 1.3s ease-out forwards;
+    color: var(--ink);
+  }
+  .popup.warn { color: var(--red); }
+  @keyframes pop-up { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: 0 calc(var(--s, 3) * -14px); } }
+
+  .noscript-card, .clear-panel {
+    position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+    width: min(92%, 520px);
+    background: #fffdf6; border: 4px solid var(--ink); box-shadow: 8px 8px 0 var(--ink);
+    padding: 1.25rem 1.4rem; text-align: center;
+  }
+  .clear-panel[hidden] { display: none; }
+  .clear-panel { animation: drop .45s cubic-bezier(.2, 1.4, .4, 1); }
+  @keyframes drop { from { translate: -50% -80%; opacity: 0; } }
+  .clear-title { font-size: clamp(16px, 3vw, 24px); margin: 0 0 .9rem; }
+  .clear-stats { font-family: var(--vt); font-size: 1.25rem; line-height: 1.1; margin: 0 0 1rem; }
+  .clear-now { margin: 0 0 .75rem; font-weight: 500; }
+  .clear-mail { font-size: clamp(1.1rem, 3.4vw, 1.6rem); margin: 0 0 .5rem; overflow-wrap: anywhere; }
+  .clear-socials { margin: 0 0 1.1rem; }
+  .clear-actions { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; }
+  .pix-btn {
+    font-family: var(--ps); font-size: 10px; text-transform: uppercase; text-decoration: none;
+    background: var(--ink); color: #fff; border: 3px solid var(--ink); padding: .7rem .9rem; cursor: pointer;
+  }
+  @media (max-width: 700px) {
+    .clear-panel { padding: .9rem 1rem; font-size: .9rem; box-shadow: 5px 5px 0 var(--ink); }
+    .clear-title { margin-bottom: .6rem; }
+    .clear-stats { font-size: 1.05rem; margin-bottom: .6rem; }
+    .clear-now { margin-bottom: .5rem; }
+    .clear-socials { margin-bottom: .8rem; }
+    .pix-btn { font-size: 9px; padding: .55rem .7rem; }
+  }
+  .pix-btn.ghost { background: #fff; color: var(--ink); }
+  .pix-btn:active { translate: 2px 2px; }
+
+  .pad { display: none; }
+  html:not(.js) .hud, html:not(.js) .pad, html:not(.js) .keys-hint { display: none !important; }
+  .keys-hint {
+    margin: 0; padding: .55rem 1rem; color: #fff; font-family: var(--vt); font-size: 1.2rem; text-align: center;
+  }
+  @media (pointer: coarse), (max-width: 700px) {
+    .keys-hint { display: none; }
+    .pad {
+      display: flex; justify-content: space-between; align-items: center; gap: .75rem;
+      padding: .8rem 1rem 1rem; background: var(--ink);
+      user-select: none; -webkit-user-select: none; touch-action: none;
+    }
+    .pad-dir { display: flex; gap: .6rem; }
+    .pad-btn {
+      width: 64px; height: 64px; border-radius: 14px; border: 0;
+      background: #2a2a2a; color: #fff; font-size: 1.4rem; box-shadow: 0 4px 0 #000, inset 0 1px 0 #444;
+      touch-action: none; -webkit-tap-highlight-color: transparent;
+    }
+    .pad-btn.on { translate: 0 3px; box-shadow: 0 1px 0 #000; background: #3a3a3a; }
+    .pad-jump { width: 88px; border-radius: 999px; background: var(--yellow); color: var(--ink); font-family: var(--ps); font-size: 11px; box-shadow: 0 4px 0 #b88a00; }
+    .pad-jump.on { background: #ffd95c; box-shadow: 0 1px 0 #b88a00; }
+    .pad-hint { color: #777; font-family: var(--ps); font-size: 7px; text-align: center; margin: 0; line-height: 1.6; }
+  }
+
+  .walkthrough { max-width: 760px; margin: 0 auto; padding: 2.5rem 1rem 3rem; font-size: 1.15rem; }
+  .eyebrow { font-size: 10px; opacity: .55; margin: 0 0 1rem; }
+  .walkthrough h1 { font-size: 2rem; line-height: 1.1; margin: 0 0 1rem; }
+  .lede { margin: 0 0 1.5rem; }
+  .levels { list-style: none; margin: 0 0 2rem; padding: 0; display: grid; gap: .65rem; }
+  .levels li { display: grid; grid-template-columns: 4.2rem 1fr; align-items: baseline; gap: .5rem; }
+  .lvl { font-size: 9px; opacity: .5; }
+  .walkthrough hr { height: 4px; background: var(--ink); border: 0; margin: 2rem 0 1rem; }
+  .fine { font-family: var(--vt); font-size: 1.15rem; opacity: .6; font-weight: 400; }
+  @media (min-width: 768px) { .walkthrough { font-size: 1.35rem; } .walkthrough h1 { font-size: 2.6rem; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sign { transition: none; scale: 1; }
+    .pit-label { font-size: calc(var(--s, 3) * 2px); translate: -50% 0; opacity: .35; white-space: nowrap; }
+  .popup { animation-duration: 1.3s; animation-name: fade-only; }
+    @keyframes fade-only { from { opacity: 1; } to { opacity: 0; } }
+    .clear-panel { animation: none; }
+  }
+</style>

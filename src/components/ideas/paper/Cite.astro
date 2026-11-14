@@ -1,0 +1,6 @@
+---
+import { refIndex } from './refs';
+const { k } = Astro.props as { k: string | string[] };
+const keys = (Array.isArray(k) ? k : [k]).slice().sort((a, b) => refIndex[a] - refIndex[b]);
+---
+<span class="cite">[{keys.map((key, i) => (<>{i > 0 && ', '}<a href={`#ref-${key}`}>{refIndex[key]}</a></>))}]</span>

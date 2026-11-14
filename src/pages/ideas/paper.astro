@@ -1,0 +1,539 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+import { refs, alsoKeys } from '../../components/ideas/paper/refs';
+import Cite from '../../components/ideas/paper/Cite.astro';
+
+const eraLabel = { early: 'Early', middle: 'Middle', recent: 'Recent' } as const;
+const stamp = 'firshman.com:2611.00001v1  [cs.HUMAN]  14 Nov 2026';
+const pad = (s: string, n: number) => s + ' '.repeat(Math.max(0, n - s.length));
+const escHtml = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+const bibHtml = (r: (typeof refs)[number]) => {
+  const fields = [
+    ['title', `{${r.title}}`],
+    ['author', `{${r.author}}`],
+    ['note', `{${r.note.charAt(0).toUpperCase() + r.note.slice(1)}}`],
+    ['year', r.year],
+  ];
+  return (
+    `<span class="bt">@${r.type}</span>{${escHtml(r.key)},\n` +
+    fields.map(([k, v]) => `  ${pad(k, 6)} = ${escHtml(v)},\n`).join('') +
+    `  url    = {<a href="${escHtml(r.url)}">${escHtml(r.url)}</a>}\n}`
+  );
+};
+const x = socials.find((s) => s.name === 'X');
+const gh = socials.find((s) => s.name === 'GitHub');
+const li = socials.find((s) => s.name === 'LinkedIn');
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — The paper</title>
+    <meta name="description" content="On the Collected Works of B. Firshman: a preprint, with an abstract, a figure, a table, and contact details in Section 5." />
+    <script is:inline>
+      // Pick a mode before first paint. No JS at all means the responsive (Vanity) layout.
+      try {
+        var saved = sessionStorage.getItem('paper-mode');
+        document.documentElement.dataset.mode = saved || (matchMedia('(min-width: 900px)').matches ? 'pdf' : 'vanity');
+      } catch (e) { document.documentElement.dataset.mode = 'vanity'; }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=Courier+Prime&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <a class="tb-back" href="/ideas">← all ideas</a>
+      <span class="tb-file" aria-hidden="true">firshman-2611.00001v1<span class="tb-ext ext-pdf">.pdf</span><span class="tb-ext ext-html">.html</span></span>
+      <div class="tb-zoom js-only" aria-label="Zoom">
+        <button type="button" id="zoom-out" aria-label="Zoom out">−</button>
+        <output id="zoom-val">100%</output>
+        <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+      </div>
+      <div class="tb-mode js-only" role="group" aria-label="Reading mode">
+        <button type="button" data-set-mode="pdf">PDF</button>
+        <button type="button" data-set-mode="vanity">Vanity</button>
+      </div>
+    </header>
+
+    <div class="vanity-banner" aria-hidden="true">
+      <span>Rendered as a responsive web page, in the spirit of <a href="https://www.arxiv-vanity.com/">arXiv Vanity</a>.</span>
+    </div>
+
+    <div class="viewer" id="viewer">
+      <article class="doc" id="doc">
+        <!-- ================= PAGE 1 ================= -->
+        <section class="page" aria-label="Page 1">
+          <div class="stamp" aria-hidden="true">{stamp}</div>
+
+          <header class="titleblock">
+            <h1>On the Collected Works of B.&nbsp;Firshman</h1>
+            <p class="authors">
+              {name}<sup><a href="#fn-star" class="fnref">∗</a></sup>
+            </p>
+            <p class="affil"><a href={now.url}>{now.name}</a></p>
+            <p class="affil"><a class="tt" href={`mailto:${email}`}>{email}</a></p>
+          </header>
+
+          <div class="abstract">
+            <h2 class="abstract-h">Abstract</h2>
+            <p>
+              We present a survey of the collected works of B.&nbsp;Firshman (hereafter, <em>the author</em>).
+              Through careful study of a single homepage, we find that the author has a persistent tendency to put
+              other people's software in containers <Cite k={['compose', 'machine', 'whalebrew', 'cog']} />, to
+              write guidelines about command-line programs <Cite k="clig" />, to make papers readable on phones <Cite k="arxiv-vanity" />,
+              and, on at least one occasion, to send things to near-space <Cite k="ukhas" />.
+              We show that these results generalise to machine learning models via {now.name} <Cite k="replicate" />.
+              Our main contribution is a list of links.
+            </p>
+            <p class="keywords"><strong>Keywords</strong>: containers · machine learning · command-line interfaces · emulators · balloons</p>
+          </div>
+
+          <div class="cols">
+            <h2 id="introduction"><span class="secnum">1</span>Introduction</h2>
+            <p>
+              The author is currently working on <a href={now.url}>{now.name}</a> <Cite k="replicate" />, which lets you {now.blurb}.
+              This is the latest in a long line of attempts to make other people's software easier to run. In this paper, we examine that line.
+            </p>
+            <p>Our contributions are as follows:</p>
+            <ul class="contrib">
+              <li>We catalogue {projects.length} projects and {alsoWorkedOn.length} further collaborations (Table&nbsp;<a href="#table-1">1</a>).</li>
+              <li>We propose a unified theory of the corpus: everything is a container (Section&nbsp;<a href="#method">3</a>).</li>
+              <li>We provide contact details (Section&nbsp;<a href="#contact">5</a>), which, to our knowledge, no paper has done before.</li>
+            </ul>
+
+            <h2 id="related"><span class="secnum">2</span>Related Work</h2>
+            <p>
+              <span class="runin">The early web.</span> Early work focused on the web. The author worked on many parts of
+              Django <Cite k="django" />, including class-based views, feeds and search, and wrote JSNES <Cite k="jsnes" />,
+              one of the first JavaScript emulators. Concurrently, he helped start the UK High Altitude Society <Cite k="ukhas" />,
+              establishing an upper bound on the altitude of the corpus (approximately, space).
+            </p>
+            <p>
+              <span class="runin">Containers.</span> A second line of work concerns containers: Docker Compose <Cite k="compose" />,
+              which began life as Fig, Docker Machine <Cite k="machine" />, and Whalebrew <Cite k="whalebrew" />, a package manager in which
+              the packages are, predictably, containers.
+            </p>
+            <p>
+              <span class="runin">Readability.</span> A third line concerns making things easier to read. arXiv Vanity <Cite k="arxiv-vanity" />
+              rendered papers from arXiv as responsive web pages. The present document is, regrettably, a PDF; readers on small screens
+              may use the <em>Vanity</em> toggle above. The Command Line Interface Guidelines <Cite k="clig" /> extend this concern to the terminal.
+            </p>
+            <p>
+              <span class="runin">Other.</span> The author also worked on {alsoWorkedOn.map((a, i) => (
+                <>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>
+              ))} <Cite k={alsoKeys} />. These are excluded from our analysis on the grounds that other people also did a lot of work on them.
+            </p>
+
+            <h2 id="method"><span class="secnum">3</span>Method</h2>
+            <p>
+              We hypothesise that every project in the corpus can be expressed as a container around some other piece of software.
+              Formally, let <math><mi mathvariant="script">P</mi></math> be the set of projects. The homepage is then
+            </p>
+            <div class="equation">
+              <math display="block">
+                <mrow>
+                  <mtext>homepage</mtext><mo>=</mo>
+                  <munder><mo>∑</mo><mrow><mi>x</mi><mo>∈</mo><mi mathvariant="script">P</mi></mrow></munder>
+                  <mtext>link</mtext><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo>
+                  <mo>+</mo><mtext>email</mtext>
+                </mrow>
+              </math>
+              <span class="eqnum">(1)</span>
+            </div>
+            <p class="noindent">
+              which we compute using Algorithm&nbsp;<a href="#alg-1">1</a>. The only known exception is <Cite k="ukhas" />,
+              in which the container (a balloon) contains a payload, which is arguably still a container.
+            </p>
+            <figure class="algorithm" id="alg-1">
+              <figcaption><strong>Algorithm 1</strong> <span class="sc">Homepage</span>(<em>p</em>)</figcaption>
+              <ol>
+                <li><strong>Require:</strong> a person <em>p</em></li>
+                <li><strong>for each</strong> project <em>x</em> by <em>p</em> <strong>do</strong></li>
+                <li class="in1">put <em>x</em> in a container</li>
+                <li class="in1">print <span class="sc">Link</span>(<em>x</em>)</li>
+                <li><strong>end for</strong></li>
+                <li><strong>return</strong> <span class="sc">Email</span>(<em>p</em>)</li>
+              </ol>
+            </figure>
+          </div>
+
+          <footer class="page-foot">
+            <p class="footnote" id="fn-star"><sup>∗</sup>Work done while working on {now.name}. Equal contribution from nobody else.</p>
+            <p class="preprint">Preprint. Under review by the reader.</p>
+            <p class="pageno">1</p>
+          </footer>
+        </section>
+
+        <!-- ================= PAGE 2 ================= -->
+        <section class="page" aria-label="Page 2">
+          <div class="cols">
+            <h2 id="results"><span class="secnum">4</span>Results</h2>
+
+            <figure class="table span" id="table-1">
+              <figcaption><strong>Table 1:</strong> The corpus. Era is reported in the author's preferred units. All links verified working at time of writing.</figcaption>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr><th class="num">#</th><th>Project</th><th>Description</th><th>Era</th><th class="hide-sm">Tags</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr class="now-row">
+                      <td class="num">0</td>
+                      <td><a href={now.url}>{now.name}</a> <Cite k="replicate" /></td>
+                      <td>{now.blurb.charAt(0).toUpperCase() + now.blurb.slice(1)}</td>
+                      <td><em>Now</em></td>
+                      <td class="hide-sm tt">ml, api</td>
+                    </tr>
+                    {projects.map((p, i) => (
+                      <tr>
+                        <td class="num">{i + 1}</td>
+                        <td><a href={p.url}>{p.name}</a> <Cite k={p.slug} /></td>
+                        <td>{p.blurb.charAt(0).toUpperCase() + p.blurb.slice(1)}</td>
+                        <td>{eraLabel[p.era]}</td>
+                        <td class="hide-sm tt">{p.tags.join(', ')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </figure>
+
+            <p>
+              Table&nbsp;<a href="#table-1">1</a> lists the corpus. Of the {projects.length} projects studied, {projects.filter((p) => p.tags.includes('containers')).length}
+              are tagged <span class="tt">containers</span> outright, and we argue the rest are containers in spirit. Figure&nbsp;<a href="#fig-1">1</a>
+              shows the number of things the author has put in containers over time. The trend is clear and, we believe, unlikely to reverse.
+            </p>
+
+            <figure class="figure" id="fig-1">
+              <svg viewBox="0 0 330 214" role="img" aria-labelledby="fig1-title fig1-desc">
+                <title id="fig1-title">Things put in containers, by era</title>
+                <desc id="fig1-desc">A line chart. Containerisation rises from Django and JSNES in the early era, through Docker Compose, Machine and Whalebrew, to Cog and Replicate now. A dashed altitude line spikes in the early era at the UK High Altitude Society and then drops to zero.</desc>
+                <defs>
+                  <marker id="dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5"><circle cx="3" cy="3" r="2.6" fill="#1f3fbf" /></marker>
+                  <marker id="tri" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5.5" markerHeight="5.5"><path d="M3 .4 5.7 5.4H.3Z" fill="#c4161c" /></marker>
+                </defs>
+                <g class="axes">
+                  <rect x="40" y="12" width="276" height="160" fill="none" stroke="#000" stroke-width=".8" />
+                  {[0, 2, 4, 6, 8, 10].map((v) => (
+                    <g>
+                      <line x1="40" x2="44" y1={172 - v * 16} y2={172 - v * 16} stroke="#000" stroke-width=".6" />
+                      <line x1="312" x2="316" y1={172 - v * 16} y2={172 - v * 16} stroke="#000" stroke-width=".6" />
+                      <text x="35" y={175 - v * 16} text-anchor="end">{v}</text>
+                    </g>
+                  ))}
+                  {[['early', 86], ['middle', 178], ['recent', 270]].map(([l, xx]) => (
+                    <g>
+                      <line x1={xx} x2={xx} y1="172" y2="168" stroke="#000" stroke-width=".6" />
+                      <text x={xx} y="185" text-anchor="middle" font-style="italic">{l}</text>
+                    </g>
+                  ))}
+                  <line x1="132" x2="132" y1="12" y2="172" stroke="#000" stroke-width=".4" stroke-dasharray="1 2.5" />
+                  <line x1="224" x2="224" y1="12" y2="172" stroke="#000" stroke-width=".4" stroke-dasharray="1 2.5" />
+                  <text x="178" y="203" text-anchor="middle">Era</text>
+                  <text transform="translate(14 92) rotate(-90)" text-anchor="middle">Things in containers (arb. units)</text>
+                </g>
+                <polyline class="series" points="62,170.4 104,165.6 150,124 178,116 204,100 256,60 290,32" fill="none" stroke="#1f3fbf" stroke-width="1.3" marker-start="url(#dot)" marker-mid="url(#dot)" marker-end="url(#dot)" />
+                <polyline points="56,172 72,30 88,172 316,172" fill="none" stroke="#c4161c" stroke-width="1.1" stroke-dasharray="4 2.5" marker-mid="url(#tri)" />
+                <g class="pt-labels">
+                  <text x="62" y="160" text-anchor="middle">Django</text>
+                  <text x="110" y="156" text-anchor="middle">JSNES</text>
+                  <text x="76" y="25" text-anchor="start">UKHAS <tspan font-style="italic">(pop)</tspan></text>
+                  <text x="150" y="137" text-anchor="middle">Compose</text>
+                  <text x="182" y="129" text-anchor="start">Machine</text>
+                  <text x="200" y="92" text-anchor="end">Whalebrew</text>
+                  <text x="252" y="56" text-anchor="end">Cog</text>
+                  <text x="286" y="28" text-anchor="end">{now.name}</text>
+                </g>
+                <g class="legend" transform="translate(208 128)">
+                  <rect width="102" height="36" fill="#fff" stroke="#000" stroke-width=".6" />
+                  <line x1="6" x2="24" y1="12" y2="12" stroke="#1f3fbf" stroke-width="1.3" />
+                  <circle cx="15" cy="12" r="1.8" fill="#1f3fbf" />
+                  <text x="29" y="15">containers</text>
+                  <line x1="6" x2="24" y1="26" y2="26" stroke="#c4161c" stroke-width="1.1" stroke-dasharray="4 2.5" />
+                  <text x="29" y="29">altitude (not to scale)</text>
+                </g>
+              </svg>
+              <figcaption>
+                <strong>Figure 1:</strong> Things the author has put in containers, by era (solid). The dashed line shows altitude reached,
+                which peaked early <Cite k="ukhas" /> and has since been disappointing. Error bars omitted out of politeness.
+              </figcaption>
+            </figure>
+
+            <p>
+              <span class="runin">Limitations.</span> This study has a sample size of one. We did not control for the author.
+              Era boundaries were chosen by eye. Reviewer 2 notes that a homepage is not, strictly, a container; we respectfully disagree,
+              since this one is a <span class="tt">&lt;div&gt;</span>.
+            </p>
+
+            <h2 id="contact"><span class="secnum">5</span>Contact</h2>
+            <p>
+              Correspondence should be addressed to <a class="tt" href={`mailto:${email}`}>{email}</a>. The author is also on
+              {x && <> <a href={x.url}>X</a> (<span class="tt">{x.handle}</span>),</>}
+              {gh && <> <a href={gh.url}>GitHub</a> (<span class="tt">{gh.handle}</span>),</>}
+              {li && <> and <a href={li.url}>LinkedIn</a></>}.
+              Reproduction of these results is left as an exercise for the reader.
+            </p>
+            <p class="ack">
+              <span class="runin">Competing interests.</span> The author is the subject of this paper.
+            </p>
+            <p class="ack">
+              <span class="runin">Acknowledgements.</span> We thank the reader for reading this far, which is further than most reviewers get.
+            </p>
+
+            <h2 id="references" class="unnumbered">References</h2>
+            <ol class="refs">
+              {refs.map((r, i) => (
+                <li id={`ref-${r.key}`}>
+                  <span class="refnum">[{i + 1}]</span>
+                  <code class="bib" set:html={bibHtml(r)} />
+                </li>
+              ))}
+            </ol>
+          </div>
+          <footer class="page-foot">
+            <p class="pageno">2</p>
+          </footer>
+        </section>
+      </article>
+    </div>
+
+    <p class="squint js-only" id="squint" hidden>
+      Squinting? <button type="button" data-set-mode="vanity">Switch to Vanity mode</button>
+    </p>
+
+    <script>
+      const root = document.documentElement;
+      const doc = document.getElementById('doc') as HTMLElement;
+      const zoomVal = document.getElementById('zoom-val') as HTMLOutputElement;
+      const squint = document.getElementById('squint') as HTMLElement;
+      const PAGE_W = 816; // 8.5in at 96dpi
+      let manual: number | null = null;
+
+      function fitZoom() {
+        const avail = window.innerWidth - (window.innerWidth < 600 ? 16 : 64);
+        return Math.min(1.35, avail / PAGE_W);
+      }
+      function apply() {
+        const mode = root.dataset.mode;
+        document.querySelectorAll<HTMLButtonElement>('[data-set-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.setMode === mode)));
+        if (mode === 'pdf') {
+          const z = manual ?? fitZoom();
+          doc.style.setProperty('zoom', String(z));
+          zoomVal.value = Math.round(z * 100) + '%';
+          squint.hidden = !(z < 0.75);
+        } else {
+          doc.style.removeProperty('zoom');
+          zoomVal.value = '100%';
+          squint.hidden = true;
+        }
+      }
+      function setMode(m: string) {
+        root.dataset.mode = m;
+        try { sessionStorage.setItem('paper-mode', m); } catch {}
+        manual = null;
+        apply();
+      }
+      document.querySelectorAll<HTMLButtonElement>('[data-set-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.setMode!)));
+      const step = (d: number) => {
+        if (root.dataset.mode !== 'pdf') setMode('pdf');
+        const cur = manual ?? fitZoom();
+        manual = Math.max(0.3, Math.min(2, Math.round((cur + d) * 10) / 10));
+        apply();
+      };
+      document.getElementById('zoom-in')!.addEventListener('click', () => step(0.1));
+      document.getElementById('zoom-out')!.addEventListener('click', () => step(-0.1));
+      window.addEventListener('resize', apply);
+      document.querySelectorAll('.js-only').forEach((el) => el.classList.add('js-ready'));
+      apply();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --serif: 'CMU Serif', 'Latin Modern Roman', 'Computer Modern Serif', 'Old Standard TT', 'Times New Roman', serif;
+    --mono: 'CMU Typewriter Text', 'Latin Modern Mono', 'Courier Prime', ui-monospace, monospace;
+    --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --link: #0a2fa8;
+    --cite: #0a7a2f;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; font-family: var(--serif); color: #000; background: #fff; }
+  .js-only { display: none !important; }
+  .js-only.js-ready { display: revert !important; }
+  .tb-zoom.js-ready, .tb-mode.js-ready { display: flex !important; }
+
+  /* ---------- toolbar ---------- */
+  .toolbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 1rem;
+    padding: .5rem 1rem; min-height: 48px;
+    font-family: var(--ui); font-size: 13px;
+    background: #323639; color: #f1f1f1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.35);
+  }
+  .toolbar a { color: inherit; }
+  .tb-back { text-decoration: none; opacity: .8; white-space: nowrap; }
+  .tb-back:hover { opacity: 1; }
+  .tb-file { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .9; }
+  .tb-ext { opacity: .55; }
+  .ext-pdf { display: none; }
+  [data-mode="pdf"] .ext-pdf { display: inline; }
+  [data-mode="pdf"] .ext-html { display: none; }
+  html:not([data-mode="pdf"]) .tb-zoom { display: none !important; }
+  html:not([data-mode="pdf"]) .toolbar { background: #111; }
+  .tb-zoom { align-items: center; gap: .25rem; }
+  .tb-zoom button, .tb-mode button {
+    font: inherit; color: inherit; background: transparent; border: 0; cursor: pointer;
+    min-width: 28px; height: 28px; border-radius: 4px;
+  }
+  .tb-zoom button:hover { background: rgba(255,255,255,.12); }
+  .tb-zoom output { min-width: 3.2em; text-align: center; font-variant-numeric: tabular-nums; background: #191b1c; padding: .2rem .35rem; border-radius: 3px; }
+  .tb-mode { background: #1d1f20; border-radius: 6px; padding: 2px; gap: 2px; }
+  .tb-mode button { padding: 0 .75rem; font-weight: 600; opacity: .7; }
+  .tb-mode button[aria-pressed="true"] { background: #fff; color: #111; opacity: 1; }
+  :focus-visible { outline: 2px solid #ffbf47; outline-offset: 2px; }
+
+  /* ---------- shared typography ---------- */
+  .doc a { color: var(--link); text-decoration: none; }
+  .doc a:hover { text-decoration: underline; }
+  .cite { color: var(--cite); white-space: nowrap; }
+  .cite a { color: var(--cite); }
+  .tt { font-family: var(--mono); font-size: .92em; }
+  .sc { font-variant: small-caps; }
+  h1, h2 { font-weight: 700; }
+  .titleblock { text-align: center; }
+  .titleblock h1 { font-size: 1.72em; line-height: 1.2; margin: 0 0 .9em; letter-spacing: -.005em; }
+  .authors { font-size: 1.1em; margin: 0 0 .2em; }
+  .affil { margin: 0; }
+  .fnref { color: inherit !important; }
+  .abstract-h { font-size: 1em; text-align: center; margin: 0 0 .5em; }
+  .abstract p { margin: 0; text-align: justify; hyphens: auto; }
+  .keywords { margin-top: .6em !important; }
+  .cols h2 { font-size: 1.2em; margin: 1.1em 0 .5em; break-after: avoid; }
+  .cols h2:first-child { margin-top: 0; }
+  .secnum { display: inline-block; min-width: 1.6em; }
+  .cols p { margin: 0; text-align: justify; hyphens: auto; }
+  .cols p + p { text-indent: 1.5em; }
+  .cols p.noindent, .cols p.ack { text-indent: 0; }
+  .cols p.ack { margin-top: .4em; }
+  .runin { font-weight: 700; margin-right: .3em; }
+  .contrib { margin: .35em 0 .4em; padding-left: 1.3em; }
+  .contrib li { margin: .2em 0; text-align: justify; }
+  .contrib li::marker { content: '•  '; }
+  .equation { display: flex; align-items: center; justify-content: center; position: relative; margin: .6em 0; break-inside: avoid; }
+  .equation math { font-size: 1.1em; }
+  .eqnum { position: absolute; right: 0; }
+  .algorithm { margin: .9em 0; break-inside: avoid; border-top: 1.4px solid #000; border-bottom: 1.4px solid #000; padding: 0; }
+  .algorithm figcaption { border-bottom: 1px solid #000; padding: .2em 0; }
+  .algorithm ol { margin: .25em 0 .3em; padding-left: 1.8em; font-size: .95em; }
+  .algorithm li { padding-left: .2em; }
+  .algorithm li::marker { content: counter(list-item) ':  '; font-size: .85em; }
+  .algorithm li:first-child { margin-left: -1.6em; }
+  .algorithm li:first-child::marker { content: ''; }
+  .algorithm li.in1 { padding-left: 1.4em; }
+  .algorithm ol { counter-reset: list-item -1; }
+
+  figure { margin: 1em 0; }
+  figcaption { font-size: .92em; line-height: 1.35; text-align: justify; hyphens: auto; }
+  .figure svg { display: block; width: 100%; height: auto; font-family: var(--serif); font-size: 8.4px; }
+  .figure svg .pt-labels { font-size: 7.4px; }
+  .figure svg .legend { font-size: 7.2px; }
+  .figure figcaption { margin-top: .5em; }
+  .table figcaption { margin-bottom: .6em; text-align: center; }
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .92em; }
+  thead tr { border-top: 1.6px solid #000; border-bottom: 1px solid #000; }
+  tbody tr:last-child { border-bottom: 1.6px solid #000; }
+  th { font-weight: 700; text-align: left; padding: .3em .6em; }
+  td { padding: .16em .6em; vertical-align: top; }
+  .num { text-align: right; padding-left: 0; font-variant-numeric: tabular-nums; }
+  .now-row td { padding-bottom: .35em; border-bottom: .5px solid #000; }
+  .refs { list-style: none; padding: 0; margin: 0; }
+  .refs li { display: grid; grid-template-columns: 2.1em 1fr; gap: .2em; margin: 0 0 .55em; break-inside: avoid; }
+  .refs li:target { background: #fff6c2; }
+  .refnum { font-size: .9em; }
+  .bib { font-family: var(--mono); font-size: .76em; line-height: 1.32; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .bt { color: #6b2fa3; }
+  .footnote { font-size: .8em; margin: 0; border-top: .6px solid #000; padding-top: .3em; width: 40%; min-width: 220px; }
+  .preprint { font-size: .8em; margin: .3em 0 0; font-style: italic; }
+  .pageno { text-align: center; margin: 1.2em 0 0; font-size: .95em; }
+
+  /* ---------- PDF mode: fixed pages in a grey viewer ---------- */
+  [data-mode="pdf"] body { background: #525659; }
+  [data-mode="pdf"] .vanity-banner { display: none; }
+  [data-mode="pdf"] .viewer { padding: 28px 0 60px; overflow-x: auto; }
+  [data-mode="pdf"] .doc { width: 816px; margin: 0 auto; }
+  [data-mode="pdf"] .page {
+    position: relative; width: 816px; min-height: 1056px;
+    margin: 0 auto 18px; padding: 82px 78px 54px;
+    background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.45);
+    font-size: 13.4px; line-height: 1.32;
+    display: flex; flex-direction: column;
+  }
+  [data-mode="pdf"] .page > .cols { flex: 1; }
+  [data-mode="pdf"] .page-foot { margin-top: auto; padding-top: 1.4em; }
+  [data-mode="pdf"] .titleblock { margin-bottom: 1.6em; }
+  [data-mode="pdf"] .abstract { margin: 0 52px 1.8em; }
+  [data-mode="pdf"] .cols { columns: 2; column-gap: 26px; column-fill: balance; }
+  [data-mode="pdf"] .cols .span { column-span: all; margin: 0 0 1.4em; }
+  [data-mode="pdf"] .stamp {
+    position: absolute; left: 22px; top: 50%;
+    writing-mode: vertical-rl; transform: translateY(-50%) rotate(180deg);
+    font-family: 'Times New Roman', Times, serif; font-size: 25px; letter-spacing: .02em;
+    color: #9a9a9a; white-space: pre; user-select: none;
+  }
+  [data-mode="pdf"] .algorithm, [data-mode="pdf"] .figure { break-inside: avoid; }
+  [data-mode="pdf"] .hide-sm { display: table-cell; }
+
+  .squint {
+    position: fixed; left: 50%; bottom: 14px; translate: -50% 0; z-index: 11; margin: 0;
+    font-family: var(--ui); font-size: 14px; background: #111; color: #fff; padding: .55rem .6rem .55rem 1rem;
+    border-radius: 999px; box-shadow: 0 6px 24px rgba(0,0,0,.4); white-space: nowrap;
+    display: flex; align-items: center; gap: .6rem;
+  }
+  .squint[hidden] { display: none !important; }
+  .squint button { font: inherit; font-weight: 600; background: #ffbf47; color: #111; border: 0; border-radius: 999px; padding: .35rem .8rem; cursor: pointer; }
+
+  /* ---------- Vanity mode (and the no-JS default): responsive reflow ---------- */
+  html:not([data-mode="pdf"]) body { background: #fff; }
+  html:not([data-mode="pdf"]) .vanity-banner {
+    font-family: var(--ui); font-size: 13px; text-align: center; padding: .55rem 1rem;
+    background: #f4f1e8; border-bottom: 1px solid #e6e1d2; color: #555;
+  }
+  html:not([data-mode="pdf"]) .vanity-banner a { color: inherit; }
+  html:not([data-mode="pdf"]) .doc { max-width: 42rem; margin: 0 auto; padding: 2.2rem 1.1rem 4rem; font-size: 19px; line-height: 1.55; }
+  html:not([data-mode="pdf"]) .stamp {
+    font-family: var(--mono); font-size: 12px; color: #888; text-align: center; margin: 0 0 2rem; white-space: normal; word-spacing: .2em;
+  }
+  html:not([data-mode="pdf"]) .titleblock h1 { font-size: clamp(1.7rem, 6vw, 2.4rem); margin-bottom: .6em; line-height: 1.12; }
+  html:not([data-mode="pdf"]) .titleblock { margin-bottom: 2rem; }
+  html:not([data-mode="pdf"]) .abstract { margin: 0 0 2rem; padding: 1.1rem 1.25rem; background: #faf8f2; border-left: 3px solid #000; }
+  html:not([data-mode="pdf"]) .abstract-h { text-align: left; font-size: .8em; letter-spacing: .12em; text-transform: uppercase; }
+  html:not([data-mode="pdf"]) .abstract p, html:not([data-mode="pdf"]) .cols p { text-align: left; hyphens: manual; }
+  html:not([data-mode="pdf"]) .cols p + p { text-indent: 0; margin-top: .85em; }
+  html:not([data-mode="pdf"]) .cols h2 { font-size: 1.35em; margin-top: 1.8em; }
+  html:not([data-mode="pdf"]) .page + .page { margin-top: 0; }
+  html:not([data-mode="pdf"]) .page-foot .pageno, html:not([data-mode="pdf"]) .page-foot .preprint { display: none; }
+  html:not([data-mode="pdf"]) .page-foot { margin: 2rem 0 0; }
+  html:not([data-mode="pdf"]) .page:last-child .page-foot { display: none; }
+  html:not([data-mode="pdf"]) .footnote { width: auto; }
+  html:not([data-mode="pdf"]) .equation { margin: 1.1em 0; }
+  html:not([data-mode="pdf"]) .figure { margin: 1.6em 0; }
+  html:not([data-mode="pdf"]) .figure svg { font-size: 8px; }
+  html:not([data-mode="pdf"]) .bib { font-size: .74em; }
+  html:not([data-mode="pdf"]) figcaption, html:not([data-mode="pdf"]) .contrib li { text-align: left; hyphens: manual; }
+  html:not([data-mode="pdf"]) .table figcaption { text-align: left; }
+  @media (max-width: 560px) {
+    html:not([data-mode="pdf"]) .doc { font-size: 17.5px; }
+    html:not([data-mode="pdf"]) .hide-sm { display: none; }
+    html:not([data-mode="pdf"]) table { font-size: .82em; }
+    html:not([data-mode="pdf"]) td, html:not([data-mode="pdf"]) th { padding-left: .35em; padding-right: .35em; }
+    .tb-file { display: none; }
+    .toolbar { gap: .6rem; justify-content: space-between; }
+    .tb-zoom output { display: none; }
+  }
+</style>

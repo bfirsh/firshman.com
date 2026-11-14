@@ -1,0 +1,646 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name, profileImage } from '../../data/bio';
+import Artefact from '../../components/ideas/museum/Artefact.astro';
+
+type Ex = { slug: string; title: string; url: string; kind: string; medium: string; date: string; artist: string; text: string; current?: boolean };
+
+const curator: Record<string, { kind: string; medium: string; text: string; artist?: string }> = {
+  jsnes: {
+    kind: 'jsnes', medium: 'JavaScript, nostalgia',
+    text: 'An early work, made when running a games console inside a web browser was considered faintly absurd. It is now considered faintly absurd that it was ever considered absurd. The cartridge is symbolic; there is no slot to put it in.',
+  },
+  django: {
+    kind: 'django', medium: 'Python', artist: 'Ben Firshman, among many hands',
+    text: 'A collaborative work of considerable scale. The artist’s contributions include class-based views, feeds and search. The framework is named after the guitarist, and the curators, unable to resist, have displayed a guitar.',
+  },
+  ukhas: {
+    kind: 'ukhas', medium: 'Latex, helium, amateur radio', artist: 'Ben Firshman, with fellow enthusiasts',
+    text: 'The collection’s highest-altitude piece, executed largely in the stratosphere. The balloon on display is a replica; the originals burst, as is customary, and came down somewhere in a field.',
+  },
+  compose: {
+    kind: 'compose', medium: 'Python, YAML',
+    text: 'Here the artist confronts the essential loneliness of the single container. Arranged in a YAML file, several containers are invited, at last, to talk to one another. First exhibited under the title Fig.',
+  },
+  machine: {
+    kind: 'machine', medium: 'Go, other people’s computers',
+    text: 'A meditation on provenance. Where does a Docker host come from? Anywhere, the artist insists, and then provisions one to prove the point. Note the blinking lights, which the curators find reassuring.',
+  },
+  whalebrew: {
+    kind: 'whalebrew', medium: 'Go, Docker images',
+    text: 'The artist asks: what if every command-line tool came in its own container? The question is answered, rather emphatically, in the affirmative. Bottled on site. Note the whale.',
+  },
+  'arxiv-vanity': {
+    kind: 'arxiv', medium: 'Python, LaTeX, CSS',
+    text: 'A stack of academic papers, typeset for A4 and squinted at on telephones for decades. The artist rendered them as responsive web pages. The hand mirror is the curator’s own addition; we could not help ourselves.',
+  },
+  cog: {
+    kind: 'cog', medium: 'Python, Go, containers',
+    text: 'A single cog, turning. Inside: a machine learning model, made portable. The work asks why it was ever so difficult to run somebody else’s model, then quietly makes the question irrelevant.',
+  },
+  clig: {
+    kind: 'clig', medium: 'Words, Markdown', artist: 'Ben Firshman and co-authors',
+    text: 'A rare written work, composed in the imperative mood. A guide to help you write better command-line programs. Visitors are respectfully reminded that this placard does not support --help.',
+  },
+};
+
+const eraDate = { early: 'Early period', middle: 'Middle period', recent: 'Recent' } as const;
+const toEx = (p: (typeof projects)[number]): Ex => {
+  const c = curator[p.slug];
+  return {
+    slug: p.slug, title: p.name, url: p.url,
+    kind: c?.kind ?? 'box',
+    medium: c?.medium ?? p.tags.join(', '),
+    date: eraDate[p.era],
+    artist: c?.artist ?? 'Ben Firshman and collaborators',
+    text: c?.text ?? `${p.blurb.charAt(0).toUpperCase() + p.blurb.slice(1)}.`,
+  };
+};
+
+const rooms = [
+  {
+    id: 'room-1', numeral: 'I', name: 'The Early Period', theme: 'green',
+    wall: 'The artist’s early work is preoccupied with the web, the browser and the upper atmosphere, frequently all at once. Visitors will note a youthful disregard for what is and is not possible in JavaScript.',
+    items: projects.filter((p) => p.era === 'early').map(toEx),
+  },
+  {
+    id: 'room-2', numeral: 'II', name: 'The Container Years', theme: 'oxblood',
+    wall: 'In his middle period the artist became fixated on a single form: the container. He put things in containers, then containers in containers, then wrote a tool to manage the containers. Critics have called these works “shippable”.',
+    items: projects.filter((p) => p.era === 'middle').map(toEx),
+  },
+  {
+    id: 'room-3', numeral: 'III', name: 'Contemporary Works', theme: 'white',
+    wall: 'Recent work turns to machine learning. The containers remain, but now there are models inside them. The white walls are intentional. So is the absence of seating.',
+    items: [
+      ...projects.filter((p) => p.era === 'recent').map(toEx),
+      {
+        slug: 'replicate', title: now.name, url: now.url, kind: 'replicate',
+        medium: 'Machine learning, GPUs, an API', date: 'Ongoing', artist: 'Ben Firshman and colleagues', current: true,
+        text: `The current exhibition, and the one the artist is working on now. Its purpose is to let you ${now.blurb}. The curators have displayed three identical vases, on the understanding that this is what “replicate” means. We have been told it is not.`,
+      } as Ex,
+    ],
+  },
+];
+let n = 0;
+for (const r of rooms) for (const it of r.items) (it as Ex & { n?: number }).n = ++n;
+const totalExhibits = n;
+
+const x = socials.find((s) => s.name === 'X');
+const gh = socials.find((s) => s.name === 'GitHub');
+const li = socials.find((s) => s.name === 'LinkedIn');
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — The museum</title>
+    <meta name="description" content="The Firshman Collection: a small museum of Ben Firshman's projects, each on a lit plinth with a placard and an audio-guide number. Open whenever. Admission free." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <a class="exit-sign" href="/ideas" aria-label="Exit to all ideas">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="11" cy="3.5" r="2" /><path d="M10 6.5 6 9.5l1 1.2 2.6-1.8-1 4.4-3.3 3.4 1.2 1.1 3.6-3.7 2 2.3V20h1.6v-4.6l-2-2.6.8-3.3 1.5 1.7h3v-1.5h-2.3z" /></svg>
+      <span>← all ideas</span>
+    </a>
+
+    <!-- ===================== LOBBY ===================== -->
+    <header class="lobby" id="lobby">
+      <div class="lobby-inner">
+        <p class="lobby-kicker">Permanent collection · Ground floor</p>
+        <h1>The <em>Firshman</em> Collection</h1>
+        <p class="lobby-sub">Works by {name}, mostly involving containers.</p>
+
+        <div class="lobby-grid">
+          <figure class="portrait">
+            <div class="frame"><img src={profileImage} alt={`Portrait of ${name}`} width="512" height="512" loading="eager" /></div>
+            <figcaption><em>Portrait of the Artist</em><br /><span>Pixels on PNG. Lent by the sitter.</span></figcaption>
+          </figure>
+
+          <div class="info">
+            <dl class="hours">
+              <div><dt>Opening hours</dt><dd>Open whenever.</dd></div>
+              <div><dt>Admission</dt><dd>Free.</dd></div>
+              <div><dt>Photography</dt><dd>Permitted. Screenshots encouraged.</dd></div>
+              <div><dt>Now showing</dt><dd><a href={now.url}>{now.name}</a>, Room III. Ongoing.</dd></div>
+            </dl>
+            <p class="rules">Please do not touch the exhibits. Do click on them, though.</p>
+            <nav class="floorplan" aria-label="Floor guide">
+              <p class="fp-h">Floor guide</p>
+              <ol>
+                {rooms.map((r) => (
+                  <li><a href={`#${r.id}`}><span class="fp-n">{r.numeral}</span>{r.name}</a></li>
+                ))}
+                <li><a href="#annexe"><span class="fp-n">IV</span>The Annexe</a></li>
+                <li><a href="#gift-shop"><span class="fp-n">£</span>Gift shop &amp; contact</a></li>
+              </ol>
+            </nav>
+            <p class="audio-hint">
+              <span class="hp" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="13" width="5" height="8" rx="2"/><rect x="16" y="13" width="5" height="8" rx="2"/></svg></span>
+              <span><strong>Audio guide.</strong> Each exhibit has a number. <span class="kbd-only">Type it on your keyboard to be taken there.</span> Press ▶ on a placard to hear the curator, who has opinions.</span>
+            </p>
+          </div>
+        </div>
+        <a class="enter" href="#room-1">Enter the galleries <span aria-hidden="true">→</span></a>
+      </div>
+    </header>
+
+    <!-- ===================== ROOMS ===================== -->
+    <main>
+      {rooms.map((room) => (
+        <section class={`room theme-${room.theme}`} id={room.id} aria-labelledby={`${room.id}-h`}>
+          <div class="gallery" tabindex="0" aria-label={`Room ${room.numeral}: ${room.name}. Scrolls sideways.`}>
+            <div class="walltext">
+              <p class="room-no">Room {room.numeral}</p>
+              <h2 id={`${room.id}-h`}>{room.name}</h2>
+              <p class="wall-p">{room.wall}</p>
+              <p class="wall-count">{room.items.length} works · <span class="desk-only">scroll sideways →</span><span class="mob-only">scroll down ↓</span></p>
+            </div>
+            {room.items.map((ex: Ex & { n?: number }) => (
+              <article class={`exhibit${ex.current ? ' is-current' : ''}`} id={`exhibit-${ex.n}`} data-n={ex.n} aria-labelledby={`ex-${ex.slug}`}>
+                <div class="stage">
+                  <div class="cone" aria-hidden="true"></div>
+                  {ex.current && <p class="current-flag">Current exhibition</p>}
+                  <div class="object"><Artefact kind={ex.kind} /></div>
+                  <div class="plinth" aria-hidden="true"><span class="plinth-no">{ex.n}</span></div>
+                  <div class="floor-shadow" aria-hidden="true"></div>
+                </div>
+                <div class="placard">
+                  <div class="placard-top">
+                    <span class="audio-no" title="Audio guide number"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="3" y="13" width="5" height="8" rx="2"/><rect x="16" y="13" width="5" height="8" rx="2"/></svg>Press {ex.n}</span>
+                    <button type="button" class="listen js-only" data-say={`Number ${ex.n}. ${ex.title}. ${ex.text}`} aria-label={`Play audio guide for ${ex.title}`}>▶ Listen</button>
+                  </div>
+                  <h3 id={`ex-${ex.slug}`}><a href={ex.url}>{ex.title}</a></h3>
+                  <p class="artist">{ex.artist}</p>
+                  <dl class="tombstone">
+                    <div><dt>Medium</dt><dd>{ex.medium}</dd></div>
+                    <div><dt>Date</dt><dd>{ex.date}</dd></div>
+                  </dl>
+                  <p class="curator">{ex.text}</p>
+                  <a class="view" href={ex.url}>View the work <span aria-hidden="true">→</span></a>
+                </div>
+              </article>
+            ))}
+            <div class="room-end" aria-hidden="true"></div>
+          </div>
+          <div class="room-nav js-only" aria-hidden="true">
+            <button type="button" class="rn-prev" tabindex="-1">←</button>
+            <button type="button" class="rn-next" tabindex="-1">→</button>
+          </div>
+        </section>
+      ))}
+
+      <!-- ===================== ANNEXE ===================== -->
+      <section class="room annexe" id="annexe" aria-labelledby="annexe-h">
+        <div class="annexe-inner">
+          <p class="room-no">Room IV</p>
+          <h2 id="annexe-h">The Annexe: Collaborative Works</h2>
+          <p class="wall-p">Smaller works on loan from the internet, made with many other people. Hung salon-style, which is to say close together, because the room is small.</p>
+          <ul class="salon">
+            {alsoWorkedOn.map((a, i) => (
+              <li class={`frame-${i % 5}`}>
+                <a href={a.url}>
+                  <span class="canvas" aria-hidden="true"></span>
+                  <span class="mini-label">{a.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <!-- ===================== GIFT SHOP ===================== -->
+      <section class="giftshop" id="gift-shop" aria-labelledby="gift-h">
+        <div class="gs-inner">
+          <p class="room-no">Exit through the</p>
+          <h2 id="gift-h">Gift Shop</h2>
+          <p class="wall-p">Everything is free. Please take as many as you like. Correspondence to the artist is welcome at <a href={`mailto:${email}`}>{email}</a>.</p>
+          <ul class="shelf">
+            <li>
+              <a href={`mailto:${email}`} class="product">
+                <span class="item postcard" aria-hidden="true"><span class="stamp"></span><span class="pc-l">Wish you<br />were here</span></span>
+                <span class="tag"><strong>Postcard</strong><span>{email}</span><em>Free</em></span>
+              </a>
+            </li>
+            {x && (
+              <li>
+                <a href={x.url} class="product">
+                  <span class="item tote" aria-hidden="true"><span class="handle"></span><span class="tote-l">{x.handle}</span></span>
+                  <span class="tag"><strong>Tote bag</strong><span>{x.handle} on X</span><em>Free</em></span>
+                </a>
+              </li>
+            )}
+            {gh && (
+              <li>
+                <a href={gh.url} class="product">
+                  <span class="item mug" aria-hidden="true"><span class="mug-l">{gh.handle}</span></span>
+                  <span class="tag"><strong>Mug</strong><span>{gh.handle} on GitHub</span><em>Free</em></span>
+                </a>
+              </li>
+            )}
+            {li && (
+              <li>
+                <a href={li.url} class="product">
+                  <span class="item badge" aria-hidden="true"><span class="b-top">HELLO</span><span class="b-mid">my name is</span><span class="b-name">Ben</span></span>
+                  <span class="tag"><strong>Name badge</strong><span>On LinkedIn</span><em>Free</em></span>
+                </a>
+              </li>
+            )}
+          </ul>
+          <p class="till">Thank you for visiting the Firshman Collection. {totalExhibits} works, no queue. Mind the step.</p>
+        </div>
+      </section>
+    </main>
+
+    <div class="guide-device js-only" id="guide" aria-hidden="true">
+      <span class="gd-screen" id="gd-screen">– –</span>
+      <span class="gd-label">Audio guide · type a number</span>
+    </div>
+    <p class="sr-only" aria-live="polite" id="announce"></p>
+
+    <script>
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const wide = () => window.matchMedia('(min-width: 900px)').matches;
+      document.querySelectorAll('.js-only').forEach((el) => el.classList.add('js-ready'));
+      const announce = document.getElementById('announce')!;
+
+      // ---- horizontal galleries: vertical wheel scrolls sideways until the end of the room
+      document.querySelectorAll<HTMLElement>('.room').forEach((room) => {
+        const g = room.querySelector<HTMLElement>('.gallery');
+        if (!g) return;
+        g.addEventListener('wheel', (e) => {
+          if (!wide() || Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.ctrlKey) return;
+          const max = g.scrollWidth - g.clientWidth;
+          if ((e.deltaY < 0 && g.scrollLeft <= 0) || (e.deltaY > 0 && g.scrollLeft >= max - 1)) return;
+          e.preventDefault();
+          g.scrollLeft += e.deltaY * (e.deltaMode === 1 ? 32 : 1);
+        }, { passive: false });
+        const by = () => Math.min(g.clientWidth * 0.8, 520);
+        room.querySelector('.rn-prev')?.addEventListener('click', () => g.scrollBy({ left: -by(), behavior: reduce ? 'auto' : 'smooth' }));
+        room.querySelector('.rn-next')?.addEventListener('click', () => g.scrollBy({ left: by(), behavior: reduce ? 'auto' : 'smooth' }));
+      });
+
+      // ---- audio guide: speech synthesis, if the browser has a voice
+      const synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
+      let speakingBtn: HTMLButtonElement | null = null;
+      function pickVoice() {
+        if (!synth) return null;
+        const vs = synth.getVoices();
+        return vs.find((v) => /en-GB/i.test(v.lang) && /Daniel|Arthur|Oliver|Google UK English Male/i.test(v.name))
+          || vs.find((v) => /en-GB/i.test(v.lang)) || vs.find((v) => /^en/i.test(v.lang)) || null;
+      }
+      function stop() {
+        synth?.cancel();
+        if (speakingBtn) { speakingBtn.textContent = '▶ Listen'; speakingBtn.classList.remove('on'); }
+        speakingBtn = null;
+      }
+      document.querySelectorAll<HTMLButtonElement>('.listen').forEach((btn) => {
+        if (!synth) { btn.remove(); return; }
+        btn.addEventListener('click', () => {
+          const was = speakingBtn === btn;
+          stop();
+          if (was) return;
+          const u = new SpeechSynthesisUtterance(btn.dataset.say || '');
+          const v = pickVoice();
+          if (v) u.voice = v;
+          u.lang = v?.lang || 'en-GB';
+          u.rate = 0.9; u.pitch = 0.85;
+          u.onend = () => { if (speakingBtn === btn) stop(); };
+          speakingBtn = btn;
+          btn.textContent = '■ Stop';
+          btn.classList.add('on');
+          synth.speak(u);
+        });
+      });
+
+      // ---- type a number to go to an exhibit
+      const screen = document.getElementById('gd-screen')!;
+      const guide = document.getElementById('guide')!;
+      let buf = '';
+      let timer = 0;
+      function go(n: number) {
+        const el = document.getElementById(`exhibit-${n}`);
+        if (!el) { screen.textContent = 'ERR'; announce.textContent = `There is no exhibit ${n}.`; return; }
+        el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center', inline: 'center' });
+        el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+        const title = el.querySelector('h3')?.textContent || '';
+        announce.textContent = `Exhibit ${n}: ${title}`;
+        (el.querySelector('h3 a') as HTMLElement)?.focus({ preventScroll: true });
+      }
+      window.addEventListener('keydown', (e) => {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        const t = e.target as HTMLElement;
+        if (t && (t.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(t.tagName))) return;
+        if (!/^[0-9]$/.test(e.key)) return;
+        buf = (buf + e.key).slice(-2);
+        screen.textContent = buf.padStart(2, '–');
+        guide.classList.add('active');
+        clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          const n = parseInt(buf, 10);
+          buf = '';
+          go(n);
+          setTimeout(() => { screen.textContent = '– –'; guide.classList.remove('active'); }, 1400);
+        }, 650);
+      });
+      // hide the keyboard hint and device on touch-only devices
+      if (window.matchMedia('(hover: none)').matches) document.documentElement.classList.add('touch');
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --serif: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --paper: #f7f3ea;
+    --ink: #1b1a17;
+    --gold: #b8913a;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { margin: 0; font-family: var(--sans); color: var(--ink); background: #ece6da; overflow-x: hidden; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .js-only { display: none !important; }
+  .js-ready.js-only { display: revert !important; }
+  .js-ready.room-nav { display: flex !important; }
+  .js-ready.guide-device { display: flex !important; }
+
+  /* -------- exit sign -------- */
+  .exit-sign {
+    position: fixed; top: 14px; left: 14px; z-index: 50;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #0b7a3b; color: #fff; text-decoration: none;
+    font: 700 12px/1 var(--sans); letter-spacing: .02em;
+    padding: 6px 10px 6px 7px; border-radius: 3px;
+    box-shadow: 0 0 0 2px #e9f5ec inset, 0 0 18px rgba(30,200,110,.35);
+  }
+  .exit-sign svg { width: 15px; height: 15px; fill: #fff; }
+
+  /* -------- lobby -------- */
+  .lobby {
+    min-height: 100vh; display: grid; place-items: center;
+    padding: 80px 20px 60px;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255,250,235,.9), transparent 70%),
+      repeating-linear-gradient(115deg, rgba(0,0,0,.018) 0 2px, transparent 2px 9px),
+      linear-gradient(#f3eee4, #e6dfd0);
+  }
+  .lobby-inner { width: min(1080px, 100%); }
+  .lobby-kicker { font: 600 11px/1 var(--sans); letter-spacing: .28em; text-transform: uppercase; color: #8a7f6a; margin: 0 0 18px; text-align: center; }
+  .lobby h1 {
+    font-family: var(--serif); font-weight: 600; text-align: center;
+    font-size: clamp(44px, 8.4vw, 112px); line-height: .95; letter-spacing: -.01em; margin: 0;
+    text-shadow: 0 1px 0 #fff;
+  }
+  .lobby h1 em { font-style: italic; font-weight: 500; }
+  .lobby-sub { font-family: var(--serif); font-size: clamp(19px, 2.2vw, 26px); text-align: center; font-style: italic; color: #5c5446; margin: 14px 0 48px; }
+  .lobby-grid { display: grid; grid-template-columns: minmax(220px, 340px) 1fr; gap: clamp(28px, 5vw, 64px); align-items: start; }
+  .portrait { margin: 0; text-align: center; }
+  .frame {
+    padding: 18px; border-radius: 2px;
+    background: linear-gradient(135deg, #d9b45c, #8f6a22 30%, #e8c66e 55%, #7a5718 80%, #c9a24d);
+    box-shadow: 0 18px 40px rgba(60,40,10,.35), inset 0 0 0 3px rgba(255,240,200,.35);
+  }
+  .frame img { display: block; width: 100%; height: auto; border: 10px solid #f3ecd9; box-shadow: inset 0 0 20px rgba(0,0,0,.4); filter: sepia(.12) contrast(1.02); }
+  .portrait figcaption { font-family: var(--serif); font-size: 17px; margin-top: 14px; color: #4b4436; }
+  .portrait figcaption span { font-family: var(--sans); font-size: 12px; color: #8a7f6a; }
+  .info { font-size: 15px; line-height: 1.5; }
+  .hours { margin: 0 0 18px; border-top: 2px solid var(--ink); }
+  .hours > div { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(27,26,23,.18); }
+  .hours dt { font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #6f6656; padding-top: 4px; }
+  .hours dd { margin: 0; font-family: var(--serif); font-size: 24px; font-weight: 600; line-height: 1.15; }
+  .rules { font-family: var(--serif); font-style: italic; font-size: 19px; margin: 0 0 22px; color: #5c5446; }
+  .floorplan { background: rgba(255,255,255,.55); border: 1px solid rgba(27,26,23,.15); padding: 16px 18px; margin-bottom: 18px; }
+  .fp-h { margin: 0 0 8px; font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #6f6656; }
+  .floorplan ol { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+  .floorplan a { text-decoration: none; display: flex; gap: 10px; align-items: baseline; padding: 3px 0; font-weight: 500; }
+  .floorplan a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .fp-n { font-family: var(--serif); font-weight: 700; min-width: 26px; color: var(--gold); }
+  .audio-hint { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: #4b4436; margin: 0; }
+  .hp svg { width: 26px; height: 26px; fill: currentColor; color: var(--ink); }
+  .touch .kbd-only { display: none; }
+  .enter {
+    display: table; margin: 48px auto 0; text-decoration: none;
+    font: 600 13px/1 var(--sans); letter-spacing: .2em; text-transform: uppercase;
+    padding: 16px 26px; border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper);
+    transition: background .2s, color .2s;
+  }
+  .enter:hover { background: transparent; color: var(--ink); }
+
+  /* -------- rooms -------- */
+  .room { position: relative; --wall: #23392f; --wall-2: #1a2c24; --fg: #efe8d8; --muted: rgba(239,232,216,.65); color: var(--fg); }
+  .theme-green { --wall: #24392f; --wall-2: #172720; }
+  .theme-oxblood { --wall: #4b1f25; --wall-2: #301216; }
+  .theme-white { --wall: #f4f2ed; --wall-2: #e4e0d6; --fg: #1b1a17; --muted: rgba(27,26,23,.6); }
+  .room {
+    background:
+      linear-gradient(180deg, rgba(0,0,0,.18), transparent 22%),
+      linear-gradient(0deg, var(--wall-2) 0 64px, rgba(0,0,0,.25) 64px 66px, transparent 66px),
+      var(--wall);
+  }
+  .theme-white.room { background: linear-gradient(0deg, #d9d4c8 0 64px, #cfc9bb 64px 66px, transparent 66px), linear-gradient(180deg, #fff, var(--wall) 30%); }
+
+  .gallery {
+    display: flex; gap: 0; overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity; scrollbar-width: thin; scrollbar-color: rgba(127,127,127,.5) transparent;
+    padding: 0 0 0 max(24px, calc((100vw - 1280px) / 2));
+    min-height: min(100vh, 900px); align-items: stretch;
+  }
+  .gallery:focus-visible { outline-offset: -4px; }
+  .walltext {
+    flex: 0 0 min(420px, 86vw); padding: 120px 48px 80px 0; scroll-snap-align: start;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .room-no { font: 600 12px/1 var(--sans); letter-spacing: .3em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+  .walltext h2, .annexe h2, .giftshop h2 { font-family: var(--serif); font-weight: 600; font-size: clamp(40px, 5vw, 64px); line-height: .98; margin: 0 0 22px; }
+  .wall-p { font-family: var(--serif); font-size: 21px; line-height: 1.45; margin: 0 0 22px; max-width: 34ch; }
+  .wall-count { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0; }
+  .mob-only { display: none; }
+
+  .exhibit {
+    flex: 0 0 380px; scroll-snap-align: center;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 40px 20px 90px;
+  }
+  .stage { position: relative; width: 340px; height: 430px; flex: none; }
+  .cone {
+    position: absolute; inset: -40px 0 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,244,214,.34), rgba(255,244,214,.08) 70%, transparent);
+    clip-path: polygon(44% 0, 56% 0, 92% 100%, 8% 100%);
+    filter: blur(6px);
+  }
+  .stage::before {
+    content: ''; position: absolute; left: 50%; top: -40px; width: 34px; height: 12px; translate: -50% 0;
+    background: #111; border-radius: 0 0 8px 8px; box-shadow: 0 6px 18px 6px rgba(255,240,200,.45);
+  }
+  .stage::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 52% 40% at 50% 52%, rgba(255,244,214,.28), transparent 70%);
+  }
+  .theme-white .cone { background: linear-gradient(180deg, rgba(255,226,160,.4), rgba(255,226,160,.06) 70%, transparent); }
+  .theme-white .stage::after { background: radial-gradient(ellipse 52% 40% at 50% 52%, rgba(255,214,140,.22), transparent 70%); }
+  .object { position: absolute; left: 50%; bottom: 150px; width: 210px; translate: -50% 0; z-index: 2; }
+  .artefact { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 6px rgba(0,0,0,.28)); overflow: visible; }
+  .plinth {
+    position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: 176px; height: 150px; z-index: 1;
+    background: linear-gradient(90deg, #cfc8b9, #f6f2e8 34%, #ece6d9 62%, #bfb7a6);
+    box-shadow: inset 0 9px 0 #fffdf6, inset 0 10px 0 rgba(0,0,0,.08);
+  }
+  .plinth::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: rgba(0,0,0,.12); }
+  .plinth-no { position: absolute; left: 50%; top: 44px; translate: -50% 0; font-family: var(--serif); font-size: 15px; color: #a0977f; letter-spacing: .1em; }
+  .floor-shadow { position: absolute; left: 50%; bottom: -12px; width: 240px; height: 26px; translate: -50% 0; background: radial-gradient(ellipse, rgba(0,0,0,.45), transparent 70%); }
+  .current-flag {
+    position: absolute; top: 4px; left: 50%; translate: -50% 0; margin: 0; z-index: 3;
+    font: 700 10px/1 var(--sans); letter-spacing: .22em; text-transform: uppercase;
+    background: var(--ink); color: #fff; padding: 7px 10px; white-space: nowrap;
+  }
+
+  .placard {
+    width: 300px; margin-top: 34px; padding: 18px 20px 18px;
+    background: var(--paper); color: var(--ink);
+    box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 10px 24px rgba(0,0,0,.28);
+    font-size: 13px; line-height: 1.5;
+  }
+  .theme-white .placard { box-shadow: 0 0 0 1px #e2ddd1, 0 8px 20px rgba(0,0,0,.08); background: #fff; }
+  .placard-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .audio-no {
+    display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    background: var(--ink); color: #fff; padding: 5px 9px 5px 7px; border-radius: 999px;
+  }
+  .audio-no svg { width: 13px; height: 13px; fill: #fff; }
+  .listen {
+    font: 600 11px/1 var(--sans); letter-spacing: .05em; cursor: pointer;
+    background: transparent; border: 1px solid rgba(27,26,23,.35); border-radius: 999px; padding: 6px 10px; color: var(--ink);
+  }
+  .listen.on { background: var(--gold); border-color: var(--gold); color: #fff; }
+  .placard h3 { font-family: var(--serif); font-size: 27px; font-weight: 700; line-height: 1.05; margin: 0 0 4px; }
+  .placard h3 a { text-decoration: none; }
+  .placard h3 a:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  .artist { margin: 0 0 10px; font-weight: 600; font-size: 12.5px; }
+  .tombstone { margin: 0 0 12px; display: grid; gap: 2px; font-size: 12.5px; }
+  .tombstone > div { display: flex; gap: 6px; }
+  .tombstone dt { color: #7a705e; }
+  .tombstone dt::after { content: ':'; }
+  .tombstone dd { margin: 0; font-style: italic; }
+  .curator { margin: 0 0 14px; font-family: var(--serif); font-size: 16.5px; line-height: 1.38; }
+  .view { font-weight: 600; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 2px; }
+  .exhibit.flash .placard { animation: flash 1.6s ease-out; }
+  @keyframes flash { 0%, 30% { box-shadow: 0 0 0 4px var(--gold), 0 10px 24px rgba(0,0,0,.28); } 100% { box-shadow: 0 0 0 0 transparent, 0 10px 24px rgba(0,0,0,.28); } }
+  .room-end { flex: 0 0 max(24px, calc((100vw - 1280px) / 2)); }
+
+  .room-nav { position: absolute; right: max(24px, calc((100vw - 1280px) / 2)); bottom: 14px; gap: 8px; z-index: 3; }
+  .room-nav button {
+    width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 17px;
+    border: 1px solid currentColor; background: transparent; color: var(--fg); opacity: .8;
+  }
+  .room-nav button:hover { opacity: 1; }
+
+  /* object animations */
+  .led { animation: led 1.6s steps(2) infinite; }
+  @keyframes led { 50% { opacity: .25; } }
+  .floaty { animation: floaty 5s ease-in-out infinite; }
+  @keyframes floaty { 50% { transform: translateY(-7px); } }
+  .spin { animation: spin 22s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .waves { animation: led 2.2s steps(2) infinite; }
+
+  /* -------- annexe -------- */
+  .annexe { --wall: #3a3a3e; --wall-2: #2b2b2e; background: linear-gradient(0deg, #2b2b2e 0 64px, #222 64px 66px, transparent 66px), #3a3a3e; --fg: #efe8d8; --muted: rgba(239,232,216,.6); }
+  .annexe-inner, .gs-inner { width: min(1100px, 100%); margin: 0 auto; padding: 110px 24px 120px; }
+  .salon { list-style: none; padding: 0; margin: 40px 0 0; display: flex; flex-wrap: wrap; gap: 34px 28px; align-items: flex-end; }
+  .salon a { display: flex; flex-direction: column; align-items: center; gap: 14px; text-decoration: none; }
+  .salon .canvas {
+    display: block; border: 12px solid #c9a24d; outline: 3px solid #8f6a22; outline-offset: -3px;
+    box-shadow: 0 14px 26px rgba(0,0,0,.45); transition: transform .3s;
+  }
+  .salon a:hover .canvas { transform: translateY(-4px) rotate(-.6deg); }
+  .mini-label { background: var(--paper); color: var(--ink); font-size: 12px; font-weight: 600; padding: 5px 9px; box-shadow: 0 4px 10px rgba(0,0,0,.3); }
+  .frame-0 .canvas { width: 170px; height: 130px; background: linear-gradient(#fff 0 22%, #1d70b8 22% 30%, #f3f2f1 30%); border-color: #2b2b2b; outline-color: #111; }
+  .frame-1 .canvas { width: 130px; height: 170px; background: radial-gradient(circle at 70% 30%, #e8eef6 0 18%, transparent 19%), linear-gradient(160deg, #052962, #0b3a85); }
+  .frame-2 .canvas { width: 150px; height: 150px; background: conic-gradient(from 20deg, #ffcf3f, #ff6b6b, #c77dff, #4ecdc4, #ffcf3f); border-radius: 50%; border-color: #c9a24d; }
+  .frame-3 .canvas { width: 180px; height: 120px; background: repeating-linear-gradient(90deg, #e9e2cf 0 14px, #d6ccb2 14px 16px), #e9e2cf; }
+  .frame-4 .canvas { width: 140px; height: 160px; background: radial-gradient(circle at 50% 120%, #f6c453 0 26%, transparent 27%), radial-gradient(1px 1px at 30% 30%, #fff, transparent), radial-gradient(1px 1px at 70% 50%, #fff, transparent), radial-gradient(1.5px 1.5px at 45% 70%, #fff, transparent), #0b1026; }
+
+  /* -------- gift shop -------- */
+  .giftshop {
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(255,250,235,.95), transparent 70%),
+      linear-gradient(#f6f1e6, #e9e1cf);
+  }
+  .giftshop .room-no { color: #8a7f6a; }
+  .shelf { list-style: none; padding: 0; margin: 40px 0 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; border-bottom: 14px solid #b9a27a; box-shadow: 0 20px 0 -6px #9c8662; padding-bottom: 0; }
+  .product { display: flex; flex-direction: column; align-items: center; gap: 14px; text-decoration: none; padding-bottom: 6px; }
+  .item { position: relative; display: grid; place-items: center; transition: transform .25s; }
+  .product:hover .item { transform: translateY(-6px) rotate(-1.5deg); }
+  .tag { display: grid; gap: 2px; text-align: center; background: #fff; padding: 8px 12px; font-size: 12.5px; position: relative; box-shadow: 0 3px 8px rgba(0,0,0,.12); max-width: 100%; }
+  .tag::before { content: ''; position: absolute; top: -8px; left: 50%; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid #999; translate: -50% 0; }
+  .tag strong { font-family: var(--serif); font-size: 19px; }
+  .tag span { overflow-wrap: anywhere; }
+  .tag em { font-style: normal; font-weight: 700; color: #0b7a3b; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+  .postcard { width: 170px; height: 112px; background: #fffdf6; box-shadow: 0 6px 14px rgba(0,0,0,.2); border: 1px solid #ddd5c2; transform: rotate(-3deg); }
+  .postcard .stamp { position: absolute; top: 9px; right: 9px; width: 26px; height: 32px; background: repeating-conic-gradient(#c8442c 0 25%, #e85d2a 0 50%) 0 0/8px 8px; outline: 2px dashed #fffdf6; outline-offset: -3px; }
+  .pc-l { font-family: var(--serif); font-style: italic; font-size: 22px; line-height: 1; color: #2e6fa3; transform: rotate(-4deg); }
+  .tote { width: 128px; height: 132px; margin-top: 20px; background: #efe6d0; border-radius: 2px 2px 8px 8px; box-shadow: 0 6px 14px rgba(0,0,0,.18); }
+  .tote .handle { position: absolute; top: -38px; left: 50%; translate: -50% 0; width: 70px; height: 52px; border: 7px solid #e2d6b8; border-bottom: 0; border-radius: 40px 40px 0 0; }
+  .tote-l { font-weight: 800; font-size: 19px; letter-spacing: -.02em; }
+  .mug { width: 112px; height: 124px; margin-top: 28px; background: linear-gradient(90deg, #e8e8e8, #fff 40%, #dedede); border-radius: 4px 4px 16px 16px; box-shadow: 0 6px 14px rgba(0,0,0,.18); }
+  .mug::after { content: ''; position: absolute; right: -32px; top: 26px; width: 34px; height: 54px; border: 11px solid #ececec; border-left: 0; border-radius: 0 30px 30px 0; }
+  .mug-l { font-family: ui-monospace, Menlo, monospace; font-weight: 700; font-size: 16px; }
+  .badge { width: 150px; height: 112px; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 6px 14px rgba(0,0,0,.2); display: flex; flex-direction: column; align-items: stretch; transform: rotate(2deg); }
+  .b-top { background: #c8442c; color: #fff; font-weight: 800; letter-spacing: .12em; text-align: center; padding: 6px 0 0; font-size: 16px; }
+  .b-mid { background: #c8442c; color: #fff; text-align: center; font-size: 10px; padding: 0 0 6px; }
+  .b-name { flex: 1; display: grid; place-items: center; font-family: 'Brush Script MT', 'Segoe Script', cursive; font-size: 34px; color: #1b3a8a; }
+  .till { margin: 64px 0 0; text-align: center; font-family: var(--serif); font-style: italic; font-size: 19px; color: #5c5446; }
+
+  /* -------- audio guide device -------- */
+  .guide-device {
+    position: fixed; right: 16px; bottom: 16px; z-index: 40;
+    flex-direction: column; align-items: center; gap: 6px;
+    background: #1b1a17; color: #c9c2b2; padding: 10px 12px 9px; border-radius: 12px;
+    font: 500 9.5px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35); opacity: .8; transition: opacity .2s, transform .2s;
+  }
+  .guide-device.active { opacity: 1; transform: translateY(-3px); }
+  .gd-screen { font: 600 22px/1 ui-monospace, Menlo, monospace; color: #9cf0b8; background: #0e1a12; padding: 6px 14px; border-radius: 4px; letter-spacing: .1em; min-width: 74px; text-align: center; text-shadow: 0 0 6px rgba(156,240,184,.6); }
+  .touch .guide-device { display: none !important; }
+
+  /* -------- small screens: rooms stack vertically -------- */
+  @media (max-width: 899px) {
+    .lobby { padding-top: 70px; }
+    .lobby-grid { grid-template-columns: 1fr; }
+    .portrait { width: min(260px, 70%); margin: 0 auto; }
+    .hours > div { grid-template-columns: 1fr; gap: 2px; }
+    .hours dd { font-size: 22px; }
+    .gallery { flex-direction: column; align-items: center; overflow: visible; padding: 0 16px 40px; min-height: 0; }
+    .walltext { flex: none; width: 100%; max-width: 440px; padding: 90px 0 10px; }
+    .exhibit { flex: none; width: 100%; max-width: 440px; padding: 50px 0 40px; }
+    .stage { width: min(340px, 100%); height: 400px; }
+    .placard { width: 100%; max-width: 360px; }
+    .desk-only { display: none; }
+    .mob-only { display: inline; }
+    .room-end { display: none; }
+    .js-ready.room-nav { display: none !important; }
+    .room { background: var(--wall); }
+    .theme-white.room { background: var(--wall); }
+    .shelf { grid-template-columns: 1fr 1fr; row-gap: 40px; border-bottom: 0; box-shadow: none; }
+    .floorplan ol { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 420px) {
+    .postcard { width: 140px; height: 96px; }
+    .pc-l { font-size: 18px; }
+    .badge { width: 130px; }
+    .tote { width: 112px; }
+    .mug { width: 96px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .led, .floaty, .spin, .waves { animation: none; }
+    .exhibit.flash .placard { animation: none; outline: 3px solid var(--gold); }
+    .item, .salon .canvas { transition: none; }
+  }
+</style>
