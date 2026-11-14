@@ -1,0 +1,441 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+const P = Object.fromEntries(projects.map((p) => [p.slug, p]));
+const a = (url: string, text: string) => `<a href="${esc(url)}">${esc(text)}</a>`;
+const pa = (slug: string) => a(P[slug].url, P[slug].name);
+const list = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')}, and ${xs[xs.length - 1]}`);
+
+type Row = { t: string; who?: 'CAPCOM' | 'FIRSHMAN'; html?: string; kind?: 'static' | 'garbled' | 'event' };
+const rows: Row[] = [
+  { t: '000:00:00:00', kind: 'event', html: 'Tape begins.' },
+  { t: '000:00:00:04', who: 'CAPCOM', html: 'Firshman, Houston. Radio check. How do you read?' },
+  { t: '000:00:00:09', who: 'FIRSHMAN', html: 'Loud and clear, Houston.' },
+  { t: '000:00:00:15', who: 'CAPCOM', html: 'Ben, say current activity?' },
+  { t: '000:00:00:21', who: 'FIRSHMAN', html: `Working on ${a(now.url, now.name)}. It lets you ${esc(now.blurb)}.` },
+  { t: '000:00:00:33', who: 'CAPCOM', html: `Roger, ${esc(now.name)}. Copy all. Can you give us a rundown of previous payloads?` },
+  { t: '000:00:00:41', who: 'FIRSHMAN', html: 'Stand by. There are a few.' },
+  { t: '000:00:01:02', who: 'FIRSHMAN', html: `Okay. ${pa('cog')}: ${esc(P.cog.blurb)}.` },
+  { t: '000:00:01:10', who: 'CAPCOM', html: 'Copy, Cog.' },
+  { t: '000:00:01:16', who: 'FIRSHMAN', html: `The ${pa('clig')}: ${esc(P.clig.blurb)}.` },
+  { t: '000:00:01:25', who: 'CAPCOM', html: "We've got the guidelines up on the wall down here. Everyone in the room is now writing helpful error messages." },
+  { t: '000:00:01:40', kind: 'static' },
+  { t: '000:00:01:52', who: 'FIRSHMAN', html: `…${pa('compose')}, to ${esc(P.compose.blurb)}. You may remember it as Fig.` },
+  { t: '000:00:02:01', who: 'CAPCOM', html: 'Say again on the name?' },
+  { t: '000:00:02:04', who: 'FIRSHMAN', html: 'Fig. Then Compose.' },
+  { t: '000:00:02:10', who: 'FIRSHMAN', html: `Also ${pa('machine')}, to ${esc(P.machine.blurb)}.` },
+  { t: '000:00:02:19', who: 'CAPCOM', html: 'Roger. Does "anywhere" include Houston?' },
+  { t: '000:00:02:23', who: 'FIRSHMAN', html: 'Anywhere within reason.' },
+  { t: '000:00:02:40', who: 'FIRSHMAN', html: `${pa('jsnes')}. ${esc(P.jsnes.blurb[0].toUpperCase() + P.jsnes.blurb.slice(1))}.` },
+  { t: '000:00:02:48', who: 'CAPCOM', html: 'Copy, emulator on board. The back room wants to know if it runs the plumber game.' },
+  { t: '000:00:02:55', who: 'FIRSHMAN', html: 'Bring your own ROM, Houston.' },
+  { t: '000:00:02:57', kind: 'event', html: 'Laughter in the back room.' },
+  { t: '000:00:03:15', who: 'FIRSHMAN', html: `${pa('whalebrew')}, ${esc(P.whalebrew.blurb)}.` },
+  { t: '000:00:03:30', who: 'FIRSHMAN', html: `And ${pa('arxiv-vanity')}. It ${esc(P['arxiv-vanity'].blurb)}.` },
+  { t: '000:00:03:38', who: 'CAPCOM', html: 'Copy. The flight surgeon says thanks. He reads them on his phone.' },
+  { t: '000:00:03:52', kind: 'garbled' },
+  { t: '000:00:04:05', who: 'FIRSHMAN', html: `…and ${pa('django')}. I ${esc(P.django.blurb)}.` },
+  { t: '000:00:04:14', who: 'CAPCOM', html: 'Roger, Django.' },
+  { t: '000:00:04:30', who: 'CAPCOM', html: 'Ben, Flight is asking about your high-altitude experience.' },
+  { t: '000:00:04:36', who: 'FIRSHMAN', html: `I ${esc(P.ukhas.blurb)}: the ${a(P.ukhas.url, P.ukhas.name)}. Balloons, mostly.` },
+  { t: '000:00:04:44', who: 'CAPCOM', html: 'Copy, balloons. Anything else for the log?' },
+  { t: '000:00:05:06', who: 'FIRSHMAN', html: `I also worked on ${list(alsoWorkedOn.map((x) => a(x.url, x.name)))}.` },
+  { t: '000:00:05:20', who: 'CAPCOM', html: 'Spacelog. <span class="noise">[static]</span> …that sounds familiar.' },
+  { t: '000:00:05:24', who: 'FIRSHMAN', html: 'It should.' },
+  { t: '000:00:05:40', who: 'CAPCOM', html: "Ben, if folks want to reach you, what's your frequency?" },
+  { t: '000:00:05:47', who: 'FIRSHMAN', html: `Email ${a(`mailto:${email}`, email)}. I'm also on ${list(socials.map((s) => a(s.url, s.name)))}.` },
+  { t: '000:00:05:58', who: 'CAPCOM', html: "Copy all. That's everything we need. Good work up there." },
+  { t: '000:00:06:03', who: 'FIRSHMAN', html: 'Thanks, Houston. Firshman out.' },
+  { t: '000:00:06:05', kind: 'event', html: 'End of tape.' },
+];
+const toSec = (t: string) => t.split(':').map(Number).reduce((acc, v, i) => acc + v * [86400, 3600, 60, 1][i], 0);
+const ring = 'FIRSHMAN ★ REPLICATE ★ COG ★ COMPOSE ★ JSNES ★ CLIG ★ ';
+---
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — Mission transcript</title>
+    <meta name="description" content="Ben Firshman's career as an air-to-ground voice transcript, with ground control asking the questions." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Oswald:wght@500;700&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.replace('no-js', 'js');</script>
+  </head>
+  <body>
+    <div class="met" id="metbar">
+      <div class="met-clock">
+        <span class="met-label">MET</span>
+        <span class="met-time" id="met" aria-label="Mission elapsed time">000:00:00:00</span>
+      </div>
+      <div class="met-controls js-only">
+        <button type="button" id="play" class="btn"><span aria-hidden="true" class="ico">▶</span> <span class="lbl">Play tape</span></button>
+        <button type="button" id="skip" class="btn ghost" hidden><span aria-hidden="true">⏭</span> Skip to end</button>
+      </div>
+      <a class="back" href="/ideas">← all ideas</a>
+    </div>
+
+    <header class="head">
+      <svg class="patch" viewBox="0 0 200 200" role="img" aria-label="Mission patch: a red balloon rising over the Earth, ringed with project names">
+        <defs>
+          <path id="ringPath" d="M100 100 m -78 0 a 78 78 0 1 1 156 0 a 78 78 0 1 1 -156 0" />
+          <clipPath id="inner"><circle cx="100" cy="100" r="64" /></clipPath>
+          <radialGradient id="earthGrad" cx="50%" cy="20%" r="80%"><stop offset="0" stop-color="#6fb7ff" /><stop offset="1" stop-color="#1d4f8f" /></radialGradient>
+        </defs>
+        <circle cx="100" cy="100" r="97" fill="#c8361d" />
+        <circle cx="100" cy="100" r="92" fill="#13203a" />
+        <text font-family="Oswald, sans-serif" font-weight="700" font-size="13.2" letter-spacing="1.6" fill="#f4efe3">
+          <textPath href="#ringPath" startOffset="0">{ring}</textPath>
+        </text>
+        <circle cx="100" cy="100" r="66" fill="#f4efe3" />
+        <g clip-path="url(#inner)">
+          <rect x="0" y="0" width="200" height="200" fill="#0b1226" />
+          {[[60, 58], [82, 48], [140, 62], [128, 46], [70, 86], [150, 92], [112, 70], [52, 110], [96, 40]].map(([x, y]) => <circle cx={x} cy={y} r="1.1" fill="#fff" />)}
+          <circle cx="100" cy="300" r="152" fill="url(#earthGrad)" />
+          <path d="M42 162 Q 70 150 96 158 T 160 150" stroke="#9fd0a0" stroke-width="5" fill="none" opacity=".6" />
+          <path d="M60 140 C 80 120, 100 104, 112 82" stroke="#f4efe3" stroke-width="1.4" stroke-dasharray="3 4" fill="none" />
+          <g transform="translate(118 66)">
+            <path d="M0 14 C -8 11 -14 4 -14 -4 C -14 -12 -8 -17 0 -17 C 8 -17 14 -12 14 -4 C 14 4 8 11 0 14Z" fill="#c8361d" />
+            <ellipse cx="5" cy="-9" rx="3" ry="5" fill="#fff" opacity=".4" transform="rotate(25 5 -9)" />
+            <line x1="0" y1="14" x2="0" y2="26" stroke="#f4efe3" stroke-width="1" />
+            <rect x="-3" y="26" width="6" height="5" fill="#f4efe3" />
+          </g>
+        </g>
+        <circle cx="100" cy="100" r="66" fill="none" stroke="#f4efe3" stroke-width="3" />
+      </svg>
+      <div class="head-text">
+        <p class="eyebrow">Air-to-ground voice transcription</p>
+        <h1>{name}</h1>
+        <p class="mission">Mission: <a href={now.url}>{now.name}</a> <span class="stamp" aria-label="(in progress)">In progress</span></p>
+        <dl class="speakers">
+          <div><dt>CAPCOM</dt><dd>Capsule communicator, Houston</dd></div>
+          <div><dt>FIRSHMAN</dt><dd>{name}</dd></div>
+        </dl>
+      </div>
+    </header>
+
+    <main class="tape" id="tape">
+      <p class="tape-meta"><span>Tape 1/1</span><span>Page 1</span><span>(GOSS NET 1)</span></p>
+      <ol class="rows" id="rows">
+        {rows.map((r) => (
+          <li class:list={['row', r.kind, r.who && r.who.toLowerCase()]} data-t={toSec(r.t)}>
+            <time class="ts">{r.t}</time>
+            <span class="who">{r.who ?? ''}</span>
+            {r.kind === 'static' ? (
+              <span class="text"><span class="hiss" aria-hidden="true"></span><span class="noise">[static]</span></span>
+            ) : r.kind === 'garbled' ? (
+              <span class="text"><span class="noise">[garbled]</span> <span class="garble" aria-hidden="true">…ink-ed ▒▒ guide▒ ▓▓ ░ conta▒ners…</span></span>
+            ) : r.kind === 'event' ? (
+              <span class="text" set:html={`(${r.html})`} />
+            ) : (
+              <span class="text" set:html={r.html} />
+            )}
+          </li>
+        ))}
+      </ol>
+      <footer class="foot">
+        <p>Transcribed from the original tapes, which do not exist.</p>
+        <p><a href={`mailto:${email}`}>{email}</a> · {socials.map((s, i) => (<>{i > 0 && ' · '}<a href={s.url}>{s.name}</a></>))} · <a href="/ideas">← all ideas</a></p>
+      </footer>
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --paper: #f4efe3;
+    --paper2: #ebe4d3;
+    --ink: #1d1b17;
+    --soft: #6c665a;
+    --red: #c8361d;
+    --amber: #ffb000;
+    --rule: #d8cfbb;
+    --mono: "Courier Prime", "Courier New", Courier, monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    background-image: radial-gradient(#0000000a 1px, transparent 1px);
+    background-size: 3px 3px;
+    color: var(--ink);
+    font: 18px/1.5 var(--mono);
+  }
+  a { color: inherit; text-decoration-thickness: 1.5px; text-underline-offset: 3px; text-decoration-color: var(--red); }
+  a:hover { background: #c8361d1f; }
+  a:focus-visible, .btn:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  .js-only { display: none; }
+  .js .js-only { display: flex; }
+
+  /* sticky MET bar */
+  .met {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 20px;
+    padding: 10px max(16px, calc(50% - 440px));
+    background: var(--ink); color: var(--paper);
+    box-shadow: 0 2px 0 var(--red);
+  }
+  .met-clock { display: flex; align-items: baseline; gap: 12px; }
+  .met-label { font: 700 12px/1 "Oswald", sans-serif; letter-spacing: .18em; color: #a59d8b; }
+  .met-time { font: 700 26px/1 var(--mono); color: var(--amber); font-variant-numeric: tabular-nums; letter-spacing: .02em; text-shadow: 0 0 12px #ffb00055; }
+  .met-controls { gap: 8px; margin-left: auto; }
+  .btn {
+    font: 700 14px/1 var(--mono); color: var(--ink); background: var(--paper);
+    border: 0; border-radius: 3px; padding: 9px 12px; cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover { background: #fff; }
+  .btn.ghost { background: transparent; color: var(--paper); box-shadow: inset 0 0 0 1px #ffffff40; }
+  .btn.ghost:hover { box-shadow: inset 0 0 0 1px var(--paper); }
+  .btn[hidden] { display: none; }
+  .back { font: 13px var(--mono); color: #a59d8b; text-decoration: none; white-space: nowrap; }
+  .back:hover { color: var(--paper); background: none; }
+  .no-js .back { margin-left: auto; }
+
+  /* header */
+  .head { max-width: 880px; margin: 0 auto; padding: 48px 16px 28px; display: flex; gap: 32px; align-items: center; }
+  .patch { width: 172px; height: 172px; flex: none; filter: drop-shadow(0 6px 10px #0002); transform: rotate(-4deg); }
+  .eyebrow { font: 700 13px/1 "Oswald", sans-serif; letter-spacing: .2em; text-transform: uppercase; color: var(--soft); margin: 0 0 10px; }
+  h1 { font: 700 clamp(40px, 7vw, 68px)/0.95 var(--mono); letter-spacing: -.03em; margin: 0 0 12px; }
+  .mission { margin: 0 0 14px; font-size: 19px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .mission a { font-weight: 700; }
+  .stamp {
+    font: 700 14px/1 "Oswald", sans-serif; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--red); border: 2.5px solid var(--red); border-radius: 4px; padding: 5px 8px 4px;
+    transform: rotate(-6deg); opacity: .85; mix-blend-mode: multiply;
+  }
+  .speakers { margin: 0; font-size: 14px; color: var(--soft); display: grid; gap: 2px; }
+  .speakers div { display: flex; gap: 1ch; }
+  .speakers dt { font-weight: 700; color: var(--ink); min-width: 9ch; }
+  .speakers dd { margin: 0; }
+
+  /* the tape */
+  .tape { max-width: 880px; margin: 0 auto; padding: 0 16px 64px; }
+  .tape-meta { display: flex; justify-content: space-between; font-size: 13px; color: var(--soft); border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); padding: 6px 0; margin: 0 0 18px; }
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .row {
+    display: grid; grid-template-columns: 14ch 10ch minmax(0, 1fr); column-gap: 2ch;
+    padding: 7px 0; align-items: baseline;
+  }
+  .ts { color: var(--soft); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .who { font-weight: 700; letter-spacing: .02em; }
+  .row.firshman .who { color: var(--red); }
+  .row.firshman .text { font-weight: 700; }
+  .row.firshman .text a { text-decoration-color: currentColor; }
+  .text { overflow-wrap: anywhere; }
+  .row.event .text { color: var(--soft); font-style: italic; }
+  .noise { color: var(--soft); font-style: italic; letter-spacing: .04em; font-weight: 400; }
+  .row.static .text, .row.garbled .text { display: flex; align-items: center; gap: 1.2ch; flex-wrap: wrap; }
+  .hiss {
+    display: inline-block; width: min(240px, 40vw); height: 12px; border-radius: 2px;
+    background:
+      repeating-linear-gradient(90deg, #1d1b1722 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, #1d1b1714 0 2px, transparent 2px 7px),
+      repeating-linear-gradient(90deg, #1d1b1718 0 1px, transparent 1px 11px);
+    animation: hiss .25s steps(3) infinite;
+  }
+  @keyframes hiss { 33% { background-position: 4px 0, -3px 0, 7px 0; } 66% { background-position: -5px 0, 6px 0, -2px 0; } }
+  .garble { color: #a69e8c; filter: blur(.6px); font-weight: 400; }
+
+  /* playback */
+  .row.pending { display: none; }
+  .row.typing .text::after {
+    content: ""; display: inline-block; width: .55em; height: 1em; margin-left: 2px; vertical-align: -.15em;
+    background: var(--ink); animation: caret .7s steps(1) infinite;
+  }
+  @keyframes caret { 50% { opacity: 0; } }
+  .row.current { background: linear-gradient(90deg, #ffb00026, transparent 85%); margin: 0 -10px; padding-left: 10px; padding-right: 10px; }
+  .row.arrive { animation: arrive .35s ease-out; }
+  @keyframes arrive { from { opacity: 0; transform: translateY(4px); } }
+
+  .foot { margin-top: 36px; border-top: 2px solid var(--ink); padding-top: 14px; font-size: 15px; color: var(--soft); }
+  .foot p { margin: 0 0 6px; }
+  .foot a { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hiss, .row.typing .text::after, .row.arrive { animation: none; }
+  }
+
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .met { gap: 10px; padding: 8px 16px; flex-wrap: wrap; }
+    .met-time { font-size: 21px; }
+    .met-label { font-size: 11px; }
+    .btn { font-size: 13px; padding: 8px 10px; }
+    .back { margin-left: auto; font-size: 12px; }
+    .js .met-controls { order: 1; width: 100%; margin-left: 0; }
+    .js .met-controls .btn { flex: 1; }
+    .head { flex-direction: column; align-items: flex-start; gap: 18px; padding-top: 28px; }
+    .patch { width: 124px; height: 124px; }
+    .row { grid-template-columns: auto minmax(0, 1fr); column-gap: 1.5ch; padding: 8px 0; }
+    .row .ts { font-size: 13px; }
+    .row .who { font-size: 14px; }
+    .row .text { grid-column: 1 / -1; margin-top: 1px; }
+    .row.event .who, .row.static .who, .row.garbled .who { display: none; }
+    .row.event, .row.static, .row.garbled { grid-template-columns: minmax(0, 1fr); }
+    .tape-meta span:last-child { display: none; }
+  }
+</style>
+
+<script>
+  const rows = [...document.querySelectorAll<HTMLElement>('#rows .row')];
+  const met = document.getElementById('met')!;
+  const play = document.getElementById('play') as HTMLButtonElement;
+  const skip = document.getElementById('skip') as HTMLButtonElement;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const bar = document.getElementById('metbar')!;
+
+  const fmt = (s: number) => {
+    const d = Math.floor(s / 86400), h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60, sec = Math.floor(s % 60);
+    return `${String(d).padStart(3, '0')}:${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  };
+  const setMet = (s: number) => { const v = fmt(s); if (met.textContent !== v) met.textContent = v; };
+
+  // ---- scroll-spy MET when not playing ----
+  let state: 'idle' | 'playing' | 'paused' | 'done' = 'idle';
+  function spy() {
+    if (state === 'playing') return;
+    const line = bar.offsetHeight + innerHeight * 0.3;
+    let t = 0;
+    for (const r of rows) {
+      if (r.classList.contains('pending')) break;
+      if (r.getBoundingClientRect().top <= line) t = +r.dataset.t!; else break;
+    }
+    setMet(t);
+  }
+  let spyQueued = false;
+  addEventListener('scroll', () => { if (!spyQueued) { spyQueued = true; requestAnimationFrame(() => { spyQueued = false; spy(); }); } }, { passive: true });
+  spy();
+
+  // ---- typewriter ----
+  type Typed = { nodes: Text[]; full: string[] };
+  const store = new Map<HTMLElement, Typed>();
+  function prepare(row: HTMLElement) {
+    const el = row.querySelector('.text') as HTMLElement;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const nodes: Text[] = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode as Text);
+    const t: Typed = { nodes, full: nodes.map((n) => n.data) };
+    nodes.forEach((n) => (n.data = ''));
+    store.set(row, t);
+  }
+  function restore(row: HTMLElement) {
+    const t = store.get(row);
+    if (t) t.nodes.forEach((n, i) => (n.data = t.full[i]));
+    store.delete(row);
+  }
+
+  let idx = 0;
+  let timer = 0;
+  let typing: { row: HTMLElement; node: number; ch: number } | null = null;
+  const wait = (fn: () => void, ms: number) => { timer = window.setTimeout(fn, ms); };
+
+  function setButton() {
+    const ico = play.querySelector('.ico')!, lbl = play.querySelector('.lbl')!;
+    if (state === 'playing') { ico.textContent = '❚❚'; lbl.textContent = 'Pause'; }
+    else if (state === 'paused') { ico.textContent = '▶'; lbl.textContent = 'Resume'; }
+    else if (state === 'done') { ico.textContent = '↺'; lbl.textContent = 'Replay'; }
+    else { ico.textContent = '▶'; lbl.textContent = 'Play tape'; }
+    skip.hidden = !(state === 'playing' || state === 'paused');
+  }
+
+  function start() {
+    clearTimeout(timer);
+    rows.forEach((r) => { restore(r); r.classList.add('pending'); r.classList.remove('current', 'typing', 'arrive'); });
+    idx = 0; typing = null;
+    state = 'playing'; setButton();
+    setMet(0);
+    document.getElementById('tape')!.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+    wait(next, 600);
+  }
+
+  function follow(row: HTMLElement) {
+    const r = row.getBoundingClientRect();
+    if (r.bottom > innerHeight - 40 || r.top < bar.offsetHeight) {
+      scrollBy({ top: r.bottom - innerHeight * 0.62, behavior: reduced ? 'auto' : 'smooth' });
+    }
+  }
+
+  function next() {
+    if (state !== 'playing') return;
+    if (idx >= rows.length) { finish(); return; }
+    const row = rows[idx];
+    rows.forEach((r) => r.classList.remove('current'));
+    row.classList.remove('pending');
+    row.classList.add('current');
+    if (!reduced) row.classList.add('arrive');
+    setMet(+row.dataset.t!);
+    follow(row);
+    if (reduced || row.classList.contains('static') || row.classList.contains('garbled')) {
+      afterRow(row, row.classList.contains('static') || row.classList.contains('garbled') ? 900 : 0);
+      return;
+    }
+    prepare(row);
+    row.classList.add('typing');
+    typing = { row, node: 0, ch: 0 };
+    type();
+  }
+
+  function type() {
+    if (state !== 'playing' || !typing) return;
+    const t = store.get(typing.row)!;
+    let n = typing.node;
+    while (n < t.nodes.length && typing.ch >= t.full[n].length) { n++; typing.ch = 0; }
+    typing.node = n;
+    if (n >= t.nodes.length) {
+      const row = typing.row;
+      row.classList.remove('typing');
+      store.delete(row);
+      typing = null;
+      afterRow(row, 0);
+      return;
+    }
+    const c = t.full[n][typing.ch];
+    t.nodes[n].data += c;
+    typing.ch++;
+    const isCap = typing.row.classList.contains('capcom');
+    const delay = (isCap ? 22 : 30) + (/[.,?:…]/.test(c) ? 140 : 0) + Math.random() * 18;
+    wait(type, delay);
+  }
+
+  function afterRow(row: HTMLElement, extra: number) {
+    const tNow = +row.dataset.t!;
+    idx++;
+    const nxt = rows[idx];
+    const gap = nxt ? +nxt.dataset.t! - tNow : 0;
+    const pause = Math.min(1100, 250 + gap * 30) + extra;
+    // tick the clock forward through the gap
+    if (nxt && gap > 1 && !reduced) {
+      const steps = Math.min(gap, 12);
+      for (let i = 1; i <= steps; i++) setTimeout(() => state === 'playing' && setMet(tNow + Math.round((gap * i) / steps)), (pause * i) / (steps + 1));
+    }
+    wait(next, reduced ? 450 : pause);
+  }
+
+  function finish() {
+    clearTimeout(timer);
+    if (typing) { typing.row.classList.remove('typing'); typing = null; }
+    rows.forEach((r) => { restore(r); r.classList.remove('pending', 'typing', 'current'); });
+    setMet(+rows[rows.length - 1].dataset.t!);
+    state = 'done'; setButton();
+  }
+
+  play.addEventListener('click', () => {
+    if (state === 'playing') { state = 'paused'; clearTimeout(timer); setButton(); }
+    else if (state === 'paused') {
+      state = 'playing'; setButton();
+      if (typing) type(); else next();
+    } else start();
+  });
+  skip.addEventListener('click', () => {
+    finish();
+    const last = rows[rows.length - 1];
+    last.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && (state === 'playing' || state === 'paused')) finish();
+  });
+</script>

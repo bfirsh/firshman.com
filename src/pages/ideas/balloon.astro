@@ -1,0 +1,577 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+
+// ---- UKHAS-style telemetry sentence with a real CRC16-CCITT checksum ----
+function crc16(s: string) {
+  let crc = 0xffff;
+  for (let i = 0; i < s.length; i++) {
+    crc ^= s.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) crc = crc & 0x8000 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+function isaTemp(h: number) {
+  if (h < 11000) return 15 - 6.5 * (h / 1000);
+  if (h < 20000) return -56.5;
+  if (h < 32000) return -56.5 + (h - 20000) / 1000;
+  return -44.5 + 2.8 * ((h - 32000) / 1000);
+}
+const hms = (sec: number) => [sec / 3600, (sec / 60) % 60, sec % 60].map((x) => String(Math.floor(x)).padStart(2, '0')).join(':');
+function sentence(n: number, alt: number, rate = 5) {
+  const body = `BEN1,${n},${hms(alt / rate)},${alt},${isaTemp(alt).toFixed(1)}`;
+  return `$$${body}*${crc16(body)}`;
+}
+
+const BURST = 35000;
+const upAlts = projects.map((_, i) => 4000 + i * 3500);
+const downAlts = alsoWorkedOn.map((_, i) => 31000 - i * 5000);
+const fmt = (m: number) => m.toLocaleString('en-GB');
+const head = (n: string) => (n.includes(' ') ? n.slice(0, n.lastIndexOf(' ') + 1) : '');
+const tail = (n: string) => n.slice(n.lastIndexOf(' ') + 1);
+
+// ---- stars and clouds, deterministic ----
+let seed = 7;
+const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+const stars = Array.from({ length: 170 }, () => ({ x: rnd() * 1000, y: rnd() * 1000, r: rnd() < 0.08 ? 1.6 : 0.5 + rnd() * 0.8, d: (rnd() * 4).toFixed(2) }));
+const clouds = [
+  // ascent: kept clear of the launch headline (roughly 1.5–3.3 km at take-off)
+  { alt: 700, x: 6, s: 1.0, ph: 'up' }, { alt: 1150, x: 68, s: 1.3, ph: 'up' }, { alt: 3600, x: 58, s: 0.9, ph: 'up' },
+  { alt: 4300, x: -6, s: 1.5, ph: 'up' }, { alt: 5600, x: 62, s: 1.2, ph: 'up' }, { alt: 6800, x: 18, s: 0.8, ph: 'up' },
+  { alt: 9300, x: 74, s: 1.6, thin: true, ph: 'both' }, { alt: 10400, x: 6, s: 1.8, thin: true, ph: 'both' },
+  // descent: kept clear of the landing text
+  { alt: 1500, x: 64, s: 1.2, ph: 'down' }, { alt: 6200, x: 70, s: 1.0, ph: 'down' }, { alt: 7800, x: 8, s: 1.4, ph: 'down' },
+];
+const ticks = Array.from({ length: 36 }, (_, i) => i * 1000);
+---
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — Ascent</title>
+    <meta name="description" content="Scroll to launch a high-altitude balloon. Ben Firshman's projects are the telemetry on the way up." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+    <script is:inline>
+      (function () {
+        var d = document.documentElement;
+        d.classList.replace('no-js', 'js');
+        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) d.classList.add('fly');
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="back" href="/ideas">← all ideas</a>
+
+    <!-- ===== the scene (decorative) ===== -->
+    <div class="scene" aria-hidden="true">
+      <div class="sky" id="sky"></div>
+      <svg class="stars" id="stars" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice">
+        {stars.map((s) => <circle cx={s.x.toFixed(1)} cy={s.y.toFixed(1)} r={s.r.toFixed(2)} style={`--d:${s.d}s`} />)}
+      </svg>
+      <svg class="limb" id="limb">
+        <defs>
+          <linearGradient id="earthG" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="0" y2="1000">
+            <stop offset="0" stop-color="#cfe8ff" />
+            <stop offset="0.04" stop-color="#7fb2de" />
+            <stop offset="0.25" stop-color="#2f6c9e" />
+            <stop offset="1" stop-color="#0d2c4a" />
+          </linearGradient>
+          <filter id="glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="6" /></filter>
+        </defs>
+        <circle id="atmo" fill="none" stroke="#7cc4ff" stroke-width="18" filter="url(#glow)" opacity=".75" />
+        <circle id="earth" fill="url(#earthG)" />
+      </svg>
+
+      <div class="world" id="world">
+        {ticks.map((t) => (
+          <div class:list={['tick', { major: t % 5000 === 0 }]} data-alt={t} data-phase="both">
+            {t % 5000 === 0 && <span>{t / 1000} km</span>}
+          </div>
+        ))}
+        {clouds.map((c) => (
+          <div class:list={['cloud', { thin: c.thin }]} data-alt={c.alt} data-phase={c.ph} style={`left:${c.x}%;--s:${c.s}`}>
+            <svg viewBox="0 0 220 90"><use href={c.thin ? '#cirrus' : '#cumulus'} /></svg>
+          </div>
+        ))}
+        <div class="plane" data-alt="11000" data-phase="up">
+          <svg viewBox="0 0 400 40"><line x1="0" y1="22" x2="330" y2="22" class="trail" /><path d="M330 22 l40 -3 q12 0 12 3 q0 3 -12 3 z M350 20 l-14 -14 h6 l20 14z M350 24 l-14 12 h6 l20 -12z M334 21 l-6 -7 h4 l8 7z" /></svg>
+        </div>
+      </div>
+
+      <div class="ground" id="ground">
+        <svg viewBox="0 0 1600 320" preserveAspectRatio="xMidYMin slice">
+          <defs>
+            <linearGradient id="fieldG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7cb04f" /><stop offset="1" stop-color="#4c7f31" /></linearGradient>
+          </defs>
+          <path d="M0 40 Q 200 6 420 30 T 860 24 T 1300 30 T 1600 20 V 0 H0Z" fill="none" />
+          <path d="M0 52 C 60 14, 110 18, 160 46 C 200 10, 270 8, 320 44 C 380 20, 430 26, 470 50 L 470 60 L0 60Z" fill="#2f5a25" />
+          <path d="M1080 50 C 1130 18, 1190 16, 1230 44 C 1280 12, 1350 14, 1400 46 C 1450 22, 1530 18, 1600 40 L1600 60 L1080 60Z" fill="#2f5a25" />
+          <rect x="0" y="48" width="1600" height="272" fill="url(#fieldG)" />
+          <g stroke="#5f9440" stroke-width="2" opacity=".55">
+            {Array.from({ length: 12 }, (_, i) => <line x1={-200 + i * 170} y1="320" x2={560 + i * 45} y2="52" />)}
+          </g>
+          <!-- a tree, for later -->
+          <g transform="translate(1180 4)"><rect x="-5" y="30" width="10" height="26" fill="#4a3320" /><circle cx="0" cy="20" r="24" fill="#2b5220" /><circle cx="-16" cy="30" r="16" fill="#2b5220" /><circle cx="15" cy="30" r="17" fill="#2b5220" /></g>
+          <!-- the chase car -->
+          <g transform="translate(560 30)"><rect x="0" y="6" width="54" height="22" rx="4" fill="#f4f1e8" /><path d="M36 6 h10 l8 10 v0 h-18z" fill="#9cc6e6" /><circle cx="12" cy="29" r="5" fill="#222" /><circle cx="42" cy="29" r="5" fill="#222" /></g>
+          <!-- launch crew -->
+          <g fill="#1c1c1c" transform="translate(690 34)">
+            <g><circle cx="0" cy="0" r="4" /><rect x="-3" y="5" width="6" height="14" rx="2" /></g>
+            <g transform="translate(18 2)"><circle cx="0" cy="0" r="4" /><rect x="-3" y="5" width="6" height="13" rx="2" /><line x1="3" y1="7" x2="11" y2="-1" stroke="#1c1c1c" stroke-width="2" /></g>
+            <g transform="translate(1000 -6)"><circle cx="0" cy="0" r="4" /><rect x="-3" y="5" width="6" height="14" rx="2" /></g>
+          </g>
+        </svg>
+      </div>
+
+      <svg width="0" height="0" style="position:absolute">
+        <symbol id="cumulus" viewBox="0 0 220 90"><path d="M20 80 C 0 80 0 56 22 54 C 18 30 48 22 62 38 C 70 10 112 6 124 32 C 136 16 168 20 168 44 C 196 40 214 58 200 80 Z" fill="#fff" /><path d="M20 80 C 60 72 150 72 200 80Z" fill="#dfe9f3" /></symbol>
+        <symbol id="cirrus" viewBox="0 0 220 90"><path d="M0 50 C 40 40 80 36 120 42 C 160 48 190 44 220 34 C 190 52 150 56 110 52 C 70 48 40 52 0 50Z M30 64 C 70 58 120 56 180 62 C 120 64 80 66 30 64Z" fill="#fff" opacity=".8" /></symbol>
+      </svg>
+    </div>
+
+    <!-- ===== the balloon ===== -->
+    <div class="rig" id="rig" aria-hidden="true">
+      <svg viewBox="0 0 200 400" class="rig-svg">
+        <g class="sway">
+          <g id="balloon" class="balloon">
+            <path d="M100 196 C 74 186 36 150 36 106 C 36 62 66 34 100 34 C 134 34 164 62 164 106 C 164 150 126 186 100 196 Z" fill="#ff5a3c" />
+            <path d="M100 196 C 74 186 36 150 36 106 C 36 62 66 34 100 34 C 84 46 70 74 72 112 C 74 150 88 180 100 196Z" fill="#000" opacity=".1" />
+            <ellipse cx="124" cy="72" rx="13" ry="22" transform="rotate(28 124 72)" fill="#fff" opacity=".45" />
+            <rect x="96" y="194" width="8" height="8" rx="2" fill="#d94a30" />
+          </g>
+          <g id="shreds" class="shreds">
+            {[[-60, -70, 40], [70, -60, -30], [-80, 10, 80], [85, 20, -70], [-20, -95, 15], [30, -90, -50], [0, 50, 120]].map(([x, y, r]) => (
+              <path d="M0 0 q 10 -6 18 2 q -6 8 -16 6z" fill="#ff5a3c" style={`--x:${x}px;--y:${y}px;--r:${r}deg`} transform="translate(100 120)" />
+            ))}
+          </g>
+          <line id="cord-top" x1="100" y1="202" x2="100" y2="270" stroke="#e9e3d2" stroke-width="1.6" />
+          <g id="chute" class="chute">
+            <path d="M44 270 C 44 226 156 226 156 270 C 142 262 128 262 114 270 C 104 262 96 262 86 270 C 72 262 58 262 44 270Z" fill="#ff9d2e" />
+            <path d="M86 270 C 88 240 112 240 114 270 C 104 262 96 262 86 270Z" fill="#fff" opacity=".85" />
+            <g stroke="#e9e3d2" stroke-width="1.2"><line x1="44" y1="270" x2="100" y2="352" /><line x1="86" y1="270" x2="100" y2="352" /><line x1="114" y1="270" x2="100" y2="352" /><line x1="156" y1="270" x2="100" y2="352" /></g>
+          </g>
+          <g id="chute-packed"><rect x="93" y="268" width="14" height="12" rx="3" fill="#ff9d2e" /></g>
+          <line x1="100" y1="280" x2="100" y2="352" stroke="#e9e3d2" stroke-width="1.6" />
+          <!-- payload -->
+          <g class="payload">
+            <line x1="112" y1="352" x2="128" y2="326" stroke="#bbb" stroke-width="1.5" />
+            <rect x="80" y="352" width="40" height="34" rx="3" fill="#f7f5ee" stroke="#c9c3b2" />
+            <rect x="86" y="362" width="28" height="7" fill="#ff5a3c" />
+            <text x="100" y="381" text-anchor="middle" font-family="Space Mono, monospace" font-size="7" fill="#333">BEN-1</text>
+            <circle class="led" cx="114" cy="357" r="1.8" fill="#43ff7a" />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- ===== HUD ===== -->
+    <div class="hud" id="hud" aria-hidden="true">
+      <div class="hud-row"><span>ALT</span><b id="h-alt">0 m</b></div>
+      <div class="hud-row"><span>TEMP</span><b id="h-temp">15.0 °C</b></div>
+      <div class="hud-row hide-sm"><span>PRES</span><b id="h-pres">1013 hPa</b></div>
+      <div class="hud-row hide-sm"><span>RATE</span><b id="h-rate">0 m/s</b></div>
+      <div class="hud-phase" id="h-phase">● ON THE GROUND</div>
+      <div class="hud-note" id="h-note"></div>
+    </div>
+
+    <div class="pop" id="pop" aria-hidden="true"><b>POP.</b><span>Burst at 35,000 m. Exactly as planned.</span></div>
+
+    <!-- ===== the content (real, accessible, in reading order) ===== -->
+    <main class="track" id="track">
+      <header class="launch" data-ground="0.62" data-phase="up">
+        <p class="kicker">Launch site · a field · wind light</p>
+        <h1>{name}</h1>
+        <p class="now">I'm working on <a href={now.url}>{now.name}</a>, {now.blurb}. <span class="nowrap">Everything else is on the way up.</span></p>
+        <p class="cue js-only"><span class="arrow">↓</span> Scroll to launch</p>
+      </header>
+
+      <ol class="payloads" aria-label="Projects, by altitude">
+        {projects.map((p, i) => (
+          <li class:list={['card', i % 2 ? 'r' : 'l']} data-alt={upAlts[i]} data-phase="up">
+            <p class="tele">{sentence(i + 1, upAlts[i])}</p>
+            <p class="alt">▲ {fmt(upAlts[i])} m · {isaTemp(upAlts[i]).toFixed(1)} °C</p>
+            <h2><a href={p.url}>{head(p.name)}<span class="nowrap">{tail(p.name)}<span class="ext">↗</span></span></a></h2>
+            <p class="blurb">{p.blurb[0].toUpperCase() + p.blurb.slice(1)}.</p>
+            {p.slug === 'ukhas' && <p class="aside">You're doing it right now.</p>}
+          </li>
+        ))}
+      </ol>
+
+      <section class="burst static-only">
+        <h2>35,000 m: burst</h2>
+        <p>The balloon pops, exactly as planned. A parachute takes it from here.</p>
+      </section>
+
+      <ol class="payloads descent" aria-label="Also worked on, on the way down">
+        {alsoWorkedOn.map((a, i) => (
+          <li class:list={['card', 'down', i % 2 ? 'l' : 'r']} data-alt={downAlts[i]} data-phase="down">
+            <p class="alt">▼ {fmt(downAlts[i])} m · descending</p>
+            <p class="label">Also worked on</p>
+            <h2><a href={a.url}>{head(a.name)}<span class="nowrap">{tail(a.name)}<span class="ext">↗</span></span></a></h2>
+          </li>
+        ))}
+      </ol>
+
+      <section class="landing" data-ground="0.5" data-phase="down">
+        <p class="kicker">Landed in a field. 40 m from the nearest tree, a personal best.</p>
+        <h2>Payload recovered.</h2>
+        <p class="contact">Email <a href={`mailto:${email}`}>{email}</a>.<br />Also on {socials.map((s, i) => (<>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>))}.</p>
+        <p class="again js-only"><a href="#top" id="relaunch">↑ Launch again</a> · <a href="/ideas">← all ideas</a></p>
+      </section>
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --ink: #0d0d0d;
+    --paper: #fff;
+    --red: #ff5a3c;
+    --mono: "Space Mono", ui-monospace, Menlo, monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    line-height: 1.35;
+    overflow-x: hidden;
+    /* static (no-JS / reduced-motion) sky: up through the atmosphere, then back down */
+    background: linear-gradient(#8cc4ef 0%, #2f74c9 15%, #0b1f55 40%, #01030c 62%, #0b1f55 72%, #4a90d9 90%, #a8d4f2 100%);
+  }
+  a { color: inherit; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .back {
+    position: fixed; z-index: 30; top: 14px; left: 16px;
+    font: 700 12px/1 var(--mono); color: #fff; text-decoration: none;
+    background: #0006; padding: 7px 10px; border-radius: 999px; backdrop-filter: blur(6px);
+  }
+  .back:hover { background: #000a; }
+  .js-only { display: none; }
+  .fly .js-only { display: revert; }
+  .track::after { content: ""; display: block; height: 90px; margin: 0 calc(50% - 50vw) -48px; background: linear-gradient(#6aa046, #4c7f31); }
+  html.fly .track::after { display: none; }
+  .nowrap { white-space: nowrap; }
+
+  /* ---------- static layout (default) ---------- */
+  .scene, .hud, .pop { display: none; }
+  .rig { width: 120px; margin: 64px auto 0; }
+  .rig .chute, .rig .shreds { display: none; }
+  .track { max-width: 640px; margin: 0 auto; padding: 0 16px 48px; }
+  .launch { padding: 16px 0 40px; color: #fff; }
+  .kicker { font: 700 12px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .06em; opacity: .85; margin: 0 0 8px; }
+  h1 { font-size: clamp(44px, 8vw, 96px); line-height: .92; letter-spacing: -.04em; margin: 0 0 14px; font-weight: 800; }
+  .now { font-size: clamp(18px, 2vw, 22px); font-weight: 650; margin: 0; max-width: 26em; text-wrap: pretty; }
+  .cue { font: 700 13px var(--mono); margin-top: 18px; }
+  .payloads { list-style: none; margin: 0; padding: 0; display: grid; gap: 28px; }
+  .card {
+    background: var(--paper); border-radius: 6px; padding: 14px 16px 16px; width: 100%; max-width: 340px;
+    box-shadow: 0 1px 0 #0001, 0 20px 40px -20px #0006;
+    position: relative;
+  }
+  .card.r { justify-self: end; }
+  .tele { font: 10.5px/1.3 var(--mono); color: #8a8a8a; margin: 0 0 10px; overflow-wrap: anywhere; }
+  .alt { font: 700 11px var(--mono); color: var(--red); margin: 0 0 4px; letter-spacing: .02em; }
+  .card h2 { font-size: 24px; letter-spacing: -.02em; line-height: 1.05; margin: 0 0 6px; font-weight: 800; }
+  .card h2 a { text-decoration: none; background: linear-gradient(currentColor, currentColor) 0 100% / 100% 2px no-repeat; }
+  .card h2 a:hover { background-size: 100% 100%; color: #fff; }
+  .card h2 .ext { font-size: .7em; vertical-align: .15em; margin-left: .2em; }
+  .blurb { margin: 0; font-size: 15px; font-weight: 550; }
+  .aside { margin: 8px 0 0; font: 11px var(--mono); color: #888; }
+  .card.down .alt { color: #2f74c9; }
+  .label { margin: 0 0 2px; font-size: 13px; color: #666; font-weight: 600; }
+  .burst { text-align: center; color: #fff; padding: 80px 0; }
+  .burst h2 { font-size: 40px; margin: 0 0 8px; letter-spacing: -.03em; }
+  .descent { margin-top: 0; }
+  .landing { padding: 80px 0 40px; }
+  .landing h2 { font-size: clamp(36px, 6vw, 64px); letter-spacing: -.04em; line-height: .95; margin: 0 0 14px; font-weight: 800; }
+  .contact { font-size: clamp(18px, 2vw, 22px); font-weight: 650; margin: 0 0 18px; }
+  .again { font: 700 13px var(--mono); margin: 0; }
+  .again a { text-decoration-thickness: 1px; }
+  .landing .kicker { opacity: .7; }
+
+  /* ---------- flight mode (JS + motion OK) ---------- */
+  html.fly body { background: #000; }
+  html.fly .scene { display: block; position: fixed; inset: 0; overflow: hidden; z-index: 0; }
+  html.fly .sky { position: absolute; inset: 0; background: #8cc4ef; }
+  html.fly .stars { position: absolute; inset: 0; width: 100%; height: 100%; fill: #fff; opacity: 0; }
+  html.fly .stars circle { animation: twinkle 3.2s ease-in-out infinite alternate; animation-delay: calc(var(--d) * -1); }
+  @keyframes twinkle { to { opacity: .35; } }
+  html.fly .limb { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
+  html.fly .world { position: absolute; inset: 0; }
+  html.fly .world > * { position: absolute; top: 0; left: 0; will-change: transform; }
+  .tick { width: 14px; height: 1px; background: #fff8; left: auto !important; right: 0; }
+  .tick.major { width: 26px; height: 2px; background: #fff; }
+  .tick span { position: absolute; right: 32px; top: -8px; font: 700 11px var(--mono); color: #fff; white-space: nowrap; }
+  html.fly .tick { left: auto; right: 0; }
+  .cloud { width: calc(220px * var(--s)); }
+  .cloud svg { width: 100%; display: block; filter: drop-shadow(0 6px 10px #3a6ea522); }
+  .cloud.thin { opacity: .7; }
+  html.fly .cloud { animation: drift 60s linear infinite alternate; }
+  @keyframes drift { to { margin-left: 60px; } }
+  .plane { width: min(420px, 70vw); left: 0 !important; }
+  .plane svg { width: 100%; display: block; fill: #f3f3f3; }
+  .plane .trail { stroke: #fff; stroke-width: 3; stroke-linecap: round; opacity: .6; stroke-dasharray: 2 0; }
+  html.fly .ground { position: absolute; left: 0; right: 0; top: 0; height: 120vh; will-change: transform; background: #4c7f31; }
+  html.fly .ground svg { width: 100%; height: 320px; display: block; background: transparent; }
+
+  html.fly .rig { position: fixed; z-index: 5; top: 0; left: 0; margin: 0; width: 140px; will-change: transform; }
+  html.fly .rig .chute, html.fly .rig .shreds { display: inline; }
+  .rig-svg { width: 100%; display: block; overflow: visible; }
+  .sway { transform-origin: 100px 120px; }
+  html.fly .sway { animation: sway 5s ease-in-out infinite alternate; }
+  @keyframes sway { from { transform: rotate(-1.4deg); } to { transform: rotate(1.4deg); } }
+  .balloon { transform-origin: 100px 200px; transform-box: view-box; }
+  .chute { transform-origin: 100px 352px; transform-box: view-box; transform: scale(0); }
+  .shreds path { opacity: 0; }
+  .rig.popped .balloon, .rig.popped #cord-top { opacity: 0; }
+  .rig.popped .shreds path { animation: shred .9s cubic-bezier(.2, .7, .3, 1) forwards; }
+  @keyframes shred {
+    0% { opacity: 1; transform: translate(100px, 120px) rotate(0); }
+    100% { opacity: 0; transform: translate(calc(100px + var(--x) * 2.4), calc(120px + var(--y) * 2.4 + 160px)) rotate(calc(var(--r) * 6)); }
+  }
+  .rig.chuted #chute-packed { opacity: 0; }
+  .led { animation: led 1.4s steps(1) infinite; }
+  @keyframes led { 50% { opacity: .15; } }
+
+  html.fly .hud {
+    display: block; position: fixed; z-index: 20; top: 14px; right: 16px;
+    font: 12px/1.5 var(--mono); color: #e9ffe9;
+    background: #050a08cc; border: 1px solid #ffffff1f; border-radius: 10px;
+    padding: 10px 12px 10px; width: 220px; backdrop-filter: blur(8px);
+    box-shadow: 0 10px 30px -10px #0008;
+  }
+  .hud-row { display: flex; justify-content: space-between; gap: 10px; }
+  .hud-row span { color: #7d9a88; }
+  .hud-row b { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .hud-phase { margin-top: 6px; padding-top: 6px; border-top: 1px solid #ffffff1a; font-weight: 700; color: #43ff7a; letter-spacing: .04em; }
+  .hud-phase.is-down { color: #ffb347; }
+  .hud-phase.is-burst { color: #ff6b5e; }
+  .hud-note { color: #b6c7bc; font-size: 11px; line-height: 1.35; min-height: 0; }
+  .hud-note:not(:empty) { margin-top: 4px; }
+
+  html.fly .pop {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: fixed; inset: 0; z-index: 15; pointer-events: none; opacity: 0; color: #fff; text-align: center;
+  }
+  .pop b { font-size: clamp(80px, 16vw, 220px); letter-spacing: -.06em; line-height: .9; font-weight: 900; transform: translateY(-25vh); }
+  .pop span { font: 700 14px var(--mono); transform: translateY(-25vh); margin-top: 6px; }
+
+  html.fly .track { position: relative; z-index: 10; max-width: none; padding: 0; margin: 0; }
+  html.fly .static-only { display: none; }
+  html.fly [data-phase]:is(.card, .launch, .landing) { position: fixed; top: 0; will-change: transform; visibility: hidden; }
+  html.fly .payloads { display: block; }
+  html.fly .card { width: 320px; justify-self: auto; }
+  html.fly .card.l { left: calc(50% - 110px - 320px); }
+  html.fly .card.r { left: calc(50% + 110px); }
+  html.fly .launch { left: max(16px, 6vw); width: min(720px, 88vw); padding: 0; }
+  html.fly .landing { left: max(16px, 6vw); width: min(620px, 88vw); padding: 0; color: #fff; text-shadow: 0 1px 12px #0003; }
+  html.fly .launch, html.fly .landing { text-shadow: 0 1px 2px #0b3a6e66, 0 2px 22px #0b3a6e55; }
+  .cue .arrow { display: inline-block; }
+  html.fly .cue .arrow { animation: bob 1.4s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(4px); } }
+
+  @media (max-width: 720px) {
+    html.fly .rig { width: 100px; }
+    html.fly .card { width: auto; left: 16px !important; right: 112px; max-width: 300px; }
+    html.fly .card h2 { font-size: 21px; }
+    html.fly .hud { top: auto; bottom: 12px; right: 12px; left: 12px; width: auto; display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; padding: 8px 12px; }
+    html.fly .hide-sm { display: none; }
+    html.fly .hud-phase, html.fly .hud-note { grid-column: 1 / -1; }
+    .tick span { display: none; }
+    .pop span { padding: 0 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .led, .cue .arrow { animation: none !important; }
+  }
+</style>
+
+<script>
+  const root = document.documentElement;
+  if (root.classList.contains('fly')) {
+    const $ = (id: string) => document.getElementById(id)!;
+    const track = $('track');
+    const sky = $('sky');
+    const stars = $('stars');
+    const limb = $('limb') as unknown as SVGSVGElement;
+    const earth = $('earth');
+    const atmo = $('atmo');
+    const earthG = document.querySelector('#earthG')!;
+    const ground = $('ground');
+    const rig = $('rig');
+    const balloon = $('balloon');
+    const chute = $('chute');
+    const pop = $('pop');
+    const hAlt = $('h-alt'), hTemp = $('h-temp'), hPres = $('h-pres'), hRate = $('h-rate'), hPhase = $('h-phase'), hNote = $('h-note');
+
+    const BURST = 35000;
+    type Item = { el: HTMLElement; alt: number; phase: string; h: number; ground?: number };
+    const items: Item[] = [];
+    document.querySelectorAll<HTMLElement>('[data-phase]').forEach((el) => {
+      items.push({ el, alt: +(el.dataset.alt || 0), phase: el.dataset.phase!, h: 0, ground: el.dataset.ground ? +el.dataset.ground : undefined });
+    });
+
+    let vw = 0, vh = 0, kUp = 0, kDown = 0, A = 0, B = 0, C = 0, E = 0, rigW = 0, rigH = 0;
+    function layout() {
+      vw = innerWidth; vh = innerHeight;
+      kUp = vh / 4500; kDown = vh / 10000;
+      A = BURST * kUp; B = vh * 1.1; C = BURST * kDown; E = vh * 0.7;
+      track.style.height = `${A + B + C + E + vh}px`;
+      items.forEach((it) => (it.h = it.el.offsetHeight));
+      rigW = rig.offsetWidth; rigH = rigW * 2;
+      limb.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
+      last = -1;
+    }
+
+    const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    function temp(h: number) {
+      if (h < 11000) return 15 - 6.5 * (h / 1000);
+      if (h < 20000) return -56.5;
+      if (h < 32000) return -56.5 + (h - 20000) / 1000;
+      return -44.5 + 2.8 * ((h - 32000) / 1000);
+    }
+    function pres(h: number) {
+      if (h < 11000) return 1013.25 * Math.pow(1 - 2.25577e-5 * h, 5.25588);
+      if (h < 20000) return 226.32 * Math.exp(-0.00015769 * (h - 11000));
+      if (h < 32000) return 54.749 * Math.pow(216.65 / (216.65 + (h - 20000) / 1000), 34.1632);
+      return 8.6802 * Math.pow(228.65 / (228.65 + (2.8 * (h - 32000)) / 1000), 12.2011);
+    }
+    // sky colours by altitude: [alt, top, horizon]
+    const SKY: [number, number[], number[]][] = [
+      [0, [94, 166, 232], [205, 230, 246]],
+      [5000, [58, 138, 222], [184, 220, 244]],
+      [12000, [30, 88, 182], [130, 190, 236]],
+      [20000, [12, 40, 108], [76, 140, 214]],
+      [28000, [4, 12, 42], [40, 104, 184]],
+      [35000, [0, 0, 5], [24, 86, 168]],
+    ];
+    function skyAt(h: number) {
+      let i = 0;
+      while (i < SKY.length - 2 && h > SKY[i + 1][0]) i++;
+      const [a0, t0, h0] = SKY[i], [a1, t1, h1] = SKY[i + 1];
+      const t = Math.min(1, Math.max(0, (h - a0) / (a1 - a0)));
+      const mix = (x: number[], y: number[]) => `rgb(${x.map((v, j) => Math.round(lerp(v, y[j], t))).join(',')})`;
+      return [mix(t0, t1), mix(h0, h1)];
+    }
+    const NOTES: [number, number, string][] = [
+      [0, 300, 'Helium in. Neck tied. Wind light.'],
+      [1500, 6000, 'Climbing through the clouds.'],
+      [10000, 12500, 'Airliners cruise around here.'],
+      [12500, 17000, 'Tropopause: it stops getting colder. For a bit.'],
+      [18500, 22000, 'Armstrong limit: water boils at body temperature.'],
+      [23000, 28500, 'The ozone layer, roughly.'],
+      [30500, 34500, '~99% of the atmosphere is below you.'],
+    ];
+    const fmt = (n: number) => Math.round(n).toLocaleString('en-GB');
+
+    let last = -1, lastT = performance.now(), lastAlt = 0, rate = 0, popped = false;
+    function frame(t: number) {
+      const s = Math.max(0, scrollY);
+      const dt = Math.max(1, t - lastT) / 1000;
+      lastT = t;
+      if (s === last && Math.abs(rate) < 0.5) { requestAnimationFrame(frame); return; }
+      last = s;
+
+      let phase: 'ground' | 'up' | 'burst' | 'down' | 'landed', alt: number, k: number, b = 0;
+      if (s < A) { alt = s / kUp; k = kUp; phase = alt < 5 ? 'ground' : 'up'; }
+      else if (s < A + B) { alt = BURST; k = kUp; phase = 'burst'; b = (s - A) / B; }
+      else if (s < A + B + C) { alt = BURST - (s - A - B) / kDown; k = kDown; phase = 'down'; }
+      else { alt = 0; k = kDown; phase = 'landed'; }
+      const descending = phase === 'down' || phase === 'landed' || (phase === 'burst' && b > 0.5);
+
+      // rate (smoothed), in m/s of pretend altitude
+      const inst = (alt - lastAlt) / dt;
+      rate = lerp(rate, inst, 0.15);
+      if (Math.abs(rate) < 0.5) rate = 0;
+      lastAlt = alt;
+
+      // camera: payload rises on screen at first, then the camera follows
+      const py = vh * lerp(0.74, 0.5, smooth(0, 2200, alt));
+      const groundTop = py + alt * k + rigW * 0.085;
+
+      // sky + stars + limb
+      const [top, hor] = skyAt(alt);
+      sky.style.background = `linear-gradient(${top} 0%, ${top} ${(24 * smooth(12000, BURST, alt)).toFixed(1)}%, ${hor} 100%)`;
+      stars.style.opacity = String(smooth(13000, 27000, alt));
+      const limbIn = smooth(2500, 9000, alt);
+      limb.style.opacity = String(limbIn);
+      const horizonY = vh * lerp(1.02, 0.82, smooth(2500, 16000, alt));
+      const R = Math.max(vw, 700) * lerp(40, 1.15, Math.pow(smooth(3000, BURST, alt), 0.55));
+      for (const c of [earth, atmo]) { c.setAttribute('cx', String(vw / 2)); c.setAttribute('cy', String(horizonY + R)); }
+      earth.setAttribute('r', String(R));
+      atmo.setAttribute('r', String(R + 4));
+      atmo.setAttribute('opacity', String(0.25 + 0.6 * smooth(8000, 30000, alt)));
+      earthG.setAttribute('y1', String(horizonY));
+      earthG.setAttribute('y2', String(vh + 200));
+
+      ground.style.transform = `translate3d(0, ${groundTop}px, 0)`;
+      ground.style.visibility = groundTop < vh + 10 ? 'visible' : 'hidden';
+
+      // world items
+      for (const it of items) {
+        let y: number, visible: boolean;
+        if (it.ground !== undefined) {
+          y = groundTop - vh * it.ground;
+          visible = (it.phase === 'up' ? !descending : descending) && y < vh && y + it.h > 0;
+        } else {
+          const want = it.phase === 'both' || (it.phase === 'up' ? !descending : descending);
+          y = py + (alt - it.alt) * k - it.h / 2;
+          visible = want && y < vh + 20 && y + it.h > -20;
+        }
+        it.el.style.visibility = visible ? 'visible' : 'hidden';
+        if (visible) it.el.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0)`;
+      }
+
+      // rig
+      const rigX = vw <= 720 ? vw * 0.8 - rigW / 2 : vw / 2 - rigW / 2;
+      const payloadOffset = rigH * (369 / 400);
+      rig.style.transform = `translate3d(${rigX}px, ${py - payloadOffset}px, 0)`;
+      const ratio = Math.cbrt(1013.25 / pres(Math.min(alt, BURST)));
+      balloon.style.transform = `scale(${1 + (ratio - 1) * 0.3})`;
+      const shouldPop = phase === 'down' || phase === 'landed' || (phase === 'burst' && b > 0.18);
+      if (shouldPop !== popped) { popped = shouldPop; rig.classList.toggle('popped', popped); }
+      const chuteOpen = phase === 'down' || phase === 'landed' ? 1 : phase === 'burst' ? smooth(0.32, 0.7, b) : 0;
+      chute.style.transform = `scale(${chuteOpen})`;
+      rig.classList.toggle('chuted', chuteOpen > 0.05);
+      pop.style.opacity = phase === 'burst' ? String(smooth(0.16, 0.26, b) * (1 - smooth(0.75, 0.98, b))) : '0';
+
+      // HUD
+      hAlt.textContent = `${fmt(alt)} m`;
+      hTemp.textContent = `${temp(alt).toFixed(1).replace('-', '−')} °C`;
+      hPres.textContent = `${pres(alt) < 10 ? pres(alt).toFixed(1) : fmt(pres(alt))} hPa`;
+      hRate.textContent = `${rate > 0 ? '+' : rate < 0 ? '−' : ''}${fmt(Math.abs(rate))} m/s`;
+      const ph = phase === 'ground' ? '● ON THE GROUND' : phase === 'up' ? '▲ ASCENDING' : phase === 'burst' ? (b < 0.18 ? '● FLOAT' : '● BURST') : phase === 'down' ? '▼ DESCENDING' : '● LANDED';
+      if (hPhase.textContent !== ph) hPhase.textContent = ph;
+      hPhase.className = 'hud-phase ' + (phase === 'burst' ? 'is-burst' : descending ? 'is-down' : '');
+      let note = '';
+      if (Math.abs(rate) > 343) note = `Mach ${(Math.abs(rate) / 343).toFixed(0)}. Real balloons do about 5 m/s.`;
+      else if (phase === 'burst') note = b < 0.18 ? 'Balloon at maximum size. Any moment now.' : 'Parachute deployed.';
+      else if (phase === 'landed') note = 'Recovered. Mostly intact.';
+      else if (descending) note = alt > 20000 ? 'Falling fast in the thin air.' : 'Under canopy. Chase car en route.';
+      else for (const [a, z, n] of NOTES) if (alt >= a && alt < z) note = n;
+      if (hNote.textContent !== note) hNote.textContent = note;
+
+      requestAnimationFrame(frame);
+    }
+
+    // keyboard users: bring a focused card into view
+    track.addEventListener('focusin', (e) => {
+      const card = (e.target as HTMLElement).closest<HTMLElement>('[data-phase]');
+      if (!card) return;
+      const a = +(card.dataset.alt || 0);
+      const target = card.dataset.phase === 'up' ? (card.dataset.ground ? 0 : a * kUp) : card.dataset.ground ? A + B + C + E : A + B + (BURST - a) * kDown;
+      scrollTo({ top: target, behavior: 'instant' as ScrollBehavior });
+    });
+    document.getElementById('relaunch')?.addEventListener('click', (e) => { e.preventDefault(); scrollTo({ top: 0, behavior: 'smooth' }); });
+
+    layout();
+    addEventListener('resize', layout);
+    requestAnimationFrame(frame);
+  }
+</script>

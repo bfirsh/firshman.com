@@ -1,0 +1,511 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+const host = (u: string) => u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+const P = Object.fromEntries(projects.map((p) => [p.slug, p]));
+
+// ---- service definitions (the cute, plausible bits) ----
+type Svc = {
+  id: string;
+  url: string;
+  image: string;
+  imageNote?: string;
+  blurb?: string;
+  env?: [string, string, string?][]; // key, value, href
+  ports?: string[];
+  deps?: string[];
+  depsNote?: string;
+  restart?: [string, string?];
+  logs: string[];
+};
+
+const svc: Svc[] = [
+  {
+    id: 'ben', url: `mailto:${email}`, image: 'firshman/ben:latest',
+    env: [
+      ['NAME', name],
+      ['EMAIL', email, `mailto:${email}`],
+      ...socials.map((s) => [s.name.toUpperCase(), s.handle, s.url] as [string, string, string]),
+    ],
+    deps: ['replicate'],
+    depsNote: 'currently',
+    restart: ['always'],
+    logs: [
+      'replicate is healthy. Getting up.',
+      `Hello. I'm ${name}.`,
+      `Currently working on <a href="${now.url}">Replicate</a>.`,
+      `Ready. Accepting connections at <a href="mailto:${email}">${email}</a>`,
+    ],
+  },
+  {
+    id: 'replicate', url: now.url, image: 'replicate/replicate:now', blurb: now.blurb,
+    ports: ['443:443'], deps: ['cog'], depsNote: 'models ship as Cog containers',
+    logs: ['Booting the model fleet…', 'Warming up GPUs (they like it warm)', `Run AI models with a cloud API`, `Listening on <a href="${now.url}">${host(now.url)}</a>`],
+  },
+  {
+    id: 'cog', url: P.cog.url, image: 'replicate/cog', blurb: P.cog.blurb,
+    ports: ['5000:5000'], deps: ['clig'], depsNote: 'it follows the guidelines',
+    logs: ['Attaching to cog…', 'Reading cog.yaml', 'Building Docker image from environment in cog.yaml…', 'Model server listening on :5000'],
+  },
+  {
+    id: 'clig', url: P.clig.url, image: 'clig/guidelines', blurb: P.clig.blurb,
+    logs: ['Loading guidelines… 1 of 1', 'Human-first design: ok', 'Helpful errors: ok · --help: ok · NO_COLOR: respected', `Serving <a href="${P.clig.url}">${host(P.clig.url)}</a>`],
+  },
+  {
+    id: 'compose', url: P.compose.url, image: 'docker/compose', imageNote: 'née fig', blurb: P.compose.blurb,
+    logs: ['Starting fig…', 'fig is now called compose. Carry on.', 'Parsing compose.yaml (this file, as it happens)', 'Defining and running multi-container apps'],
+  },
+  {
+    id: 'machine', url: P.machine.url, image: 'docker/machine', blurb: P.machine.blurb,
+    deps: ['compose'], depsNote: 'compose needs somewhere to run',
+    logs: ['Creating machine…', 'Provisioning Docker host… anywhere, apparently', 'Docker is up and running!'],
+  },
+  {
+    id: 'whalebrew', url: P.whalebrew.url, image: 'whalebrew/whalebrew', blurb: P.whalebrew.blurb,
+    deps: ['machine'],
+    logs: ['Installing packages as Docker images…', 'Linked whalebrew/wget → /usr/local/bin/wget', 'Homebrew, but with whales'],
+  },
+  {
+    id: 'jsnes', url: P.jsnes.url, image: 'bfirsh/jsnes', blurb: P.jsnes.blurb,
+    ports: ['6502:6502'],
+    logs: ['Powering on…', '▶ Emulating 6502…', 'PPU ready. APU ready. Controller 1 ready', 'Running at 60 fps (in a browser, in a container, on a web page)'],
+  },
+  {
+    id: 'django', url: P.django.url, image: 'django:latest', blurb: P.django.blurb,
+    ports: ['8000:8000'],
+    logs: ['Watching for file changes with StatReloader', 'Performing system checks… System check identified no issues (0 silenced).', 'Class-based views: loaded · Feeds: loaded · Search: loaded', 'Starting development server at http://0.0.0.0:8000/'],
+  },
+  {
+    id: 'arxiv-vanity', url: P['arxiv-vanity'].url, image: 'arxiv-vanity/web', blurb: P['arxiv-vanity'].blurb,
+    deps: ['django'], depsNote: 'built on it',
+    logs: ['Fetching LaTeX source from arXiv…', 'Rendering paper as a responsive web page…', 'Done. Your phone says thanks.'],
+  },
+  {
+    id: 'ukhas', url: P.ukhas.url, image: 'ukhas/balloon', blurb: P.ukhas.blurb,
+    env: [['ALTITUDE', 'up']], restart: ['"no"', "balloons don't"],
+    logs: ['Filling balloon with helium…', 'Launch! Ascending.', 'Telemetry: still going up', 'Burst. Parachute deployed. As planned.'],
+  },
+];
+const ids = svc.map((s) => s.id);
+
+// ---- YAML rendering ----
+type Line = { ind: number; html: string; svc?: string; head?: boolean };
+const L: Line[] = [];
+const k = (key: string) => `<span class="k">${esc(key)}</span><span class="p">:</span>`;
+const str = (v: string, href?: string) =>
+  href ? `<a class="s" href="${esc(href)}">"${esc(v)}"</a>` : `<span class="s">"${esc(v)}"</span>`;
+const plain = (v: string, href?: string) => (href ? `<a class="v" href="${esc(href)}">${esc(v)}</a>` : `<span class="v">${esc(v)}</span>`);
+const com = (c: string) => `<span class="c"># ${c}</span>`;
+const dash = `<span class="p">- </span>`;
+const push = (ind: number, html: string, extra: Partial<Line> = {}) => L.push({ ind, html, ...extra });
+
+push(0, com(`compose.yaml — the homepage of ${esc(name)}`));
+push(0, com(`press <b>▶ docker compose up</b> to start everything he's made`));
+push(0, `${k('name')} ${plain('ben-firshman')}`);
+push(0, '');
+push(0, `${k('x-also-worked-on')} ${com('extension fields: compose ignores these, people don\'t')}`);
+alsoWorkedOn.forEach((a) => push(1, `${dash}${str(a.name, a.url)}`));
+push(0, '');
+push(0, `${k('services')}`);
+svc.forEach((s, i) => {
+  if (i > 0) push(0, '');
+  push(1, `<a class="svc" href="${esc(s.url)}" id="svc-${s.id}">${esc(s.id)}</a><span class="p">:</span><span class="st" data-st="${s.id}"></span>`, { svc: s.id, head: true });
+  push(2, `${k('image')} ${plain(s.image)}${s.imageNote ? ' ' + com(s.imageNote) : ''}`, { svc: s.id });
+  if (s.blurb) {
+    push(2, `${k('environment')}`, { svc: s.id });
+    push(3, `${k('BLURB')} ${str(s.blurb)}`, { svc: s.id });
+  }
+  if (s.env) {
+    if (!s.blurb) push(2, `${k('environment')}`, { svc: s.id });
+    s.env.forEach(([kk, v, href]) => push(3, `${k(kk)} ${str(v, href)}`, { svc: s.id }));
+  }
+  push(2, `${k('labels')}`, { svc: s.id });
+  push(3, `${k('url')} ${plain(s.url.replace(/^mailto:/, 'mailto:'), s.url)}`, { svc: s.id });
+  if (s.ports) {
+    push(2, `${k('ports')}`, { svc: s.id });
+    s.ports.forEach((p) => push(3, `${dash}<span class="n">"${p}"</span>`, { svc: s.id }));
+  }
+  if (s.deps) {
+    push(2, `${k('depends_on')}${s.depsNote ? ' ' + com(esc(s.depsNote)) : ''}`, { svc: s.id });
+    s.deps.forEach((d) => push(3, `${dash}<a class="v dep" href="#svc-${d}">${esc(d)}</a>`, { svc: s.id }));
+  }
+  if (s.restart) push(2, `${k('restart')} ${plain(s.restart[0])}${s.restart[1] ? ' ' + com(esc(s.restart[1])) : ''}`, { svc: s.id });
+});
+
+const clientData = svc.map((s) => ({ id: s.id, deps: s.deps || [], logs: s.logs, url: s.url }));
+---
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — compose up</title>
+    <meta name="description" content="Ben Firshman's homepage as a compose.yaml. Every project is a service. Press play." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.replace('no-js', 'js');</script>
+  </head>
+  <body>
+    <header class="hero">
+      <a class="back" href="/ideas">← all ideas</a>
+      <h1>{name}</h1>
+      <p class="lede">I'm working on <a href={now.url}>{now.name}</a>. Everything else I've made is in the file below, one service per project. It's a working homepage, in the sense that it <em>almost</em> runs.</p>
+    </header>
+
+    <main class="wrap">
+      <section class="editor" aria-label="compose.yaml">
+        <div class="tabbar"><span class="tab">compose.yaml</span><span class="tab-meta">YAML · UTF-8 · LF</span></div>
+        <div class="yaml" id="yaml">
+          {L.map((l) => (
+            <div class:list={['ln', { head: l.head }]} data-svc={l.svc} style={`--ind:${l.ind * 2}`}>
+              <code set:html={l.html || '&#8203;'} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <aside class="side" aria-label="docker compose up">
+        <button class="go" id="go" type="button" aria-controls="logs">
+          <span class="go-icon" aria-hidden="true">▶</span>
+          <span class="go-label">docker compose up</span>
+        </button>
+        <div class="pane">
+          <div class="pane-head">
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span id="summary">[+] Running 0/{svc.length}</span>
+          </div>
+          <div class="logs" id="logs" role="log" aria-live="off" tabindex="0">
+            <p class="idle">$ <span class="blink">▍</span><br /><span class="dim">Nothing running yet. Press the big button.</span></p>
+          </div>
+        </div>
+        <noscript><p class="nojs">(The button needs JavaScript. Every link in the file works without it.)</p></noscript>
+      </aside>
+    </main>
+
+    <footer class="foot">
+      <p>Email <a href={`mailto:${email}`}>{email}</a> · {socials.map((s, i) => (<>{i > 0 && ' · '}<a href={s.url}>{s.name}</a></>))} · <a href="/ideas">← all ideas</a></p>
+    </footer>
+
+    <script type="application/json" id="compose-data" set:html={JSON.stringify({ svc: clientData, order: ids })}></script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #f7f5ef;
+    --paper: #fffdf8;
+    --ink: #111;
+    --mute: #8b877a;
+    --rule: #e6e1d4;
+    --key: #2547a6;
+    --str: #b5441b;
+    --num: #8a3fb0;
+    --com: #9a9686;
+    --up: #13a35a;
+    --wait: #d69a00;
+    --term: #121311;
+    --term-fg: #e8e6dc;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.4;
+  }
+  a { color: inherit; }
+
+  .hero { max-width: 1360px; margin: 0 auto; padding: 28px 32px 8px; position: relative; }
+  .back { position: absolute; top: 18px; right: 32px; font-size: 13px; color: var(--mute); text-decoration: none; font-weight: 600; }
+  .back:hover { color: var(--ink); }
+  h1 { font-size: clamp(40px, 7vw, 84px); line-height: .95; letter-spacing: -0.035em; margin: 28px 0 14px; font-weight: 800; }
+  .lede { font-size: clamp(17px, 1.6vw, 21px); font-weight: 600; max-width: 40em; margin: 0 0 20px; text-wrap: pretty; }
+  .lede a { text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+  .wrap {
+    max-width: 1360px; margin: 0 auto; padding: 8px 32px 40px;
+    display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 28px; align-items: start;
+  }
+
+  /* editor */
+  .editor { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 0 #0000000a, 0 12px 40px -24px #0003; }
+  .tabbar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--rule); background: #f2efe6; font: 12px/1 "IBM Plex Mono", ui-monospace, monospace; }
+  .tab { padding: 11px 16px; background: var(--paper); border-right: 1px solid var(--rule); margin-bottom: -1px; font-weight: 600; }
+  .tab::before { content: "◆ "; color: var(--str); }
+  .tab-meta { padding: 0 14px; color: var(--mute); }
+  .yaml { padding: 14px 0 18px; font: 14px/1.7 "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; counter-reset: ln; }
+  .ln { display: flex; position: relative; transition: background-color .4s; }
+  .ln::before {
+    counter-increment: ln; content: counter(ln);
+    flex: none; width: 4.2ch; padding-right: 1.6ch; text-align: right; color: #c4bfb0; user-select: none; font-size: 12px; line-height: inherit;
+  }
+  .ln code {
+    font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0;
+    padding-left: calc((var(--ind) + 2) * 1ch); text-indent: -2ch; padding-right: 16px;
+  }
+  .ln[data-svc]::after { content: ""; position: absolute; left: 4.2ch; top: 0; bottom: 0; width: 3px; background: transparent; transition: background-color .4s; }
+  .ln[data-svc].starting::after { background: var(--wait); }
+  .ln[data-svc].up::after { background: var(--up); }
+  .ln[data-svc].exited::after { background: #c9c4b4; }
+  .ln.up { background: color-mix(in srgb, var(--up) 5%, transparent); }
+  .ln.flash { background: color-mix(in srgb, var(--up) 18%, transparent); transition: none; }
+  .k { color: var(--key); }
+  .p { color: #9a968a; }
+  .s { color: var(--str); text-decoration: none; }
+  a.s, a.v { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
+  a.s:hover, a.v:hover { text-decoration-color: currentColor; }
+  .v { color: var(--ink); }
+  .n { color: var(--num); }
+  .c { color: var(--com); font-style: italic; }
+  .c b { font-style: normal; font-weight: 600; color: var(--ink); }
+  .svc { font-weight: 600; color: var(--ink); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; text-decoration-color: #0002; }
+  .svc:hover { text-decoration-color: var(--ink); }
+  .svc:target, .ln.head:has(.svc:target) { background: #ffe9a8; }
+  .st { margin-left: 1.2ch; font-style: italic; color: var(--com); }
+  .st[data-state]::before { content: "# "; }
+  .st[data-state="created"]::after { content: "created"; }
+  .st[data-state="starting"] { color: var(--wait); }
+  .st[data-state="starting"]::after { content: "◌ starting…"; }
+  .st[data-state="up"] { color: var(--up); font-style: normal; font-weight: 600; }
+  .st[data-state="up"]::after { content: "● running"; }
+  .st[data-state="exited"]::after { content: "exited (0), landed safely"; }
+  .st[data-state="stopped"]::after { content: "stopped"; }
+
+  /* side */
+  .side { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; height: calc(100vh - 40px); max-height: 860px; min-height: 420px; }
+  .go {
+    appearance: none; border: 0; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    width: 100%; padding: 20px 24px;
+    background: var(--ink); color: #fff;
+    border-radius: 14px;
+    font: 600 clamp(18px, 2vw, 24px)/1 "IBM Plex Mono", ui-monospace, monospace;
+    letter-spacing: -0.01em;
+    box-shadow: 0 6px 0 #000, 0 14px 30px -12px #0008;
+    transform: translateY(-3px);
+    transition: transform .08s, box-shadow .08s, background .2s;
+  }
+  .go:hover { background: #222; }
+  .go:active { transform: translateY(2px); box-shadow: 0 1px 0 #000, 0 6px 16px -10px #0008; }
+  .go:focus-visible { outline: 3px solid var(--wait); outline-offset: 4px; }
+  .go-icon { display: grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--up); color: #fff; font-size: .7em; padding-left: .12em; }
+  .go[data-mode="stop"] .go-icon { background: #e0452b; padding-left: 0; }
+  .go[data-mode="down"] .go-icon { background: #555; padding-left: 0; }
+  .no-js .go { opacity: .4; cursor: not-allowed; }
+
+  .pane { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--term); color: var(--term-fg); border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px -30px #000a; }
+  .pane-head { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-bottom: 1px solid #ffffff14; font: 12px/1 "IBM Plex Mono", monospace; color: #a5a296; }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 10px; height: 10px; border-radius: 50%; background: #34352f; }
+  #summary.all { color: #63d68f; }
+  .logs { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 14px 18px; font: 12.5px/1.6 "IBM Plex Mono", ui-monospace, monospace; scrollbar-color: #333 transparent; }
+  .logs:focus-visible { outline: 2px solid var(--wait); outline-offset: -2px; }
+  .logs p { margin: 0; padding-left: calc(var(--pw, 16) * 1ch + 2ch); text-indent: calc(-1 * (var(--pw, 16) * 1ch + 2ch)); overflow-wrap: anywhere; }
+  .logs .raw { padding-left: 2ch; text-indent: -2ch; }
+  .logs .idle { padding: 0; text-indent: 0; color: var(--term-fg); }
+  .logs .dim { color: #807d72; }
+  .logs .pre { color: var(--c); font-weight: 600; white-space: pre; }
+  .logs a { color: #8fd3ff; }
+  .logs .sys { color: #a5a296; }
+  .logs .ok { color: #63d68f; }
+  .logs .warn { color: #f0c04a; }
+  .logs .err { color: #ff7a66; }
+  .blink { animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .nojs { font-size: 13px; color: var(--mute); margin: 0; }
+
+  .foot { max-width: 1360px; margin: 0 auto; padding: 0 32px 40px; font-weight: 600; font-size: 15px; }
+  .foot a { text-underline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blink { animation: none; }
+    .ln, .ln::after { transition: none; }
+  }
+
+  @media (max-width: 860px) {
+    .hero { padding: 16px 16px 4px; }
+    .back { right: 16px; top: 16px; }
+    h1 { margin-top: 36px; }
+    .wrap { grid-template-columns: minmax(0, 1fr); padding: 4px 16px 28px; gap: 18px; }
+    .side { order: -1; position: sticky; top: 0; z-index: 2; height: auto; min-height: 0; padding: 10px 0 0; margin: -10px 0 0; background: var(--bg); gap: 10px; }
+    .go { padding: 16px 18px; }
+    .pane { height: 168px; flex: none; }
+    .js .side:not(.running):not(.ran) .pane { display: none; }
+    .yaml { font-size: 12.5px; padding: 10px 0 14px; }
+    .ln::before { width: 3.4ch; padding-right: 1.2ch; font-size: 11px; }
+    .ln[data-svc]::after { left: 3.4ch; }
+    .tab-meta { display: none; }
+    .logs { font-size: 11.5px; }
+    .foot { padding: 0 16px 32px; }
+  }
+</style>
+
+<script>
+  type S = { id: string; deps: string[]; logs: string[]; url: string };
+  const { svc, order } = JSON.parse(document.getElementById('compose-data')!.textContent!) as { svc: S[]; order: string[] };
+  const go = document.getElementById('go') as HTMLButtonElement;
+  const label = go.querySelector('.go-label')!;
+  const logs = document.getElementById('logs')!;
+  const summary = document.getElementById('summary')!;
+  const side = document.querySelector('.side') as HTMLElement;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const PROJECT = 'ben-firshman';
+  const COLORS = ['#5fd3e6', '#f0c04a', '#63d68f', '#e58cf2', '#7aa7ff', '#ff9f6b', '#b8e05c', '#ff7aa8', '#9d8cff', '#5ee0c0', '#f5e07a'];
+  const color: Record<string, string> = {};
+  order.forEach((id, i) => (color[id] = COLORS[i % COLORS.length]));
+  const pw = Math.max(...order.map((id) => id.length)) + 3; // "-1 "
+  logs.style.setProperty('--pw', String(pw + 1));
+
+  let state: Record<string, string> = {};
+  let token = 0;
+  let mode: 'up' | 'stop' | 'down' = 'up';
+  let upCount = 0;
+  let stopPresses = 0;
+
+  const setState = (id: string, s: string) => {
+    state[id] = s;
+    document.querySelectorAll<HTMLElement>(`.st[data-st="${id}"]`).forEach((el) => (el.dataset.state = s));
+    document.querySelectorAll<HTMLElement>(`.ln[data-svc="${id}"]`).forEach((el) => {
+      el.classList.toggle('starting', s === 'starting');
+      el.classList.toggle('up', s === 'up');
+      el.classList.toggle('exited', s === 'exited');
+      if (s === 'up' && !reduced) {
+        el.classList.add('flash');
+        requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('flash')));
+      }
+    });
+  };
+  const setMode = (m: typeof mode) => {
+    mode = m;
+    go.dataset.mode = m;
+    go.querySelector('.go-icon')!.textContent = m === 'up' ? '▶' : m === 'stop' ? '■' : '⏏';
+    label.textContent = m === 'up' ? 'docker compose up' : m === 'stop' ? 'Ctrl+C' : 'docker compose down';
+  };
+  const updateSummary = () => {
+    summary.textContent = `[+] Running ${upCount}/${order.length}`;
+    summary.classList.toggle('all', upCount === order.length);
+  };
+
+  let stick = true;
+  logs.addEventListener('scroll', () => { stick = logs.scrollTop + logs.clientHeight >= logs.scrollHeight - 30; });
+  function line(html: string, id?: string) {
+    const p = document.createElement('p');
+    if (id) {
+      const prefix = `${id}-1`.padEnd(pw, ' ');
+      p.innerHTML = `<span class="pre" style="--c:${color[id]}">${prefix}</span><span class="pre" style="--c:${color[id]}">| </span>${html}`;
+    } else { p.innerHTML = html; p.className = 'raw'; }
+    p.querySelectorAll('a').forEach((a) => { a.target = '_blank'; a.rel = 'noopener'; });
+    logs.appendChild(p);
+    if (stick) logs.scrollTop = logs.scrollHeight;
+  }
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, reduced ? 0 : ms));
+  const jitter = (a: number, b: number) => a + Math.random() * (b - a);
+
+  async function up() {
+    const my = ++token;
+    setMode('stop');
+    side.classList.add('running');
+    side.classList.remove('ran');
+    logs.innerHTML = '';
+    upCount = 0; stopPresses = 0; state = {};
+    updateSummary();
+    stick = true;
+    line(`<span class="dim">$</span> docker compose up`);
+    line(`<span class="sys">[+] Running ${order.length}/${order.length}</span>`);
+    line(` <span class="ok">✔</span> <span class="sys">Network ${PROJECT}_default</span>  <span class="dim">Created</span>`);
+    for (const id of order) { setState(id, 'created'); }
+    await sleep(250);
+    if (my !== token) return;
+    line(`<span class="sys">Attaching to ${order.map((id) => `${id}-1`).join(', ')}</span>`);
+
+    const ready: Record<string, Promise<void>> = {};
+    const resolvers: Record<string, () => void> = {};
+    order.forEach((id) => (ready[id] = new Promise((r) => (resolvers[id] = r))));
+
+    await Promise.all(
+      svc.map(async (s) => {
+        await Promise.all(s.deps.map((d) => ready[d]));
+        if (my !== token) return;
+        await sleep(jitter(120, 600));
+        if (my !== token) return;
+        setState(s.id, 'starting');
+        for (let i = 0; i < s.logs.length; i++) {
+          await sleep(jitter(260, 900));
+          if (my !== token) return;
+          line(s.logs[i], s.id);
+        }
+        setState(s.id, 'up');
+        upCount++;
+        updateSummary();
+        resolvers[s.id]();
+      })
+    );
+    if (my !== token) return;
+    await sleep(900);
+    if (my !== token) return;
+    // the balloon comes down, as balloons do
+    setState('ukhas', 'exited');
+    line(`<span class="dim">ukhas-1 exited with code 0</span>`);
+    upCount--; updateSummary();
+    await sleep(500);
+    if (my !== token) return;
+    line(`<span class="ok">All services up.</span> <span class="dim">Say hello:</span> <a href="mailto:ben@firshman.com">ben@firshman.com</a>`);
+    side.classList.remove('running');
+    side.classList.add('ran');
+    setMode('down');
+  }
+
+  async function stop(force: boolean) {
+    const my = ++token;
+    if (force) {
+      line(`<span class="err">^C</span> <span class="sys">Killing…</span>`);
+      for (const id of [...order].reverse()) if (state[id] && state[id] !== 'exited') setState(id, 'stopped');
+      line(`<span class="err">✘ Killed. That's a bit rude, but fine.</span>`);
+      finishStop();
+      return;
+    }
+    line(`<span class="warn">^C Gracefully stopping… (press Ctrl+C again to force)</span>`);
+    for (const id of [...order].reverse()) {
+      if (!state[id] || state[id] === 'exited' || state[id] === 'stopped') continue;
+      await sleep(jitter(90, 260));
+      if (my !== token) return;
+      setState(id, 'stopped');
+      line(` <span class="ok">✔</span> <span class="sys">Container ${PROJECT}-${id}-1</span>  <span class="dim">Stopped</span>`);
+    }
+    finishStop();
+  }
+  function finishStop() {
+    upCount = 0; updateSummary();
+    side.classList.remove('running');
+    side.classList.add('ran');
+    setMode('up');
+  }
+
+  async function down() {
+    const my = ++token;
+    line(`<span class="dim">$</span> docker compose down`);
+    for (const id of [...order].reverse()) {
+      await sleep(jitter(60, 160));
+      if (my !== token) return;
+      setState(id, 'stopped');
+      line(` <span class="ok">✔</span> <span class="sys">Container ${PROJECT}-${id}-1</span>  <span class="dim">Removed</span>`);
+    }
+    line(` <span class="ok">✔</span> <span class="sys">Network ${PROJECT}_default</span>  <span class="dim">Removed</span>`);
+    line(`<span class="dim">Nothing is running. The links still work.</span>`);
+    finishStop();
+  }
+
+  go.addEventListener('click', () => {
+    if (mode === 'up') up();
+    else if (mode === 'stop') { stopPresses++; stop(stopPresses > 1); }
+    else down();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'c' && e.ctrlKey && mode === 'stop' && !window.getSelection()?.toString()) { stopPresses++; stop(stopPresses > 1); }
+  });
+</script>
