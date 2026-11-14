@@ -1,0 +1,201 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+import { palettes } from '../../components/ideas/automata/palettes';
+
+const P = Object.fromEntries(projects.map((p) => [p.slug, p]));
+const pal = palettes.map((p) => ({ bg: p.bg, bg2: p.bg2, ink: p.ink, dim: p.dim, dark: p.dark, acc: p.cells[p.dark ? 1 : 1] }));
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman is working on Replicate. Before that he made Docker Compose, Cog, JSNES and the Command Line Interface Guidelines." />
+    <script is:inline define:vars={{ pal }}>
+      // Pick this visit's edition before first paint, so the page never flashes the wrong palette.
+      var q = parseInt(new URLSearchParams(location.search).get('seed'), 10);
+      var seed = q >= 1 && q <= 99999 ? q : 1 + Math.floor(Math.random() * 99999);
+      var a = seed;
+      var rnd = function () { a |= 0; a = (a + 0x6d2b79f5) | 0; var t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+      var pi = Math.floor(rnd() * pal.length);
+      var side = rnd() < 0.5 ? 'left' : 'right';
+      var p = pal[pi], d = document.documentElement, st = d.style;
+      st.setProperty('--bg', p.bg); st.setProperty('--bg2', p.bg2); st.setProperty('--ink', p.ink); st.setProperty('--dim', p.dim); st.setProperty('--acc', p.acc);
+      st.colorScheme = p.dark ? 'dark' : 'light';
+      d.dataset.side = side;
+      d.dataset.tone = p.dark ? 'dark' : 'light';
+      d.classList.add('js');
+      window.__edition = { seed: seed, pal: pi, side: side };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="art" aria-hidden="true"><canvas id="gl"></canvas></div>
+
+    <main class="text">
+      <h1>{name}</h1>
+      <p>I’m working on <a href={now.url}>{now.name}</a>. Some other stuff I’ve done:</p>
+      <ul>
+        <li><a href={P.cog.url}>{P.cog.name}</a>, containers for machine learning.</li>
+        <li><a href={P.clig.url}>{P.clig.name}</a>, a guide to help you write better command-line programs.</li>
+        <li><a href={P.compose.url}>{P.compose.name}</a> and <a href={P.machine.url}>{P.machine.name}</a>.</li>
+        <li><a href={P.jsnes.url}>{P.jsnes.name}</a>, one of the first JavaScript emulators.</li>
+        <li><a href={P.whalebrew.url}>{P.whalebrew.name}</a>, a Docker package manager.</li>
+        <li><a href={P['arxiv-vanity'].url}>{P['arxiv-vanity'].name}</a>, which rendered papers from arXiv as responsive web pages.</li>
+        <li>I worked on {alsoWorkedOn.map((a, i) => <>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>)}.</li>
+        <li>I worked on many parts of <a href={P.django.url}>Django</a>, including class-based views, feeds, and search.</li>
+        <li>I helped start the <a href={P.ukhas.url}>{P.ukhas.name}</a>, a group for amateur near-space exploration.</li>
+      </ul>
+      <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+        I’m also on {socials.map((s, i) => <>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>)}.</p>
+    </main>
+
+    <footer class="corner">
+      <a href="/ideas">ideas</a>
+      <a class="ed" id="ed" href="?" hidden></a>
+    </footer>
+
+    <style is:global>
+      :root {
+        --bg: #f1eee8;
+        --bg2: #e6e2da;
+        --ink: #1d1d1f;
+        --dim: #6f6b66;
+        --acc: #2c4bb0;
+        --sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+        color-scheme: light;
+      }
+      html { background: var(--bg); -webkit-text-size-adjust: 100%; }
+      html, body { margin: 0; overflow-x: hidden; }
+      body {
+        position: relative;
+        min-height: 100vh;
+        min-height: 100svh;
+        color: var(--ink);
+        background: var(--bg);
+        font: 400 17px/1.58 var(--sans);
+        font-feature-settings: 'kern', 'liga', 'ss01';
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+      /* the room the piece hangs in: a faint pool of light and a little grain */
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background: radial-gradient(120% 90% at var(--lx, 70%) 45%, var(--bg) 0%, var(--bg) 35%, var(--bg2) 100%);
+      }
+      body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+        opacity: .07;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1.6 -.3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+      [data-side='right'] body::before { --lx: 30%; }
+      [data-tone='dark'] body::after { opacity: .09; }
+
+      .art { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+      .art canvas { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 2.4s cubic-bezier(.3,.1,.2,1); }
+      .art canvas.on { opacity: 1; }
+
+      .text {
+        position: relative;
+        z-index: 2;
+        box-sizing: border-box;
+        min-height: 100vh;
+        min-height: 100svh;
+        max-width: calc(27.5rem + 2 * 8vw);
+        padding: 12vh 8vw;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      [data-side='right'] .text { margin-left: auto; }
+
+      h1 { font-size: 1.5rem; line-height: 1.2; font-weight: 600; letter-spacing: -.012em; margin: 0 0 1.25rem; }
+      p { margin: 0 0 1rem; }
+      ul { list-style: none; margin: 0 0 1.35rem; padding: 0; }
+      li { position: relative; margin: 0 0 .42rem; }
+      li::before { content: '–'; position: absolute; left: -1.05em; color: var(--dim); }
+      a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .2em; text-decoration-color: color-mix(in srgb, var(--ink) 32%, transparent); transition: text-decoration-color .2s; }
+      a:hover, a:focus-visible { text-decoration-color: var(--ink); }
+      a:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; border-radius: 2px; }
+      ::selection { background: var(--ink); color: var(--bg); }
+
+      .corner {
+        position: absolute;
+        z-index: 4;
+        bottom: 14px;
+        left: 16px;
+        display: flex;
+        gap: 14px;
+        font-size: 11px;
+        letter-spacing: .02em;
+        line-height: 1;
+      }
+      [data-side='right'] .corner { left: auto; right: 16px; }
+      .corner a { text-decoration: none; opacity: .28; transition: opacity .25s; font-variant-numeric: tabular-nums; }
+      .corner a:hover, .corner a:focus-visible { opacity: .85; }
+
+      @media (max-width: 859px) {
+        .art { position: relative; height: 64vh; height: 64svh; }
+        .text { min-height: 0; max-width: none; padding: 4px 24px 72px 44px; display: block; }
+        [data-side='right'] .text { margin-left: 0; }
+        h1 { font-size: 1.375rem; }
+        body { font-size: 16.5px; }
+        .corner, [data-side='right'] .corner { left: 44px; right: auto; bottom: 22px; }
+        body::before { background: var(--bg); }
+      }
+      html:not(.js) .art, .nogl .art { display: none; }
+      @media (max-width: 859px) { html:not(.js) .text, .nogl .text { padding-top: 16vh; } }
+    </style>
+
+    <script>
+      import { palettes } from '../../components/ideas/automata/palettes';
+      import { start } from '../../components/ideas/automata/scene';
+
+      const ed = (window as any).__edition as { seed: number; pal: number; side: 'left' | 'right' };
+      const link = document.getElementById('ed') as HTMLAnchorElement;
+      const permalink = `${location.origin}${location.pathname}?seed=${ed.seed}`;
+      link.textContent = `No. ${ed.seed}`;
+      link.href = permalink;
+      link.title = 'Copy a link to this edition';
+      link.hidden = false;
+      link.addEventListener('click', async (e) => {
+        if (!navigator.clipboard) return;
+        e.preventDefault();
+        try {
+          await navigator.clipboard.writeText(permalink);
+          link.textContent = 'Link copied';
+          setTimeout(() => (link.textContent = `No. ${ed.seed}`), 1600);
+        } catch {
+          location.href = permalink;
+        }
+      });
+
+      const canvas = document.getElementById('gl') as HTMLCanvasElement;
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      try {
+        start({
+          canvas,
+          seed: ed.seed,
+          palette: palettes[ed.pal],
+          side: ed.side,
+          reduce,
+          onFirstFrame: () => requestAnimationFrame(() => canvas.classList.add('on')),
+        });
+      } catch (err) {
+        document.documentElement.classList.add('nogl');
+        console.warn('automata: no WebGL', err);
+      }
+    </script>
+  </body>
+</html>
