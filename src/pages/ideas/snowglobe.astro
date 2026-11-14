@@ -1,0 +1,158 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+const order = ['compose', 'cog', 'jsnes', 'arxiv-vanity', 'ukhas', 'django', 'clig', 'machine', 'whalebrew'];
+const ordered = order.map((s) => projects.find((p) => p.slug === s)!).filter(Boolean);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman — Snow globe</title>
+    <meta name="description" content="A tiny wintry town inside a snow globe, where every building is one of Ben Firshman's projects. Drag to turn it, flick to shake it, and watch the snow settle on the roofs." />
+    <meta name="theme-color" content="#0c0a0d" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Figtree:wght@500;600&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <canvas id="scene" aria-hidden="true"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <header class="title">
+      <h1>{name}</h1>
+      <p>A small town of projects, kept under glass. The big lit building is <a href={now.url}>{now.name}</a>, where I work now.</p>
+    </header>
+
+    <nav class="corner">
+      <a href="/ideas" class="pill">← all ideas</a>
+    </nav>
+
+    <div id="tip" class="tip" role="dialog" aria-live="polite" hidden></div>
+
+    <footer class="dock">
+      <button type="button" id="shake" class="pill strong">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7M12 2l-2.5 2.5M12 2l2.5 2.5M12 22l-2.5-2.5M12 22l2.5-2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Shake
+      </button>
+      <button type="button" id="sound" class="pill" aria-pressed="false">Sound off</button>
+      <button type="button" id="listBtn" class="pill" aria-expanded="false" aria-controls="list">List view</button>
+    </footer>
+    <p class="hint" id="hint">Drag to turn it. Flick it to shake. Hover the houses.</p>
+
+    <section id="list" class="list" aria-label="Everything in the town, as a list">
+      <div class="list-inner">
+        <button type="button" class="pill close" id="listClose">Back to the globe</button>
+        <h2>{name}</h2>
+        <p>I'm working on <a href={now.url}>{now.name}</a>, to {now.blurb}. It's the town hall. Around it:</p>
+        <ul>
+          {ordered.map((p) => <li><a href={p.url}>{p.name}</a>, {p.blurb}.</li>)}
+        </ul>
+        <p>On the old street, things I also worked on: {alsoWorkedOn.map((a, i) => <>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>)}.</p>
+        <p>Engraved on the base: <a href={`mailto:${email}`}>{email}</a>. I'm also on {socials.map((s, i) => <>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>)}.</p>
+      </div>
+    </section>
+
+    <noscript><style>#scene, .dock, .hint, .close, .vignette { display: none !important; } .list { position: static; opacity: 1; visibility: visible; background: none; }</style></noscript>
+
+    <style is:global>
+      :root {
+        color-scheme: dark;
+        --ink: #f4ecdf;
+        --dim: rgba(244, 236, 223, 0.66);
+        --warm: #ffcf8a;
+        --bg: #0c0a0d;
+        --paper: #f7f0e3;
+        --paper-ink: #2b221d;
+        --red: #b8362c;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); }
+      body { font: 500 16px/1.45 'Figtree', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+      a { color: var(--warm); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+      :focus-visible { outline: 2px solid var(--warm); outline-offset: 3px; }
+      #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+      #scene.hot { cursor: pointer; }
+      #scene.dragging { cursor: grabbing; }
+      .vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse 75% 70% at 50% 45%, transparent 55%, rgba(0,0,0,0.55) 100%); }
+
+      .title { position: fixed; top: 34px; left: 40px; max-width: 330px; z-index: 3; pointer-events: none; }
+      .title a { pointer-events: auto; }
+      .title h1 { margin: 0 0 10px; font: 600 44px/0.95 'Fraunces', Georgia, serif; letter-spacing: -0.01em; color: var(--ink); font-variation-settings: "opsz" 144; }
+      .title p { margin: 0; font: italic 400 18px/1.4 'Fraunces', Georgia, serif; color: var(--dim); }
+
+      .corner { position: fixed; top: 28px; right: 28px; z-index: 5; }
+      .pill {
+        appearance: none; display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; cursor: pointer;
+        font: 600 14px/1 'Figtree', sans-serif; color: var(--ink); text-decoration: none; white-space: nowrap;
+        background: rgba(30, 24, 26, 0.6); border: 1px solid rgba(255, 220, 170, 0.22);
+        backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      }
+      .pill:hover { border-color: rgba(255, 220, 170, 0.6); color: #fff; }
+      .pill svg { width: 17px; height: 17px; }
+      .pill.strong { background: var(--paper); color: var(--paper-ink); border-color: transparent; box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+      .pill.strong:hover { background: #fff; color: #000; }
+      .pill[aria-pressed="true"] { border-color: var(--warm); color: var(--warm); }
+
+      .dock { position: fixed; left: 50%; bottom: max(26px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 8px; z-index: 4; }
+      .hint {
+        position: fixed; left: 50%; bottom: calc(max(26px, env(safe-area-inset-bottom)) + 52px); transform: translateX(-50%); margin: 0; z-index: 3;
+        font: italic 400 15px 'Fraunces', serif; color: var(--dim); white-space: nowrap; transition: opacity 1.2s; pointer-events: none;
+      }
+      .hint.gone { opacity: 0; }
+
+      .tip {
+        position: fixed; left: 0; top: 0; z-index: 6; width: 284px; padding: 16px 18px 15px 18px; border-radius: 6px 6px 6px 6px;
+        background: var(--paper); color: var(--paper-ink); box-shadow: 0 18px 40px rgba(0,0,0,0.5), 0 2px 0 rgba(0,0,0,0.15);
+        transform-origin: 50% 100%; will-change: transform;
+      }
+      .tip::before { /* the tag's hole */
+        content: ""; position: absolute; top: 12px; right: 14px; width: 9px; height: 9px; border-radius: 50%;
+        background: var(--bg); box-shadow: inset 0 0 0 2px #d9cbb1;
+      }
+      .tip::after { /* and its string */
+        content: ""; position: absolute; top: 15px; right: 2px; width: 20px; height: 2px; background: var(--red); transform: rotate(-30deg); transform-origin: right;
+      }
+      .tip .k { margin: 0 0 4px; font: 600 11px/1 'Figtree', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); }
+      .tip h2 { margin: 0 0 6px; padding-right: 18px; font: 600 23px/1.05 'Fraunces', Georgia, serif; letter-spacing: -0.01em; }
+      .tip p { margin: 0 0 10px; font: italic 400 16px/1.35 'Fraunces', Georgia, serif; color: #5b4c42; }
+      .tip a { color: var(--red); font-weight: 600; }
+      .tip ul { margin: 0 0 4px; padding: 0; list-style: none; display: grid; gap: 4px; }
+      .tip .go { display: inline-block; margin-top: 2px; white-space: nowrap; }
+      .tip.in { animation: tagIn 0.35s cubic-bezier(.2,1.4,.4,1) both; }
+      @keyframes tagIn { from { opacity: 0; scale: 0.92; rotate: -3deg; } }
+
+      .list {
+        position: fixed; inset: 0; z-index: 8; overflow-y: auto; background: rgba(12, 10, 13, 0.95);
+        opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+      }
+      html:not(.js) .list, .list.open { opacity: 1; visibility: visible; }
+      .list-inner { max-width: 620px; margin: 0 auto; padding: 84px 24px 60px; font: 400 20px/1.5 'Fraunces', Georgia, serif; }
+      .list h2 { font: 600 36px/1 'Fraunces', serif; margin: 0 0 16px; }
+      .list ul { padding-left: 1.1em; }
+      .list li { margin: 6px 0; }
+      .close { position: absolute; top: 24px; left: 24px; }
+      .fallback .dock, .fallback .hint, .fallback .close { display: none; }
+
+      @media (max-width: 720px) {
+        .title { top: 20px; left: 20px; right: 20px; max-width: none; }
+        .title h1 { font-size: 32px; margin-bottom: 6px; }
+        .title p { font-size: 15.5px; max-width: 270px; }
+        .corner { top: auto; bottom: calc(max(20px, env(safe-area-inset-bottom)) + 54px); right: 50%; transform: translateX(50%); }
+        .dock { bottom: max(20px, env(safe-area-inset-bottom)); }
+        .pill { padding: 10px 14px; font-size: 13.5px; }
+        .hint { display: none; }
+        .tip { width: min(280px, calc(100vw - 24px)); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tip.in { animation: none; }
+        .hint, .list { transition: none; }
+      }
+    </style>
+
+    <script>
+      import '../../components/ideas/snowglobe/globe.ts';
+    </script>
+  </body>
+</html>
