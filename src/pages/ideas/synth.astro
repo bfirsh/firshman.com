@@ -1,0 +1,667 @@
+---
+import { name, email, socials, now, alsoWorkedOn } from '../../data/bio';
+import { channels } from '../../components/ideas/synth/channels';
+
+const keys = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'];
+const ticks = (n: number, r0: number, r1: number) =>
+  Array.from({ length: n }, (_, i) => {
+    const a = ((-135 + (270 * i) / (n - 1)) * Math.PI) / 180;
+    return `M${(50 + Math.sin(a) * r0).toFixed(2)} ${(50 - Math.cos(a) * r0).toFixed(2)}L${(50 + Math.sin(a) * r1).toFixed(2)} ${(50 - Math.cos(a) * r1).toFixed(2)}`;
+  }).join('');
+const gear = (() => {
+  let d = '';
+  const n = 8;
+  for (let i = 0; i < n * 4; i++) {
+    const a = (i / (n * 4)) * Math.PI * 2;
+    const r = i % 4 === 1 || i % 4 === 2 ? 11 : 8.4;
+    d += `${i ? 'L' : 'M'}${(Math.cos(a) * r).toFixed(2)} ${(Math.sin(a) * r).toFixed(2)}`;
+  }
+  return d + 'Z';
+})();
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman — Synth</title>
+    <meta name="description" content="Ben Firshman's homepage as a generative groovebox. Every project is a voice in the song: Docker Compose on bass, Cog on hi-hat, JSNES on square lead, Replicate improvising over the top." />
+    <meta name="theme-color" content="#151413" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=VT323&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <header class="page-top">
+      <a class="back" href="/ideas">← all ideas</a>
+      <button type="button" class="notes-btn" id="notes-btn" aria-expanded="false" aria-controls="notes">Liner notes</button>
+    </header>
+
+    <main class="stage">
+      <h1 class="sr">{name}</h1>
+      <div class="device" id="device">
+        <!-- FRONT -->
+        <section class="face front" aria-label="Front panel">
+          <div class="cheek l" aria-hidden="true"></div>
+          <div class="panel">
+            <div class="top">
+              <div class="brandbox">
+                <p class="brand" aria-hidden="true">BEN FIRSHMAN</p>
+                <p class="model" aria-hidden="true"><b>BF-09</b> generative groovebox</p>
+                <div class="lcd" id="lcd" aria-hidden="true">
+                  <div class="lcd-glass">
+                    <span class="lcd-line" id="lcd1">BEN FIRSHMAN · BF-09</span>
+                    <span class="lcd-line" id="lcd2">10 voices, all synthesised</span>
+                    <span class="lcd-line" id="lcd3">press ▶ to play</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hero">
+                <button type="button" class="play" id="play" aria-pressed="false">
+                  <span class="play-ring" aria-hidden="true"></span>
+                  <span class="play-icon" aria-hidden="true"></span>
+                  <span class="play-label" id="play-label">press to play</span>
+                </button>
+                <div class="transport">
+                  <button type="button" class="pill" id="reroll" title="New seed (R)"><span class="die" aria-hidden="true">⚄</span> Re-roll</button>
+                  <span class="seed" id="seed" aria-live="polite">seed ----</span>
+                </div>
+              </div>
+
+              <div class="meters" aria-hidden="true">
+                <div class="scope">
+                  <canvas id="scope" width="240" height="132"></canvas>
+                  <span class="label">Scope</span>
+                </div>
+                <div class="vu">
+                  <svg viewBox="0 0 160 110" class="vu-svg">
+                    <defs>
+                      <linearGradient id="vuface" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6dc" /><stop offset="1" stop-color="#f0dfae" /></linearGradient>
+                    </defs>
+                    <rect x="0" y="0" width="160" height="110" rx="6" fill="url(#vuface)" />
+                    <path d="M28 76 A62 62 0 0 1 112 32" fill="none" stroke="#2a2418" stroke-width="1.4" />
+                    <path d="M112 32 A62 62 0 0 1 134 52" fill="none" stroke="#d2321e" stroke-width="4" />
+                    <g stroke="#2a2418" stroke-width="1.2">
+                      {[-50, -38, -26, -14, -2, 8, 18, 28, 40, 50].map((a) => {
+                        const r = (a * Math.PI) / 180;
+                        return <line x1={80 + Math.sin(r) * 62} y1={100 - Math.cos(r) * 62} x2={80 + Math.sin(r) * 70} y2={100 - Math.cos(r) * 70} />;
+                      })}
+                    </g>
+                    <text x="80" y="58" text-anchor="middle" class="vu-text">VU</text>
+                    <text x="24" y="28" class="vu-small">-20</text>
+                    <text x="128" y="24" class="vu-small red">+3</text>
+                    <g id="needle" style="transform-origin: 80px 100px; transform: rotate(-50deg)">
+                      <line x1="80" y1="100" x2="80" y2="26" stroke="#1b1712" stroke-width="1.6" />
+                    </g>
+                    <circle cx="80" cy="100" r="7" fill="#2a2418" />
+                    <rect x="0" y="0" width="160" height="110" rx="6" fill="url(#vuface)" opacity="0" />
+                  </svg>
+                  <span class="label">Level</span>
+                </div>
+              </div>
+
+              <div class="knobs">
+                <div class="knob-wrap big">
+                  <div class="knob" id="k-tempo" role="slider" tabindex="0" aria-label="Tempo" aria-valuemin="60" aria-valuemax="160" aria-valuenow="96" aria-valuetext="96 BPM" data-min="60" data-max="160" data-value="96" data-step="1">
+                    <svg class="ticks" viewBox="0 0 100 100" aria-hidden="true"><path d={ticks(21, 46, 50)} /></svg>
+                    <div class="knob-body"><span class="knob-ind"></span></div>
+                  </div>
+                  <span class="label">Tempo <output id="bpm">96</output></span>
+                </div>
+                <div class="knob-col">
+                  <div class="knob-wrap">
+                    <div class="knob" id="k-space" role="slider" tabindex="0" aria-label="Space (reverb and delay)" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40" data-min="0" data-max="100" data-value="40" data-step="1">
+                      <svg class="ticks" viewBox="0 0 100 100" aria-hidden="true"><path d={ticks(11, 45, 50)} /></svg>
+                      <div class="knob-body"><span class="knob-ind"></span></div>
+                    </div>
+                    <span class="label">Space</span>
+                  </div>
+                  <div class="knob-wrap">
+                    <div class="knob" id="k-vol" role="slider" tabindex="0" aria-label="Volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="75" data-min="0" data-max="100" data-value="75" data-step="1">
+                      <svg class="ticks" viewBox="0 0 100 100" aria-hidden="true"><path d={ticks(11, 45, 50)} /></svg>
+                      <div class="knob-body"><span class="knob-ind"></span></div>
+                    </div>
+                    <span class="label">Volume</span>
+                  </div>
+                </div>
+                <button type="button" class="flip" id="flip" aria-pressed="false" aria-label="Flip to the back panel">
+                  <span class="toggle" aria-hidden="true"><span></span></span>
+                  <span class="label">Flip</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="seq">
+              <div class="seq-head" aria-hidden="true">
+                <span class="sh-name">Voice</span>
+                <span class="sh-ms">M&nbsp;&nbsp;S</span>
+                <span class="sh-lvl">Lvl</span>
+                <span class="sh-steps">{Array.from({ length: 16 }, (_, i) => <span class:list={['n', { beat: i % 4 === 0 }]} data-n={i}>{i + 1}</span>)}</span>
+                <span class="sh-viz"></span>
+              </div>
+              {channels.map((c, i) => (
+                <div class="row" data-ch={i} style={`--c:${c.color}`}>
+                  <div class="ch-id">
+                    <span class="led" aria-hidden="true"></span>
+                    <span class="ch-text">
+                      <a class="ch-name" href={c.url}>{c.name}</a>
+                      <span class="ch-role">{c.role}</span>
+                    </span>
+                  </div>
+                  <div class="ch-ms">
+                    <button type="button" class="ms mute" aria-pressed="false" aria-label={`Mute ${c.name}`}>M</button>
+                    <button type="button" class="ms solo" aria-pressed="false" aria-label={`Solo ${c.name}`}>S</button>
+                  </div>
+                  <div class="knob sm lvl" role="slider" tabindex="0" aria-label={`${c.name} level`} aria-valuemin="0" aria-valuemax="100" aria-valuenow="80" data-min="0" data-max="100" data-value="80" data-step="1">
+                    <div class="knob-body"><span class="knob-ind"></span></div>
+                  </div>
+                  <div class="steps" role="group" aria-label={`${c.name} pattern`}>
+                    {Array.from({ length: 16 }, (_, s) => <button type="button" class="step" aria-pressed="false" aria-label={`${c.name} step ${s + 1}`} data-s={s}></button>)}
+                  </div>
+                  <div class={`viz v-${c.voice}`} aria-hidden="true">
+                    <svg viewBox="0 0 72 28">
+                      {c.voice === 'ai' && <><path class="spark" d="M12 4 L14 12 L22 14 L14 16 L12 24 L10 16 L2 14 L10 12 Z" /><text class="v-note" x="28" y="19">··</text></>}
+                      {c.voice === 'square' && <path class="sq" d="M-22 21 H-10 V7 H2 V21 H14 V7 H26 V21 H38 V7 H50 V21 H62 V7 H74 V21 H86" />}
+                      {c.voice === 'pluck' && <g class="strings">{[5, 8.6, 12.2, 15.8, 19.4, 23].map((y) => <line x1="2" x2="70" y1={y} y2={y} />)}</g>}
+                      {c.voice === 'pad' && <g class="balloon"><line x1="36" y1="15" x2="36" y2="22" /><circle cx="36" cy="9" r="6.5" /><rect x="33" y="22" width="6" height="4" /></g>}
+                      {c.voice === 'whale' && <g class="whale"><path d="M14 18 C14 10 34 8 44 14 C50 10 54 8 58 6 C56 11 56 14 60 17 C54 17 50 17 46 18 C40 24 18 25 14 18 Z" /><g class="spout"><path d="M24 9 C23 5 20 4 18 4 M24 9 C25 5 28 4 30 4 M24 9 V3" /></g></g>}
+                      {c.voice === 'bass' && <g class="boxes">{[0, 1, 2, 3, 4, 5, 6, 7].map((k) => <rect x={14 + (k % 4) * 11} y={k < 4 ? 16 : 7} width="10" height="8" data-k={k} />)}</g>}
+                      {c.voice === 'hat' && <g transform="translate(36 14)"><path class="gear" d={gear} /><circle r="3" class="hub" /></g>}
+                      {c.voice === 'type' && <text class="tty" x="4" y="19">$ <tspan class="typed"></tspan><tspan class="cur">_</tspan></text>}
+                      {c.voice === 'paper' && <g class="page"><path d="M24 3 H42 L48 9 V25 H24 Z" /><path class="fold" d="M42 3 V9 H48" /><line x1="28" y1="12" x2="44" y2="12" /><line x1="28" y1="16" x2="44" y2="16" /><line x1="28" y1="20" x2="38" y2="20" /></g>}
+                      {c.voice === 'kick' && <g class="spk" transform="translate(36 14)"><circle r="12" class="rim" /><circle r="8" class="cone" /><circle r="3" class="dust" /></g>}
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div class="perform">
+              <div class="keys" aria-label="Keyboard: press A to L to play notes in key">
+                <span class="label perf-label">Perform</span>
+                {keys.map((k, i) => <button type="button" class="key" data-key={k.toLowerCase()} data-i={i} aria-label={`Play note ${i + 1} (${k})`}>{k}</button>)}
+              </div>
+              <p class="credits">
+                <span class="label">Also played on</span>
+                {alsoWorkedOn.map((a) => <a href={a.url}>{a.name}</a>)}
+              </p>
+            </div>
+          </div>
+          <div class="cheek r" aria-hidden="true"></div>
+        </section>
+
+        <!-- BACK -->
+        <section class="face back" aria-label="Back panel">
+          <div class="cheek l" aria-hidden="true"></div>
+          <div class="panel back-panel">
+            <div class="jacks" aria-hidden="true">
+              {['Out L', 'Out R', 'Phones', 'MIDI in', 'MIDI out', '9V DC'].map((j) => <span class="jack"><span class="hole"></span><span class="label">{j}</span></span>)}
+            </div>
+            <div class="vents" aria-hidden="true"></div>
+            <div class="caution" aria-hidden="true">
+              <svg viewBox="0 0 40 36"><path d="M20 2 L38 34 H2 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" /><path d="M20 13 V23 M20 27 V29" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+              <p><b>Caution</b> Risk of groove. Do not open.<br />Contains ten projects under pressure.</p>
+            </div>
+            <div class="sticker">
+              <p class="st-brand">BEN FIRSHMAN</p>
+              <dl>
+                <div><dt>Model</dt><dd>BF-09 generative groovebox</dd></div>
+                <div><dt>Made by</dt><dd>{name}</dd></div>
+                <div><dt>Now at</dt><dd><a href={now.url}>{now.name}</a></dd></div>
+                <div><dt>Contact</dt><dd><a href={`mailto:${email}`}>{email}</a></dd></div>
+                {socials.map((s) => <div><dt>{s.name}</dt><dd><a href={s.url}>{s.handle}</a></dd></div>)}
+                <div><dt>Serial</dt><dd id="serial">----</dd></div>
+              </dl>
+              <div class="barcode" aria-hidden="true"></div>
+              <p class="st-fine">100% synthesised. No samples were harmed. No user-serviceable parts inside, except all of them.</p>
+            </div>
+            <button type="button" class="flip back-flip" id="flip-back" aria-label="Flip to the front panel">
+              <span class="toggle on" aria-hidden="true"><span></span></span>
+              <span class="label">Flip</span>
+            </button>
+          </div>
+          <div class="cheek r" aria-hidden="true"></div>
+        </section>
+      </div>
+    </main>
+
+    <section class="notes" id="notes" aria-labelledby="notes-title">
+      <div class="notes-card">
+        <header class="notes-head">
+          <div>
+            <p class="notes-name">{name}</p>
+            <h2 id="notes-title">Liner notes</h2>
+          </div>
+          <button type="button" class="notes-close" id="notes-close" aria-label="Close liner notes">×</button>
+        </header>
+        <ol class="tracklist">
+          {channels.map((c, i) => (
+            <li style={`--c:${c.color}`}>
+              <span class="tn">{String(i + 1).padStart(2, '0')}</span>
+              <span><a href={c.url}>{c.name}</a>, {c.blurb}{c.now ? ' (now)' : ''}. <em>{c.role}.</em></span>
+            </li>
+          ))}
+        </ol>
+        <p class="notes-also">Also played on {alsoWorkedOn.map((a, i) => <>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>)}.</p>
+        <p class="notes-contact">Bookings: <a href={`mailto:${email}`}>{email}</a>. Also on {socials.map((s, i) => <>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>)}.</p>
+        <p class="notes-hint">Space plays and stops. A–L play notes. R re-rolls. Click steps to edit the pattern; drag knobs to turn them.</p>
+      </div>
+    </section>
+
+    <style is:global>
+      :root {
+        --desk: #141312;
+        --chassis: #ebe6db;
+        --chassis-2: #ddd7ca;
+        --ink: #23211d;
+        --ink-2: #6d675c;
+        --orange: #ff5b1f;
+        --pad: #2a2a2d;
+        --pad-2: #343438;
+        --lcd-bg: #b9c79a;
+        --lcd-ink: #1f2a12;
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body {
+        background:
+          radial-gradient(120% 70% at 50% 0%, #2a2724 0%, transparent 60%),
+          radial-gradient(80% 60% at 50% 100%, #1d1b19, transparent),
+          var(--desk);
+        color: var(--ink);
+        font-family: 'Archivo', system-ui, sans-serif;
+        font-stretch: 100%;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a { color: inherit; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      .label {
+        font-size: 9.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+        font-stretch: 75%; color: var(--ink-2);
+      }
+
+      .page-top {
+        display: flex; justify-content: space-between; align-items: center;
+        max-width: 1220px; margin: 0 auto; padding: 14px 20px 0;
+        font-size: 12px; letter-spacing: .04em;
+      }
+      .back { color: #a39d92; text-decoration: none; }
+      .back:hover { color: #fff; }
+      .notes-btn {
+        font: inherit; color: #a39d92; background: none; border: 1px solid #3a3733; border-radius: 99px; padding: 5px 12px; cursor: pointer;
+      }
+      .notes-btn:hover { color: #fff; border-color: #6a655d; }
+
+      .stage { perspective: 2200px; padding: 14px 20px 28px; min-height: calc(100vh - 46px); min-height: calc(100dvh - 46px); display: flex; flex-direction: column; justify-content: center; }
+      .stage > .device { width: 100%; }
+      .device {
+        position: relative; max-width: 1220px; margin: 0 auto;
+        transform-style: preserve-3d;
+        transition: transform .9s cubic-bezier(.5, 0, .2, 1);
+      }
+      .device.flipped { transform: rotateY(180deg); }
+      .face {
+        display: flex; border-radius: 14px;
+        backface-visibility: hidden; -webkit-backface-visibility: hidden;
+        box-shadow: 0 40px 80px -20px rgba(0,0,0,.75), 0 12px 24px rgba(0,0,0,.4);
+      }
+      .face.back { position: absolute; inset: 0; transform: rotateY(180deg); }
+      .cheek {
+        width: 26px; flex: none;
+        background:
+          repeating-linear-gradient(92deg, rgba(0,0,0,.0) 0 3px, rgba(0,0,0,.12) 3px 4px, rgba(255,220,180,.05) 4px 7px),
+          repeating-linear-gradient(180deg, rgba(0,0,0,.08) 0 13px, rgba(255,255,255,.03) 13px 29px),
+          linear-gradient(90deg, #4a2c17, #7a4c2b 40%, #6a3f22 70%, #3c2312);
+        box-shadow: inset 0 1px 0 rgba(255,220,180,.25), inset 0 -2px 4px rgba(0,0,0,.4);
+      }
+      .cheek.l { border-radius: 14px 0 0 14px; }
+      .cheek.r { border-radius: 0 14px 14px 0; }
+      .panel {
+        flex: 1; min-width: 0;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 3px),
+          repeating-linear-gradient(90deg, rgba(0,0,0,.012) 0 1px, rgba(255,255,255,.02) 1px 3px),
+          var(--chassis);
+        padding: 20px 22px 16px;
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), inset 0 -3px 0 rgba(0,0,0,.08);
+      }
+
+      /* --- top --- */
+      .top { display: grid; grid-template-columns: minmax(270px, 1fr) auto minmax(0, 1.05fr) auto; gap: 20px; align-items: stretch; }
+      .brand {
+        margin: 0; font-weight: 900; font-stretch: 125%; font-size: 27px; letter-spacing: -.01em; line-height: 1;
+        color: var(--ink);
+      }
+      .model { margin: 5px 0 12px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-stretch: 75%; font-weight: 600; color: var(--ink-2); }
+      .model b { color: var(--orange); font-weight: 800; }
+      .lcd {
+        background: #2a2925; border-radius: 8px; padding: 7px;
+        box-shadow: inset 0 2px 5px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.8);
+      }
+      .lcd-glass {
+        position: relative; display: flex; flex-direction: column; justify-content: center;
+        height: 88px; padding: 6px 12px; border-radius: 4px; overflow: hidden;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0) 40%),
+          radial-gradient(120% 140% at 30% 20%, #c9d6a8, var(--lcd-bg) 60%, #a4b384);
+        color: var(--lcd-ink);
+        font-family: 'VT323', ui-monospace, monospace; font-size: 21px; line-height: 25px;
+        text-shadow: 1px 1px 0 rgba(30,45,10,.18);
+      }
+      .lcd-glass::after {
+        content: ''; position: absolute; inset: 0; pointer-events: none;
+        background-image: linear-gradient(rgba(60,80,30,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(60,80,30,.07) 1px, transparent 1px);
+        background-size: 3px 3px;
+      }
+      .lcd-line { white-space: pre; overflow: hidden; text-overflow: clip; }
+      .lcd-line.blink { animation: blink 1.1s steps(1) infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+
+      .hero { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 0 6px; }
+      .play {
+        position: relative; width: 132px; height: 132px; border-radius: 50%;
+        border: 0; cursor: pointer; padding: 0;
+        background: radial-gradient(circle at 50% 35%, #ff8a55, var(--orange) 55%, #d63d07);
+        box-shadow: 0 10px 0 #a62e05, 0 14px 22px rgba(0,0,0,.35), inset 0 2px 1px rgba(255,255,255,.45), inset 0 -6px 14px rgba(120,20,0,.35);
+        color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+        transition: transform .08s, box-shadow .08s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .play:active, .play.down { transform: translateY(6px); box-shadow: 0 4px 0 #a62e05, 0 6px 12px rgba(0,0,0,.35), inset 0 2px 1px rgba(255,255,255,.45), inset 0 -6px 14px rgba(120,20,0,.35); }
+      .play-ring { position: absolute; inset: -9px; border-radius: 50%; border: 2px solid rgba(0,0,0,.08); box-shadow: inset 0 2px 4px rgba(0,0,0,.18); }
+      .play-icon {
+        width: 0; height: 0; border-style: solid; border-width: 17px 0 17px 28px; border-color: transparent transparent transparent #fff;
+        margin-left: 8px; filter: drop-shadow(0 1px 0 rgba(120,20,0,.4));
+      }
+      .play[aria-pressed='true'] .play-icon { border: 0; width: 26px; height: 26px; background: #fff; margin: 0; border-radius: 3px; }
+      .play-label { font-weight: 800; font-size: 13px; letter-spacing: .02em; font-stretch: 90%; text-shadow: 0 1px 0 rgba(120,20,0,.4); }
+      .js .play[aria-pressed='false'] .play-ring { animation: breathe 2.4s ease-in-out infinite; }
+      @keyframes breathe { 0%, 100% { box-shadow: inset 0 2px 4px rgba(0,0,0,.18), 0 0 0 0 rgba(255,91,31,.0); } 50% { box-shadow: inset 0 2px 4px rgba(0,0,0,.18), 0 0 0 8px rgba(255,91,31,.18); } }
+      .play:focus-visible, .pill:focus-visible, .ms:focus-visible, .step:focus-visible, .key:focus-visible, .flip:focus-visible, .knob:focus-visible, .notes-btn:focus-visible, .back:focus-visible, .ch-name:focus-visible, .credits a:focus-visible {
+        outline: 2px solid #1d6bff; outline-offset: 3px;
+      }
+      .transport { display: flex; align-items: center; gap: 8px; }
+      .pill {
+        font: 700 11px/1 'Archivo', sans-serif; font-stretch: 85%; letter-spacing: .1em; text-transform: uppercase;
+        color: var(--ink); background: linear-gradient(#fbf9f4, #e2dccf); border: 1px solid rgba(0,0,0,.18); border-radius: 99px;
+        padding: 7px 12px 7px 10px; cursor: pointer; box-shadow: 0 2px 0 rgba(0,0,0,.15);
+        display: inline-flex; align-items: center; gap: 6px;
+      }
+      .pill:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(0,0,0,.15); }
+      .die { font-size: 16px; line-height: 0; }
+      .seed { font: 18px/1 'VT323', monospace; color: var(--ink-2); min-width: 72px; }
+
+      .meters { display: flex; gap: 14px; align-items: stretch; min-width: 0; }
+      .scope { flex: 1; min-width: 110px; }
+      .scope, .vu { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+      .scope canvas {
+        width: 100%; height: 110px; border-radius: 8px; display: block;
+        background: #0b120e;
+        box-shadow: inset 0 0 0 6px #2a2925, inset 0 2px 8px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.8);
+      }
+      .vu-svg { width: 160px; height: 110px; display: block; border-radius: 8px; box-shadow: 0 0 0 6px #2a2925, inset 0 2px 6px rgba(0,0,0,.3), 0 1px 0 6px rgba(255,255,255,.0); }
+      .vu { padding-top: 0; }
+      .vu .vu-svg { margin: 6px 6px 0; width: 140px; height: 98px; }
+      .vu-text { font: 800 14px 'Archivo', sans-serif; fill: #2a2418; letter-spacing: .1em; }
+      .vu-small { font: 600 8px 'Archivo', sans-serif; fill: #2a2418; }
+      .vu-small.red { fill: #d2321e; }
+
+      .knobs { display: flex; align-items: center; gap: 14px; padding-left: 4px; }
+      .knob-col { display: flex; flex-direction: column; gap: 10px; }
+      .knob-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+      .knob { position: relative; width: 44px; height: 44px; cursor: grab; touch-action: none; border-radius: 50%; flex: none; }
+      .knob:active { cursor: grabbing; }
+      .knob .ticks { position: absolute; inset: -7px; width: calc(100% + 14px); height: calc(100% + 14px); }
+      .knob .ticks path { stroke: #9a9385; stroke-width: 1.6; }
+      .knob-body {
+        position: absolute; inset: 0; border-radius: 50%;
+        background: repeating-conic-gradient(#18181a 0 5deg, #2e2e33 5deg 10deg);
+        box-shadow: 0 4px 6px rgba(0,0,0,.4), 0 1px 1px rgba(0,0,0,.5);
+        transform: rotate(var(--rot, 0deg));
+      }
+      .knob-body::after {
+        content: ''; position: absolute; inset: 14%; border-radius: 50%;
+        background: radial-gradient(circle at 40% 30%, #6a6a70, #2c2c31 55%, #1a1a1d);
+        box-shadow: inset 0 1px 1px rgba(255,255,255,.25), 0 1px 2px rgba(0,0,0,.5);
+      }
+      .knob-ind { position: absolute; left: 50%; top: 9%; width: 3px; height: 30%; margin-left: -1.5px; border-radius: 2px; background: #f6f2e8; z-index: 1; box-shadow: 0 0 2px rgba(0,0,0,.4); }
+      .knob-wrap.big .knob { width: 86px; height: 86px; }
+      .knob-wrap.big .knob .ticks { inset: -11px; width: calc(100% + 22px); height: calc(100% + 22px); }
+      .knob-wrap.big .knob-ind { background: var(--orange); width: 4px; margin-left: -2px; }
+      .knob-wrap.big .label { margin-top: 10px; }
+      output { font: 18px/1 'VT323', monospace; color: var(--ink); letter-spacing: 0; margin-left: 4px; }
+
+      .flip { background: none; border: 0; padding: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+      .toggle { position: relative; width: 22px; height: 40px; border-radius: 11px; background: linear-gradient(90deg, #1e1e21, #3a3a3f, #1e1e21); box-shadow: inset 0 1px 3px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.7); }
+      .toggle span { position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 40% 30%, #fff, #c9c5bc); box-shadow: 0 2px 3px rgba(0,0,0,.5); transition: transform .25s; }
+      .toggle.on span { transform: translateY(18px); }
+
+      /* --- sequencer --- */
+      .seq {
+        margin-top: 18px; background: linear-gradient(#232326, #1b1b1e); border-radius: 10px; padding: 8px 12px 10px;
+        box-shadow: inset 0 2px 6px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.9);
+        color: #d9d4c9;
+      }
+      .seq-head, .row { display: grid; grid-template-columns: 236px 56px 30px 1fr 80px; gap: 12px; align-items: center; }
+      .seq-head { padding: 0 0 4px; font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-stretch: 75%; color: #7b766d; }
+      .sh-steps, .steps { display: grid; grid-template-columns: repeat(16, 1fr); gap: 5px; }
+      .sh-steps .n { text-align: center; font-family: 'VT323', monospace; font-size: 13px; letter-spacing: 0; color: #55524c; position: relative; }
+      .sh-steps .n.beat { color: #8d877c; }
+      .sh-steps .n.now { color: #fff; }
+      .sh-steps .n.now::after { content: ''; position: absolute; left: 50%; bottom: -3px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 6px var(--orange); }
+      .row { padding: 4px 0; border-top: 1px solid rgba(255,255,255,.04); }
+      .ch-id { display: flex; align-items: center; gap: 10px; min-width: 0; }
+      .led {
+        width: 9px; height: 9px; border-radius: 50%; flex: none;
+        background: color-mix(in srgb, var(--c) 25%, #222);
+        box-shadow: inset 0 1px 1px rgba(0,0,0,.6);
+        transition: background .08s, box-shadow .08s;
+      }
+      .row.hit .led { background: var(--c); box-shadow: 0 0 8px var(--c), 0 0 2px #fff inset; transition: none; }
+      .ch-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+      .ch-name { color: #f2eee6; font-weight: 700; font-size: 13.5px; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-stretch: 84%; }
+      .ch-name:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--c); }
+      .ch-role { font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: #8a847a; font-stretch: 75%; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .ch-ms { display: flex; gap: 4px; }
+      .ms {
+        width: 24px; height: 22px; border-radius: 4px; border: 0; cursor: pointer;
+        font: 800 10px/1 'Archivo', sans-serif; color: #a8a297;
+        background: linear-gradient(#45454b, #35353a); box-shadow: 0 2px 0 #151517, inset 0 1px 0 rgba(255,255,255,.12);
+      }
+      .ms:active { transform: translateY(1px); box-shadow: 0 1px 0 #151517; }
+      .ms.mute[aria-pressed='true'] { background: linear-gradient(#ff7a4a, #e2501d); color: #fff; }
+      .ms.solo[aria-pressed='true'] { background: linear-gradient(#ffe066, #f2c21b); color: #3a2a00; }
+      .row.muted .ch-name, .row.muted .ch-role { opacity: .45; }
+      .row.muted .step[aria-pressed='true'] { background: color-mix(in srgb, var(--c) 30%, #2a2a2d); box-shadow: none; }
+      .knob.sm { width: 26px; height: 26px; }
+      .knob.sm .knob-ind { top: 6%; height: 34%; width: 2px; margin-left: -1px; background: var(--c); }
+
+      .step {
+        height: 26px; border: 0; border-radius: 4px; cursor: pointer; padding: 0;
+        background: linear-gradient(#3b3b40, #313136);
+        box-shadow: 0 2px 0 #121214, inset 0 1px 0 rgba(255,255,255,.07);
+        transition: background .12s, box-shadow .12s, transform .05s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .step:nth-child(8n+5), .step:nth-child(8n+6), .step:nth-child(8n+7), .step:nth-child(8n+8) { background: linear-gradient(#36363b, #2c2c31); }
+      .step:hover { filter: brightness(1.25); }
+      .step:active { transform: translateY(1px); box-shadow: 0 1px 0 #121214; }
+      .step[aria-pressed='true'] {
+        background: linear-gradient(color-mix(in srgb, var(--c) 92%, #fff), var(--c));
+        box-shadow: 0 2px 0 color-mix(in srgb, var(--c) 40%, #000), 0 0 10px color-mix(in srgb, var(--c) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.45);
+      }
+      .step.ph { outline: 1.5px solid rgba(255,255,255,.55); outline-offset: 1px; }
+      .step.ph[aria-pressed='true'] { filter: brightness(1.35); }
+
+      .viz { height: 28px; display: flex; align-items: center; justify-content: center; }
+      .viz svg { width: 72px; height: 28px; overflow: visible; }
+      .v-square svg { overflow: hidden; }
+      .viz * { vector-effect: non-scaling-stroke; }
+      .v-ai .spark { fill: var(--c); opacity: .6; transform-origin: 12px 14px; transition: transform .3s, opacity .3s; }
+      .v-ai .v-note { font: 20px 'VT323', monospace; fill: #f4f1ea; }
+      .v-ai.on .spark { opacity: 1; transform: scale(1.25) rotate(45deg); transition: none; }
+      .v-square .sq { fill: none; stroke: var(--c); stroke-width: 2.5; shape-rendering: crispEdges; transition: transform .1s steps(2); }
+      .v-pluck .strings line { stroke: #b9b2a5; stroke-width: 1; transform-origin: 36px 14px; }
+      .v-pluck.on .strings line { stroke: var(--c); animation: twang .35s ease-out; }
+      .v-pluck.on .strings line:nth-child(2n) { animation-delay: .04s; }
+      @keyframes twang { 0% { transform: scaleY(1) translateY(1.4px); } 25% { transform: translateY(-1.2px); } 50% { transform: translateY(.8px); } 75% { transform: translateY(-.4px); } 100% { transform: none; } }
+      .v-pad .balloon { transition: transform 1.2s cubic-bezier(.3,.6,.3,1); }
+      .v-pad .balloon circle { fill: #f2efe7; stroke: var(--c); stroke-width: 1.5; }
+      .v-pad .balloon line { stroke: #8a847a; }
+      .v-pad .balloon rect { fill: var(--c); }
+      .v-whale .whale > path { fill: var(--c); }
+      .v-whale .spout path { stroke: #d6f6ff; fill: none; stroke-width: 1.4; stroke-linecap: round; opacity: 0; transition: opacity .8s; }
+      .v-whale.on .spout path { opacity: 1; transition: none; }
+      .v-bass rect { fill: #3a3a40; stroke: rgba(0,0,0,.4); transition: fill .4s; }
+      .v-bass rect.lit { fill: var(--c); transition: none; }
+      .v-hat .gear { fill: var(--c); stroke: rgba(0,0,0,.35); transition: transform .12s cubic-bezier(.3,1.8,.4,1); }
+      .v-hat .hub { fill: #1b1b1e; }
+      .v-type .tty { font: 17px 'VT323', monospace; fill: var(--c); }
+      .v-type .cur { animation: blink 1s steps(1) infinite; }
+      .v-paper .page path:first-child { fill: #f1ece0; stroke: #b9b2a5; transform-origin: 36px 25px; transition: transform .25s; }
+      .v-paper .page .fold { fill: #d7d0c0; stroke: #b9b2a5; }
+      .v-paper .page line { stroke: var(--c); stroke-width: 1; }
+      .v-paper .page { transform-origin: 36px 25px; transition: transform .2s; }
+      .v-paper.on .page { transform: rotate(-6deg) skewX(-4deg); transition: none; }
+      .v-kick .rim { fill: #121214; stroke: #4a4a50; }
+      .v-kick .cone { fill: #2d2d32; stroke: var(--c); stroke-width: 1; transform-origin: 0 0; transition: transform .18s ease-out; }
+      .v-kick .dust { fill: #4a4a50; }
+      .v-kick.on .cone { transform: scale(1.22); transition: none; }
+
+      /* --- perform strip --- */
+      .perform { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 14px; flex-wrap: wrap; }
+      .keys { display: flex; align-items: center; gap: 6px; }
+      .perf-label { margin-right: 6px; }
+      .key {
+        width: 34px; height: 34px; border-radius: 6px; border: 0; cursor: pointer;
+        font: 700 13px/1 'Archivo', sans-serif; color: var(--ink);
+        background: linear-gradient(#fdfcf9, #e6e0d4);
+        box-shadow: 0 3px 0 #b7b0a2, 0 4px 6px rgba(0,0,0,.18), inset 0 1px 0 #fff;
+        transition: transform .05s, box-shadow .05s, background .1s;
+      }
+      .key.down, .key:active { transform: translateY(2px); box-shadow: 0 1px 0 #b7b0a2, inset 0 1px 0 #fff; background: linear-gradient(#ffd9c9, #ffb48f); }
+      .credits { margin: 0; font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; color: var(--ink); }
+      .credits .label { margin-right: 2px; }
+      .credits a { text-decoration: underline; text-decoration-color: rgba(0,0,0,.25); text-underline-offset: 3px; font-weight: 600; font-stretch: 92%; }
+      .credits a:hover { text-decoration-color: var(--orange); }
+
+      /* --- back panel --- */
+      .back-panel {
+        position: relative; display: grid; grid-template-columns: 1fr minmax(280px, 420px); grid-template-rows: auto auto auto; gap: 30px 48px; align-content: center;
+        background:
+          repeating-linear-gradient(90deg, rgba(0,0,0,.02) 0 1px, rgba(255,255,255,.02) 1px 3px),
+          linear-gradient(#3b3936, #2c2b29);
+        color: #ddd7cb;
+        padding: 32px 40px;
+      }
+      .back-panel .label { color: #b3ada1; }
+      .jacks { display: flex; gap: 22px; flex-wrap: wrap; align-self: start; }
+      .jack { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+      .hole { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle, #050505 0 32%, #8d8a83 34% 46%, #5a5853 48% 60%, #c9c5bb 62% 70%, #6f6c66 72%); box-shadow: 0 2px 3px rgba(0,0,0,.6); }
+      .vents {
+        grid-column: 1; height: 120px; border-radius: 8px;
+        background: repeating-linear-gradient(90deg, transparent 0 10px, #141312 10px 16px);
+        mask: linear-gradient(transparent 0 10px, #000 10px calc(100% - 10px), transparent 0);
+        -webkit-mask: linear-gradient(transparent 0 10px, #000 10px calc(100% - 10px), transparent 0);
+        opacity: .8;
+      }
+      .sticker {
+        grid-column: 2; grid-row: 1 / span 3; align-self: center;
+        background: linear-gradient(135deg, #f7f6f2, #e5e3dc); color: #161513;
+        border-radius: 6px; padding: 18px 20px 16px; transform: rotate(-.6deg);
+        box-shadow: 0 2px 0 rgba(0,0,0,.25), 0 8px 18px rgba(0,0,0,.35);
+        font-size: 12px;
+      }
+      .st-brand { margin: 0 0 10px; font-weight: 900; font-stretch: 125%; font-size: 20px; letter-spacing: -.01em; border-bottom: 2px solid #161513; padding-bottom: 8px; }
+      .sticker dl { margin: 0; display: grid; gap: 4px; }
+      .sticker dl div { display: grid; grid-template-columns: 74px 1fr; gap: 10px; }
+      .sticker dt { font-size: 9.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-stretch: 75%; color: #6d675c; padding-top: 2px; }
+      .sticker dd { margin: 0; font-weight: 600; }
+      .sticker a { text-underline-offset: 3px; }
+      .sticker a:focus-visible { outline: 2px solid #1d6bff; outline-offset: 2px; }
+      #serial { font-family: 'VT323', monospace; font-size: 17px; line-height: 1; }
+      .barcode { margin: 14px 0 8px; height: 34px; background: repeating-linear-gradient(90deg, #161513 0 2px, transparent 2px 3px, #161513 3px 4px, transparent 4px 7px, #161513 7px 10px, transparent 10px 11px, #161513 11px 12px, transparent 12px 15px); }
+      .st-fine { margin: 0; font-size: 10px; color: #6d675c; line-height: 1.4; }
+      .back-flip { position: absolute; left: 40px; bottom: 30px; }
+      .caution { grid-column: 1; display: flex; gap: 14px; align-items: center; color: #c9c2b4; }
+      .caution svg { width: 40px; height: 36px; flex: none; color: #e8b23a; }
+      .caution p { margin: 0; font-size: 12px; line-height: 1.5; letter-spacing: .04em; font-stretch: 85%; }
+      .caution b { display: block; font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: #e8b23a; }
+      .back-flip .label { color: #b3ada1; }
+
+      /* --- liner notes --- */
+      .notes { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(10,9,8,.6); backdrop-filter: blur(4px); }
+      .js .notes:not(.open) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); padding: 0; }
+      .notes-card { width: min(580px, 100%); max-height: calc(100dvh - 32px); overflow: auto; background: var(--chassis); color: var(--ink); border-radius: 12px; padding: 22px 24px; box-shadow: 0 30px 80px rgba(0,0,0,.6); font-size: 13.5px; line-height: 1.5; }
+      .notes-head { display: flex; justify-content: space-between; align-items: flex-start; }
+      .notes-name { margin: 0; font-weight: 900; font-stretch: 125%; font-size: 24px; line-height: 1; }
+      #notes-title { margin: 6px 0 0; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-stretch: 75%; color: var(--ink-2); }
+      .notes-close { background: none; border: 0; font: 400 28px/1 'Archivo', sans-serif; cursor: pointer; color: var(--ink); padding: 0 4px; }
+      .tracklist { list-style: none; padding: 0; margin: 16px 0 0; border-top: 1px solid rgba(0,0,0,.12); }
+      .tracklist li { display: grid; grid-template-columns: 30px 1fr; padding: 7px 0; border-bottom: 1px solid rgba(0,0,0,.12); }
+      .tn { font: 17px/1.2 'VT323', monospace; color: var(--c); text-shadow: 0 0 0 #000; filter: brightness(.7) saturate(1.4); }
+      .tracklist a, .notes-also a, .notes-contact a { font-weight: 700; text-underline-offset: 3px; }
+      .tracklist em { color: var(--ink-2); font-style: normal; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-stretch: 80%; }
+      .notes-also, .notes-contact { margin: 12px 0 0; }
+      .notes-hint { margin: 10px 0 0; font-size: 11.5px; color: var(--ink-2); }
+
+      /* --- responsive --- */
+      @media (max-width: 1180px) {
+        .top { grid-template-columns: 1fr auto; }
+        .meters { order: 3; }
+        .knobs { order: 4; justify-content: flex-end; }
+      }
+      @media (max-width: 760px) {
+        .stage { padding: 10px 10px 24px; perspective: 1400px; }
+        .page-top { padding: 12px 16px 0; }
+        .cheek { width: 10px; }
+        .panel { padding: 16px 12px 14px; }
+        .top { grid-template-columns: 1fr; gap: 16px; }
+        .brand { font-size: 23px; }
+        .hero { flex-direction: row; justify-content: space-between; gap: 12px; padding: 0; }
+        .play { width: 112px; height: 112px; flex: none; }
+        .transport { flex-direction: column; align-items: flex-start; }
+        .meters { justify-content: space-between; gap: 10px; order: 0; }
+        .scope canvas { width: 100%; height: 96px; }
+        .scope { flex: 1; min-width: 0; }
+        .vu .vu-svg { width: 128px; height: 85px; }
+        .knobs { justify-content: space-between; order: 0; }
+        .knob-col { flex-direction: row; gap: 16px; }
+        .lcd-glass { font-size: 18px; line-height: 22px; height: 80px; padding: 6px 10px; }
+        .seq { padding: 8px 8px 10px; margin-top: 16px; }
+        .seq-head { display: none; }
+        .row { grid-template-columns: 1fr auto auto auto; gap: 8px 8px; padding: 9px 0 8px; }
+        .ch-id { grid-column: 1; }
+        .ch-name { white-space: normal; line-height: 1.15; }
+        .ch-ms { grid-column: 2; }
+        .knob.sm { grid-column: 3; }
+        .viz { grid-column: 4; width: 60px; }
+        .viz svg { width: 60px; }
+        .steps { grid-column: 1 / -1; grid-row: 2; gap: 3px; }
+        .step { height: 24px; border-radius: 3px; }
+        .perform { flex-direction: column; align-items: stretch; }
+        .keys { justify-content: space-between; gap: 3px; }
+        .perf-label { display: none; }
+        .key { width: auto; flex: 1; height: 38px; }
+        .back-panel { grid-template-columns: 1fr; padding: 22px 16px 80px; gap: 22px; align-content: start; }
+        .sticker { grid-column: 1; grid-row: auto; order: -1; align-self: start; }
+        .vents { height: 60px; }
+        .back-flip { left: 16px; bottom: 20px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .device { transition: opacity .3s; }
+        .js .play .play-ring, .lcd-line.blink, .v-type .cur { animation: none; }
+        .viz *, .v-pluck.on .strings line { animation: none !important; transition: none !important; }
+      }
+    </style>
+
+    <script>
+      import { startSynth } from '../../components/ideas/synth/app';
+      startSynth();
+    </script>
+  </body>
+</html>
