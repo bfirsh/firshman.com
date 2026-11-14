@@ -1,0 +1,534 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name, profileImage } from '../../data/bio';
+
+const P = Object.fromEntries(projects.map((p) => [p.slug, p]));
+const host = (u: string) => u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+
+function rng(seed: number) {
+  let s = seed % 2147483647; if (s <= 0) s += 2147483646;
+  return () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
+}
+
+// ---------- ransom-note letters ----------
+const fonts = [
+  "'Anton', sans-serif", "'Abril Fatface', serif", "'Bungee', sans-serif", "'Special Elite', monospace",
+  "'Playfair Display', serif", "'Archivo Black', sans-serif", "'Courier Prime', monospace", "Georgia, serif",
+];
+const looks = [
+  { bg: '#fff', fg: '#111' }, { bg: '#111', fg: '#fff' }, { bg: 'var(--spot)', fg: '#111' },
+  { bg: '#e7e2d3', fg: '#111' }, { bg: '#fff', fg: '#111', ring: true }, { bg: '#111', fg: 'var(--spot)' },
+];
+function ransom(text: string, seed: number) {
+  const r = rng(seed);
+  return text.split(' ').map((word) => word.split('').map((ch) => {
+    const f = fonts[Math.floor(r() * fonts.length)];
+    const l = looks[Math.floor(r() * looks.length)];
+    const j = () => (r() * 7).toFixed(1);
+    return {
+      ch: r() < 0.3 ? ch.toLowerCase() : ch,
+      style: [
+        `--f:${f}`, `--bg:${l.bg}`, `--fg:${l.fg}`,
+        `--rot:${(r() * 14 - 7).toFixed(1)}deg`, `--sz:${(0.82 + r() * 0.36).toFixed(2)}em`,
+        `--ty:${(r() * 8 - 4).toFixed(1)}px`,
+        `--italic:${f.includes('Playfair') ? 'italic' : 'normal'}`,
+        `--clip:polygon(${j()}% ${j()}%, ${100 - +j()}% ${j()}%, ${100 - +j()}% ${100 - +j()}%, ${j()}% ${100 - +j()}%)`,
+        l.ring ? '--ring:2px' : '--ring:0px',
+      ].join(';'),
+    };
+  }));
+}
+const headline = ransom(name.toUpperCase(), 1616);
+const nowWord = ransom('NOW!', 77);
+const letterWord = ransom('SEND ME A LETTER', 404);
+
+// ---------- torn paper edges ----------
+function torn(seed: number, top = true, bottom = true, left = false, right = false) {
+  const r = rng(seed);
+  const pts: string[] = [];
+  const steps = 18;
+  const amp = 2.6;
+  for (let i = 0; i <= steps; i++) pts.push(`${(i / steps * 100).toFixed(1)}% ${top ? (r() * amp).toFixed(1) : 0}%`);
+  for (let i = 1; i < 8; i++) pts.push(`${right ? (100 - r() * 2).toFixed(1) : 100}% ${(i / 8 * 100).toFixed(1)}%`);
+  for (let i = steps; i >= 0; i--) pts.push(`${(i / steps * 100).toFixed(1)}% ${bottom ? (100 - r() * amp).toFixed(1) : 100}%`);
+  for (let i = 7; i > 0; i--) pts.push(`${left ? (r() * 2).toFixed(1) : 0}% ${(i / 8 * 100).toFixed(1)}%`);
+  return `polygon(${pts.join(', ')})`;
+}
+
+// ---------- clippings ----------
+type Clip = { slug: string; style: 'news' | 'type' | 'invert' | 'pink' | 'strip'; head: string; rot: number };
+const clipsA: Clip[] = [
+  { slug: 'cog', style: 'invert', head: 'Machine learning, now in a box', rot: -2 },
+  { slug: 'clig', style: 'news', head: 'Man tells programs how to behave', rot: 1.5 },
+  { slug: 'compose', style: 'pink', head: 'One file. Many containers. No panic.', rot: -1 },
+  { slug: 'machine', style: 'type', head: 'Docker hosts spotted “anywhere”', rot: 2.5 },
+];
+const clipsB: Clip[] = [
+  { slug: 'jsnes', style: 'news', head: '8-bit console found living inside web page', rot: -1.5 },
+  { slug: 'whalebrew', style: 'strip', head: 'Whale brews packages', rot: 2 },
+  { slug: 'arxiv-vanity', style: 'type', head: 'Science papers readable on phones, say scientists', rot: -2.5 },
+  { slug: 'django', style: 'invert', head: 'Views: now with class', rot: 1 },
+  { slug: 'ukhas', style: 'pink', head: 'Brits send balloons to edge of space', rot: -1 },
+];
+const withData = (c: Clip, i: number, base: number) => ({ ...c, p: P[c.slug], clip: torn(base + i * 31, true, true, i % 2 === 0, i % 3 === 0) });
+const pageA = clipsA.map((c, i) => withData(c, i, 900));
+const pageB = clipsB.map((c, i) => withData(c, i, 1900));
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — Zine</title>
+    <meta name="description" content="Ben Firshman's homepage as a photocopied, cut-and-paste zine. Issue Nº1. Free. Please photocopy." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Anton&family=Archivo+Black&family=Bungee&family=Courier+Prime:wght@400;700&family=Permanent+Marker&family=Playfair+Display:ital,wght@1,900&family=Special+Elite&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".04" numOctaves="2" seed="7" /><feDisplacementMap in="SourceGraphic" scale="3" /></filter>
+    </svg>
+
+    <a class="home" href="/ideas">← all ideas</a>
+
+    <main class="zine">
+      <!-- ================= COVER ================= -->
+      <div class="spread cover-spread">
+        <article class="page cover" aria-label="Cover">
+          <span class="staple" aria-hidden="true"></span>
+          <div class="cover-top">
+            <span class="tag">Issue Nº1</span>
+            <span class="tag inv">Free</span>
+            <span class="tag">Please photocopy</span>
+          </div>
+
+          <h1 class="ransom" aria-label={name}>
+            {headline.map((w) => (
+              <span class="rword" aria-hidden="true">{w.map((l) => <span class="rl" style={l.style}>{l.ch}</span>)}</span>
+            ))}
+          </h1>
+
+          <figure class="photo">
+            <span class="misreg" aria-hidden="true"></span>
+            <span class="photo-inner">
+              <img src={profileImage} alt="Photocopied portrait of Ben Firshman" width="512" height="512" />
+              <canvas class="halftone" aria-hidden="true"></canvas>
+            </span>
+            <span class="tape t1" aria-hidden="true"></span>
+            <span class="tape t2" aria-hidden="true"></span>
+          </figure>
+          <p class="scrawl this-guy" aria-hidden="true">this guy</p>
+          <svg class="doodle arrow-guy" viewBox="0 0 160 110" aria-hidden="true">
+            <path pathLength="1" d="M10 18 C 60 0, 120 20, 132 84" />
+            <path pathLength="1" d="M112 70 L 133 90 L 148 64" />
+          </svg>
+
+          <p class="inside"><span>Inside:</span> containers! balloons! a NES in your browser! a whale!</p>
+        </article>
+      </div>
+
+      <!-- ================= SPREAD 1 ================= -->
+      <div class="spread">
+        <article class="page p2" aria-label="Page 2: now">
+          <span class="folio" aria-hidden="true">2</span>
+          <h2 class="ransom small" aria-label="Now!">
+            {nowWord.map((w) => (
+              <span class="rword" aria-hidden="true">{w.map((l) => <span class="rl" style={l.style}>{l.ch}</span>)}</span>
+            ))}
+          </h2>
+
+          <div class="ed-letter" style={`clip-path:${torn(55, true, true)}`}>
+            <p class="ed-k">Editor's letter</p>
+            <p>I'm working on <a href={now.url}>{now.name}</a>. Some other stuff I've done is over the page.</p>
+            <p class="sig">— Ben</p>
+          </div>
+
+          <a class="now-clip" href={now.url} style={`clip-path:${torn(66, true, true, true, false)}`}>
+            <span class="now-kicker">Currently</span>
+            <span class="now-name">{now.name}</span>
+            <span class="now-blurb">{now.blurb}</span>
+            <span class="url">→ {host(now.url)}</span>
+          </a>
+          <svg class="doodle circle-now" viewBox="0 0 300 200" preserveAspectRatio="none" aria-hidden="true">
+            <path pathLength="1" d="M160 12 C 60 6, 8 50, 14 104 C 22 168, 120 196, 200 186 C 276 176, 300 110, 280 64 C 262 24, 196 6, 120 16" />
+          </svg>
+          <p class="scrawl go-look" aria-hidden="true">go look ↗</p>
+
+          <p class="fact" style={`clip-path:${torn(77, true, true)}`}>
+            <b>Fun fact:</b> <a href={P.compose.url}>Docker Compose</a> started life as a thing called Fig.
+          </p>
+          <span class="tape t3" aria-hidden="true"></span>
+        </article>
+
+        <article class="page p3" aria-label="Page 3: stuff I've done">
+          <span class="folio" aria-hidden="true">3</span>
+          <h2 class="section-h"><span>Stuff I've done</span> <small>(pt. 1)</small></h2>
+          <div class="clips">
+            {pageA.map((c) => (
+              <a class={`clipping ${c.style}`} href={c.p.url} style={`--rot:${c.rot}deg;clip-path:${c.clip}`}>
+                <span class="kicker">{c.p.name}</span>
+                <span class="head">{c.head}</span>
+                <span class="body">{c.p.blurb.charAt(0).toUpperCase() + c.p.blurb.slice(1)}.</span>
+                <span class="url">→&nbsp;{host(c.p.url)}</span>
+              </a>
+            ))}
+          </div>
+          <svg class="doodle star-doodle" viewBox="0 0 100 100" aria-hidden="true">
+            <path pathLength="1" d="M50 6 L61 38 L95 38 L67 58 L78 92 L50 71 L22 92 L33 58 L5 38 L39 38 Z" />
+          </svg>
+        </article>
+      </div>
+
+      <!-- ================= SPREAD 2 ================= -->
+      <div class="spread">
+        <article class="page p4" aria-label="Page 4: stuff I've done, continued">
+          <span class="folio" aria-hidden="true">4</span>
+          <h2 class="section-h"><span>Stuff I've done</span> <small>(pt. 2)</small></h2>
+          <div class="clips">
+            {pageB.map((c) => (
+              <a class={`clipping ${c.style}`} href={c.p.url} style={`--rot:${c.rot}deg;clip-path:${c.clip}`}>
+                <span class="kicker">{c.p.name}</span>
+                <span class="head">{c.head}</span>
+                <span class="body">{c.p.blurb.charAt(0).toUpperCase() + c.p.blurb.slice(1)}.</span>
+                <span class="url">→&nbsp;{host(c.p.url)}</span>
+              </a>
+            ))}
+          </div>
+          <p class="scrawl up" aria-hidden="true">↑ actually went to near-space</p>
+        </article>
+
+        <article class="page p5" aria-label="Page 5: also worked on, and contact">
+          <span class="folio" aria-hidden="true">5</span>
+          <section class="also" style={`clip-path:${torn(88, true, true)}`}>
+            <h2>Also worked on</h2>
+            <ul>
+              {alsoWorkedOn.map((a) => <li><a href={a.url}>{a.name}</a></li>)}
+            </ul>
+          </section>
+          <span class="tape t4" aria-hidden="true"></span>
+
+          <section class="letter-box" aria-labelledby="letter-h">
+            <p class="cut" aria-hidden="true">✂ - - - - cut along the dotted line - - - -</p>
+            <h2 class="ransom tiny" id="letter-h" aria-label="Send me a letter">
+              {letterWord.map((w) => (
+                <span class="rword" aria-hidden="true">{w.map((l) => <span class="rl" style={l.style}>{l.ch}</span>)}</span>
+              ))}
+            </h2>
+            <p class="field"><span>To:</span> <a href={`mailto:${email}`}>{email}</a></p>
+            <p class="field"><span>Or find me on:</span>
+              {socials.map((s, i) => <>{i > 0 && ' / '}<a href={s.url}>{s.name}</a></>)}
+            </p>
+            <p class="field lines" aria-hidden="true"><span>Message:</span></p>
+            <span class="stamp" aria-hidden="true">1st<br />class</span>
+          </section>
+
+          <p class="colophon">Made with scissors, glue stick &amp; a borrowed photocopier. Issue Nº1. Pass it on.</p>
+        </article>
+      </div>
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    color-scheme: light;
+    --spot: #ff2e88;
+    --paper: #f3f0e8;
+    --ink: #111;
+    --noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.4 1.25'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: #2a2a2a;
+    background-image: var(--noise), radial-gradient(120% 80% at 50% 0%, #3a3a3a, #1d1d1d);
+    color: var(--ink);
+    font-family: "Courier Prime", "Courier New", monospace;
+    overflow-x: hidden;
+  }
+  a { color: inherit; }
+  .home {
+    position: absolute; left: 16px; top: 14px; z-index: 5;
+    font: 700 13px/1 "Courier Prime", monospace; text-transform: uppercase; letter-spacing: .08em;
+    color: #111; background: #fff; padding: 6px 8px; text-decoration: none; rotate: -2deg;
+    box-shadow: 2px 2px 0 var(--spot);
+  }
+  .home:hover { background: var(--spot); }
+
+  .zine { padding: 64px 16px 80px; display: grid; gap: 72px; justify-items: center; }
+
+  /* spreads: two pages side by side on desktop with a fold in the middle */
+  .spread { display: grid; grid-template-columns: repeat(2, minmax(0, 560px)); filter: drop-shadow(0 22px 30px rgba(0,0,0,.55)); }
+  .cover-spread { grid-template-columns: minmax(0, 560px); }
+
+  .page {
+    position: relative; container-type: inline-size;
+    aspect-ratio: 1 / 1.41;
+    background: var(--paper);
+    padding: 7% 7% 8%;
+    font-size: clamp(13px, 2.65cqw, 16px);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  /* photocopy grain, toner streaks and dark xerox edges */
+  .page::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 10;
+    background:
+      var(--noise),
+      linear-gradient(90deg, transparent 0 18%, rgba(0,0,0,.035) 18.5% 19%, transparent 19.5% 63%, rgba(0,0,0,.05) 63.2% 63.6%, transparent 64%),
+      radial-gradient(130% 110% at 50% 45%, transparent 60%, rgba(0,0,0,.16) 100%);
+    background-size: 220px 220px, 100% 100%, 100% 100%;
+    mix-blend-mode: multiply; opacity: .55;
+  }
+  .spread > .page:first-child:not(:only-child) { box-shadow: inset -26px 0 30px -24px rgba(0,0,0,.35); }
+  .spread > .page:last-child:not(:only-child) { box-shadow: inset 26px 0 30px -24px rgba(0,0,0,.35); }
+  .folio { position: absolute; bottom: 3%; font: 700 .85em/1 "Courier Prime", monospace; }
+  .p2 .folio, .p4 .folio { left: 6%; }
+  .p3 .folio, .p5 .folio { right: 6%; }
+
+  /* ---------------- ransom letters ---------------- */
+  .ransom { margin: 0; font-weight: 400; line-height: 1; display: flex; flex-wrap: wrap; gap: .12em .35em; }
+  .rword { display: inline-flex; gap: .04em; white-space: nowrap; }
+  .rl {
+    display: inline-block;
+    font-family: var(--f); font-style: var(--italic); font-size: var(--sz);
+    background: var(--bg); color: var(--fg);
+    padding: .06em .12em .02em; line-height: 1;
+    transform: translateY(var(--ty)) rotate(var(--rot));
+    clip-path: var(--clip);
+    box-shadow: inset 0 0 0 var(--ring) #111;
+    filter: contrast(1.2);
+  }
+  .cover .ransom { font-size: 15cqw; margin-top: 4%; gap: .1em .3em; }
+  .ransom.small { font-size: 12cqw; }
+  .ransom.tiny { font-size: 6.6cqw; gap: .1em .25em; }
+
+  /* ---------------- cover ---------------- */
+  .cover { display: flex; flex-direction: column; }
+  .staple {
+    position: absolute; left: 4.5%; top: 3.8%; width: 9%; height: 1.1%; z-index: 11;
+    background: linear-gradient(180deg, #f2f2f2, #8a8a8a 60%, #c8c8c8);
+    border-radius: 2px; rotate: -38deg;
+    box-shadow: 0 1px 1px rgba(0,0,0,.5), 0 0 0 .5px rgba(0,0,0,.3);
+  }
+  .staple::before, .staple::after { content: ""; position: absolute; top: 100%; width: 10%; height: 160%; background: rgba(0,0,0,.25); }
+  .staple::before { left: 0; } .staple::after { right: 0; }
+  .cover-top { display: flex; gap: .6em; justify-content: flex-end; flex-wrap: wrap; }
+  .tag { font: 700 .8em/1 "Courier Prime", monospace; text-transform: uppercase; letter-spacing: .08em; padding: .35em .5em; border: 2px solid #111; background: #fff; }
+  .tag.inv { background: var(--spot); }
+
+  .photo { position: relative; margin: 6% auto 0 8%; width: 58%; aspect-ratio: 1; rotate: -3deg; }
+  .misreg { position: absolute; inset: 0; background: var(--spot); translate: 4.5% 4%; mix-blend-mode: multiply; }
+  .photo-inner { position: absolute; inset: 0; overflow: hidden; background: #fff; clip-path: polygon(0 1%, 99% 0, 100% 98%, 1% 100%); }
+  .photo img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(1) contrast(2.4) brightness(1.1); }
+  .halftone { position: absolute; inset: 0; width: 100%; height: 100%; display: none; background: #fff; }
+  .has-halftone .halftone { display: block; }
+  .tape {
+    position: absolute; width: 34%; height: 9%; z-index: 3;
+    background: rgba(232, 220, 180, .78);
+    box-shadow: 0 1px 2px rgba(0,0,0,.12);
+    clip-path: polygon(0 8%, 6% 0, 12% 10%, 20% 2%, 30% 6%, 100% 4%, 97% 30%, 100% 55%, 96% 78%, 100% 100%, 0 96%, 3% 70%, 0 45%, 4% 22%);
+    mix-blend-mode: multiply;
+  }
+  .photo .t1 { left: -12%; top: -3%; rotate: -32deg; }
+  .photo .t2 { right: -14%; bottom: 4%; rotate: -24deg; }
+  .scrawl { position: absolute; margin: 0; font: 400 1.6em/1 "Permanent Marker", cursive; color: var(--spot); z-index: 4; }
+  .this-guy { right: 9%; top: 47%; rotate: -8deg; font-size: 2.4em; }
+  .doodle { position: absolute; z-index: 4; overflow: visible; pointer-events: none; }
+  .doodle path { fill: none; stroke: var(--spot); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; filter: url(#rough); stroke-dasharray: 1; stroke-dashoffset: 0; }
+  .js .doodle path { stroke-dashoffset: 1; transition: stroke-dashoffset .9s cubic-bezier(.6,0,.3,1); }
+  .js .doodle path + path { transition-delay: .8s; transition-duration: .3s; }
+  .js .doodle.drawn path { stroke-dashoffset: 0; }
+  .arrow-guy { right: 10%; top: 54%; width: 26%; rotate: 72deg; }
+  .inside {
+    margin: auto 0 0; padding: .7em .8em; background: #111; color: #fff;
+    font: 400 1.2em/1.2 "Special Elite", monospace; rotate: 1deg;
+  }
+  .inside span { background: var(--spot); color: #111; padding: 0 .25em; margin-right: .3em; text-transform: uppercase; font-family: "Anton", sans-serif; letter-spacing: .04em; }
+
+  /* ---------------- page 2 ---------------- */
+  .p2 { display: flex; flex-direction: column; gap: 4%; }
+  .ed-letter { background: #fff; padding: 1em 1.1em 1.3em; rotate: -1.5deg; font: 400 1.1em/1.4 "Special Elite", monospace; margin-right: 18%; }
+  .ed-letter p { margin: 0 0 .5em; }
+  .ed-k { font: 400 1.1em/1 "Anton", sans-serif !important; text-transform: uppercase; letter-spacing: .06em; }
+  .ed-letter a { background: var(--spot); text-decoration: none; padding: 0 .15em; }
+  .sig { font: 400 1.3em/1 "Permanent Marker", cursive; margin: .2em 0 0 !important; }
+  .now-clip {
+    position: relative; display: grid; gap: .25em; justify-items: start;
+    padding: 1.3em 1.4em 1.5em; margin: 2% 6% 0 10%; rotate: 2deg;
+    background: #111; color: #fff; text-decoration: none;
+  }
+  .now-kicker { font: 700 .9em/1 "Courier Prime", monospace; text-transform: uppercase; letter-spacing: .2em; color: var(--spot); }
+  .now-name { font: 400 4.6em/.9 "Anton", sans-serif; text-transform: uppercase; letter-spacing: .01em; }
+  .now-blurb { font: 400 1.25em/1.2 "Special Elite", monospace; background: #fff; color: #111; padding: .15em .35em; }
+  .url { font: 700 .9em/1 "Courier Prime", monospace; margin-top: .35em; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px; text-decoration-color: var(--spot); }
+  .now-clip:hover .now-name, .now-clip:focus-visible .now-name { color: var(--spot); }
+  .circle-now { left: 3%; top: 41.5%; width: 94%; height: 33%; }
+  .go-look { right: 5%; top: 37%; rotate: 6deg; }
+  .fact { margin: auto 22% 0 4%; padding: .8em 1em 1em; background: #e7e2d3; font: 400 1.05em/1.35 "Courier Prime", monospace; rotate: -1deg; }
+  .fact b { background: var(--spot); padding: 0 .2em; }
+  .tape.t3 { left: 52%; bottom: 13.5%; width: 22%; height: 4%; rotate: 70deg; }
+
+  /* ---------------- clippings ---------------- */
+  .section-h { margin: 0 0 4%; font: 400 2.6em/1 "Anton", sans-serif; text-transform: uppercase; letter-spacing: .01em; }
+  .section-h span { background: linear-gradient(transparent 55%, var(--spot) 55% 92%, transparent 92%); padding: 0 .1em; }
+  .section-h small { font: 400 .45em/1 "Permanent Marker", cursive; text-transform: none; color: var(--spot); vertical-align: middle; }
+  .clips { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1em .9em; align-items: start; }
+  .clipping {
+    display: grid; gap: .3em; padding: 1em 1em 1.2em; text-decoration: none;
+    rotate: var(--rot); transition: rotate .2s, scale .2s;
+  }
+  .clipping:hover, .clipping:focus-visible { rotate: 0deg; scale: 1.03; }
+  .clipping:focus-visible { outline: 3px dashed var(--spot); outline-offset: 2px; }
+  .clipping .kicker { font: 700 .72em/1 "Courier Prime", monospace; text-transform: uppercase; letter-spacing: .14em; }
+  .clipping .head { font: 400 1.5em/1.02 "Anton", sans-serif; text-transform: uppercase; }
+  .clipping .body { font: 400 .95em/1.3 "Courier Prime", monospace; }
+  .clipping .url { font-size: .78em; overflow-wrap: anywhere; }
+  .clipping.news { background: #e7e2d3; }
+  .clipping.news .head { font: 900 1.45em/1.05 "Playfair Display", serif; font-style: italic; text-transform: none; }
+  .clipping.news .body { font-family: Georgia, serif; font-size: .9em; line-height: 1.3; }
+  .clipping.type { background: #fff; }
+  .clipping.type .head { font: 400 1.25em/1.15 "Special Elite", monospace; text-transform: none; }
+  .clipping.invert { background: #111; color: #fff; }
+  .clipping.invert .kicker { color: var(--spot); }
+  .clipping.pink { background: var(--spot); }
+  .clipping.pink .url { text-decoration-color: #111; }
+  .clipping.strip { background: #fff; border: 2px solid #111; }
+  .clipping.strip .head { font: 400 1.3em/1 "Bungee", sans-serif; }
+  .p3 .clipping:nth-child(1) { grid-column: 1 / -1; margin-right: 18%; }
+  .p3 .clipping:nth-child(4) { margin-top: -6%; }
+  .p4 .clipping:nth-child(3) { grid-column: 1 / -1; margin: 0 12% 0 6%; }
+  .star-doodle { right: 8%; bottom: 6%; width: 16%; rotate: 12deg; }
+  .up { right: 9%; bottom: 3.5%; font-size: 1.15em; rotate: -3deg; color: #111; }
+  .up::first-letter { color: var(--spot); }
+
+  /* ---------------- page 5 ---------------- */
+  .p5 { display: flex; flex-direction: column; gap: 5%; }
+  .also { background: #fff; padding: 1.2em 1.4em 1.4em; margin: 0 14% 0 3%; rotate: 1.5deg; }
+  .also h2 { margin: 0 0 .4em; font: 400 1.8em/1 "Anton", sans-serif; text-transform: uppercase; }
+  .also ul { margin: 0; padding: 0; list-style: none; font: 400 1.2em/1.5 "Special Elite", monospace; }
+  .also li::before { content: "✗ "; color: var(--spot); }
+  .also a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .also a:hover { background: var(--spot); }
+  .tape.t4 { right: 8%; top: 8%; width: 24%; height: 4%; rotate: 28deg; }
+  .letter-box {
+    position: relative; padding: 1.4em 1.4em 1.2em; border: 3px dashed #111; background: #fff; rotate: -1deg;
+  }
+  .cut { position: absolute; left: 0; right: 0; top: -1.6em; margin: 0; font: 700 .75em/1 "Courier Prime", monospace; text-align: center; white-space: nowrap; overflow: hidden; }
+  .letter-box h2 { margin: 0 0 .6em; padding-right: 3.6em; }
+  .field { margin: .5em 0 0; font: 400 1.15em/1.35 "Special Elite", monospace; }
+  .field span { font: 700 .75em/1 "Courier Prime", monospace; text-transform: uppercase; letter-spacing: .1em; margin-right: .4em; }
+  .field a { font-weight: 700; text-decoration-color: var(--spot); text-decoration-thickness: 3px; text-underline-offset: 3px; overflow-wrap: anywhere; }
+  .field a:hover { background: var(--spot); }
+  .field.lines { height: 3.4em; background: repeating-linear-gradient(transparent 0 1.6em, #111 1.6em calc(1.6em + 1px)); }
+  .stamp {
+    position: absolute; right: 1em; top: 1em; width: 3.6em; height: 4.2em; display: grid; place-items: center; text-align: center;
+    font: 400 .8em/1.1 "Anton", sans-serif; text-transform: uppercase; color: #111; background: var(--spot);
+    outline: 3px dotted var(--spot); outline-offset: 2px; rotate: 6deg;
+  }
+  .colophon { margin: auto 0 0; font: 400 .85em/1.4 "Courier Prime", monospace; text-align: center; opacity: .8; }
+
+  /* ---------------- phone: one page at a time ---------------- */
+  @media (max-width: 900px) {
+    .zine { gap: 36px; padding-top: 56px; }
+    .spread { grid-template-columns: minmax(0, 1fr); gap: 36px; filter: none; width: 100%; max-width: 560px; }
+    .page { aspect-ratio: auto; min-height: 0; padding: 32px 22px 44px; font-size: 15px; box-shadow: 0 14px 24px rgba(0,0,0,.45) !important; }
+    .spread .page:nth-child(odd) { rotate: -.6deg; }
+    .spread .page:nth-child(even) { rotate: .7deg; }
+    .cover .ransom { font-size: clamp(36px, 10.6vw, 84px); }
+    .ransom.small { font-size: 60px; }
+    .ransom.tiny { font-size: 30px; }
+    .cover { gap: 0; }
+    .photo { width: 66%; margin-top: 28px; }
+    .inside { margin-top: 40px; }
+    .this-guy { font-size: 28px; }
+    .arrow-guy { width: 24%; }
+    .circle-now { display: none; }
+    .go-look { position: relative; right: auto; top: auto; align-self: flex-end; margin: -8px 4px 0 0; }
+    .p2 { gap: 22px; }
+    .now-clip { margin: 0 2% 0 4%; }
+    .now-name { font-size: 3.6em; }
+    .ransom.tiny { font-size: 26px; }
+    .fact { margin: 8px 12% 0 0; }
+    .tape.t3 { display: none; }
+    .clips { grid-template-columns: 1fr; gap: 18px; }
+    .p3 .clipping:nth-child(n), .p4 .clipping:nth-child(n) { grid-column: auto; margin: 0; }
+    .clipping:nth-child(odd) { margin-right: 8% !important; }
+    .clipping:nth-child(even) { margin-left: 8% !important; }
+    .star-doodle { width: 56px; bottom: 10px; }
+    .up { position: relative; right: auto; bottom: auto; margin: 18px 0 6px; text-align: right; }
+    .p5 { gap: 40px; }
+    .also { margin: 0 6% 0 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .js .doodle path { transition: none; stroke-dashoffset: 0; }
+    .clipping { transition: none; }
+  }
+</style>
+
+<script>
+  /* Halftone the cover photo: sample brightness on a grid, draw dots. */
+  function halftone() {
+    const fig = document.querySelector('.photo') as HTMLElement;
+    const img = fig.querySelector('img') as HTMLImageElement;
+    const cv = fig.querySelector('canvas') as HTMLCanvasElement;
+    const run = () => {
+      const size = (fig.querySelector('.photo-inner') as HTMLElement).getBoundingClientRect().width;
+      if (!size) return;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      cv.width = cv.height = Math.round(size * dpr);
+      const ctx = cv.getContext('2d')!;
+      const cell = Math.max(4, size / 64) * dpr;
+      const n = Math.ceil(cv.width / cell) + 2;
+      const sample = document.createElement('canvas');
+      sample.width = sample.height = n;
+      const sctx = sample.getContext('2d', { willReadFrequently: true })!;
+      sctx.drawImage(img, 0, 0, n, n);
+      let data: Uint8ClampedArray;
+      try { data = sctx.getImageData(0, 0, n, n).data; } catch { return; }
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.fillStyle = '#111';
+      // rotate the screen 45° like a real halftone
+      ctx.save();
+      ctx.translate(cv.width / 2, cv.height / 2);
+      ctx.rotate(Math.PI / 4);
+      const span = cv.width * 0.75;
+      for (let gy = -span; gy <= span; gy += cell) {
+        for (let gx = -span; gx <= span; gx += cell) {
+          // map back to image space
+          const ix = (gx - gy) * Math.SQRT1_2 + cv.width / 2;
+          const iy = (gx + gy) * Math.SQRT1_2 + cv.height / 2;
+          if (ix < 0 || iy < 0 || ix >= cv.width || iy >= cv.height) continue;
+          const sx = Math.min(n - 1, Math.floor((ix / cv.width) * n));
+          const sy = Math.min(n - 1, Math.floor((iy / cv.height) * n));
+          const k = (sy * n + sx) * 4;
+          let lum = (0.299 * data[k] + 0.587 * data[k + 1] + 0.114 * data[k + 2]) / 255;
+          lum = Math.min(1, Math.max(0, (lum - 0.5) * 1.6 + 0.58));
+          const r = (cell / 2) * Math.sqrt(1 - lum) * 1.35;
+          if (r < 0.35) continue;
+          ctx.beginPath();
+          ctx.arc(gx, gy, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+      document.documentElement.classList.add('has-halftone');
+    };
+    if (img.complete && img.naturalWidth) run(); else img.addEventListener('load', run, { once: true });
+    let t: number | undefined;
+    addEventListener('resize', () => { clearTimeout(t); t = window.setTimeout(run, 150); });
+  }
+  halftone();
+
+  /* Scrawls draw themselves in when they come into view. */
+  const doodles = document.querySelectorAll('.doodle');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('drawn'); io.unobserve(e.target); } });
+    }, { threshold: 0.4 });
+    doodles.forEach((d) => io.observe(d));
+  } else doodles.forEach((d) => d.classList.add('drawn'));
+</script>

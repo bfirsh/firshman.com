@@ -1,0 +1,623 @@
+---
+import { projects, now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+
+const bySlug = Object.fromEntries(projects.map((p) => [p.slug, p]));
+
+// Deterministic "randomness" so the server render is stable.
+function rng(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+const r = rng(13);
+
+const colours = ['#e63b2e', '#f6b80f', '#1f6fd1', '#26a65b', '#f07b1d', '#8a4fd6', '#e5457f'];
+const words = name.toUpperCase().split(' ').map((w, wi) =>
+  w.split('').map((ch, i) => ({
+    ch,
+    id: `l${wi}-${i}`,
+    c: colours[(wi * 5 + i * 3 + (i % 2)) % colours.length],
+    rot: Math.round((r() * 16 - 8) * 10) / 10,
+    lift: Math.round(r() * 10 - 5),
+  })),
+);
+
+// Polaroids: the non-container projects. The container ones are on the takeaway menu.
+const polaroids = [
+  { slug: 'clig', caption: 'clig.dev — write better CLIs', x: 3.5, y: 27, rot: -5 },
+  { slug: 'jsnes', caption: 'JSNES! (NES in a browser)', x: 17, y: 24.5, rot: 4 },
+  { slug: 'arxiv-vanity', caption: 'arXiv Vanity — papers, but readable', x: 30.5, y: 29, rot: -2 },
+  { slug: 'django', caption: 'Django — views, feeds, search', x: 6.5, y: 59, rot: 3 },
+  { slug: 'ukhas', caption: 'UKHAS — up up up', x: 21, y: 61, rot: -4 },
+].map((p) => ({ ...p, project: bySlug[p.slug] }));
+
+const menu = [
+  { slug: 'compose', no: 21, note: 'serves many' },
+  { slug: 'machine', no: 22, note: 'hosts anywhere' },
+  { slug: 'whalebrew', no: 23, note: 'house special' },
+  { slug: 'cog', no: 24, note: 'spicy (ML)' },
+].map((m) => ({ ...m, project: bySlug[m.slug] }));
+
+const art: Record<string, string> = {
+  clig: `<svg viewBox="0 0 160 140" aria-hidden="true"><rect width="160" height="140" fill="#14161a"/><rect x="0" y="0" width="160" height="16" fill="#2a2d33"/><circle cx="10" cy="8" r="3.2" fill="#ff5f57"/><circle cx="21" cy="8" r="3.2" fill="#febc2e"/><circle cx="32" cy="8" r="3.2" fill="#28c840"/><text x="10" y="40" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#7ee787">$ ben --help</text><text x="10" y="58" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#c9d1d9">Usage: ben [command]</text><text x="10" y="72" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#8b949e">  -h, --human  be nice</text><text x="10" y="86" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#8b949e">  -q, --quiet  shh</text><text x="10" y="110" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#7ee787">$</text><rect x="20" y="101" width="7" height="12" fill="#c9d1d9"/></svg>`,
+  jsnes: `<svg viewBox="0 0 160 140" aria-hidden="true"><defs><radialGradient id="crt" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#5b7fd6"/><stop offset="1" stop-color="#1b2a66"/></radialGradient></defs><rect width="160" height="140" fill="url(#crt)"/><g fill="#f5d142"><rect x="24" y="96" width="112" height="8"/></g><g fill="#c0582b"><rect x="24" y="104" width="112" height="24"/></g><g fill="#fff" opacity=".9"><rect x="36" y="26" width="20" height="6"/><rect x="30" y="32" width="34" height="6"/><rect x="102" y="40" width="16" height="6"/><rect x="96" y="46" width="28" height="6"/></g><g transform="translate(70 70)"><rect x="0" y="0" width="12" height="4" fill="#26a65b"/><rect x="-2" y="4" width="18" height="4" fill="#26a65b"/><rect x="0" y="8" width="14" height="6" fill="#f3c59b"/><rect x="0" y="14" width="14" height="6" fill="#2b4bd6"/><rect x="0" y="20" width="4" height="6" fill="#6b3a17"/><rect x="10" y="20" width="4" height="6" fill="#6b3a17"/></g><rect x="112" y="78" width="14" height="14" fill="#f5a623" stroke="#6b3a17" stroke-width="2"/><text x="119" y="89" text-anchor="middle" font-family="monospace" font-weight="700" font-size="10" fill="#6b3a17">?</text></svg>`,
+  'arxiv-vanity': `<svg viewBox="0 0 160 140" aria-hidden="true"><rect width="160" height="140" fill="#efe6d8"/><g transform="rotate(-6 60 70)"><rect x="22" y="18" width="70" height="96" fill="#fff" stroke="#c9bfae"/><rect x="30" y="26" width="40" height="5" fill="#b31b1b"/><g fill="#bdb3a3"><rect x="30" y="38" width="54" height="2.5"/><rect x="30" y="44" width="54" height="2.5"/><rect x="30" y="50" width="48" height="2.5"/><rect x="30" y="60" width="25" height="2.5"/><rect x="59" y="60" width="25" height="2.5"/><rect x="30" y="66" width="25" height="2.5"/><rect x="59" y="66" width="25" height="2.5"/><rect x="30" y="72" width="25" height="2.5"/><rect x="59" y="72" width="25" height="2.5"/><rect x="30" y="78" width="25" height="2.5"/><rect x="59" y="78" width="25" height="2.5"/><rect x="30" y="84" width="25" height="2.5"/><rect x="59" y="84" width="25" height="2.5"/></g></g><g transform="rotate(5 118 76)"><rect x="96" y="40" width="46" height="80" rx="7" fill="#222"/><rect x="100" y="48" width="38" height="64" fill="#fff"/><rect x="104" y="54" width="22" height="4" fill="#b31b1b"/><g fill="#999"><rect x="104" y="63" width="30" height="2"/><rect x="104" y="68" width="30" height="2"/><rect x="104" y="73" width="26" height="2"/><rect x="104" y="80" width="30" height="2"/><rect x="104" y="85" width="30" height="2"/><rect x="104" y="90" width="22" height="2"/></g></g><path d="M84 36 l4 -8 l4 8 l-4 8z M140 26 l3 -6 l3 6 l-3 6z" fill="#f6b80f"/></svg>`,
+  django: `<svg viewBox="0 0 160 140" aria-hidden="true"><rect width="160" height="140" fill="#0c4b33"/><text x="80" y="64" text-anchor="middle" font-family="Georgia,serif" font-size="30" fill="#fff" font-weight="700">{% %}</text><text x="80" y="96" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#44b78b">class BenView(View):</text><text x="80" y="112" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#c9f0dd">    pass</text></svg>`,
+  ukhas: `<svg viewBox="0 0 160 140" aria-hidden="true"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1840"/><stop offset=".55" stop-color="#3b76c4"/><stop offset="1" stop-color="#9fd0f0"/></linearGradient></defs><rect width="160" height="140" fill="url(#sky)"/><circle cx="20" cy="14" r="1" fill="#fff"/><circle cx="130" cy="22" r="1" fill="#fff"/><circle cx="60" cy="10" r=".8" fill="#fff"/><ellipse cx="80" cy="190" rx="160" ry="66" fill="#3a8a4a"/><ellipse cx="80" cy="190" rx="160" ry="66" fill="none" stroke="#bfe6ff" stroke-width="3" opacity=".7"/><ellipse cx="84" cy="42" rx="22" ry="25" fill="#fff"/><ellipse cx="77" cy="34" rx="6" ry="9" fill="#fff" opacity=".9"/><path d="M84 67 q-4 12 2 22" stroke="#333" stroke-width="1" fill="none"/><rect x="80" y="89" width="12" height="9" fill="#f07b1d"/></svg>`,
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — Fridge door</title>
+    <meta name="description" content="Ben Firshman's homepage, as a fridge door: letter magnets, polaroids of projects, a takeaway menu and a shopping list." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Caveat:wght@500;700&family=Gochi+Hand&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="door" id="door">
+      <a class="label back" href="/ideas" data-mag="back" draggable="false">← all ideas</a>
+
+      <h1 class="letters" aria-label={name}>
+        {words.map((w) => (
+          <span class="word" aria-hidden="true">
+            {w.map((l) => (
+              <span class="mag letter" data-mag={l.id} style={`--c:${l.c};--r:${l.rot}deg;--ly:${l.lift}px`}>{l.ch}</span>
+            ))}
+          </span>
+        ))}
+      </h1>
+
+      <a class="mag pinned sticky" data-mag="now" href={now.url} draggable="false" style="--x:69%;--y:5%;--r:3deg">
+        <span class="sticky-k">NOW:</span>
+        <span class="sticky-v">{now.name}</span>
+        <span class="sticky-s">{now.blurb}</span>
+        <span class="sticky-p">(back by 6)</span>
+      </a>
+
+      {polaroids.map((p) => (
+        <a class="mag pinned polaroid" data-mag={`p-${p.slug}`} href={p.project.url} draggable="false" style={`--x:${p.x}%;--y:${p.y}%;--r:${p.rot}deg`}>
+          <span class="dome" aria-hidden="true"></span>
+          <span class="photo" set:html={art[p.slug]} />
+          <span class="caption">{p.caption}</span>
+          <span class="sr-only">: {p.project.name}, {p.project.blurb}</span>
+        </a>
+      ))}
+
+      <figure class="mag pinned drawing" data-mag="whale" style="--x:44.5%;--y:24%;--r:2.5deg" aria-label="A child's crayon drawing of a whale carrying shipping containers">
+        <span class="dome" aria-hidden="true" style="--dc:#26a65b"></span>
+        <svg viewBox="0 0 300 236" aria-hidden="true">
+          <defs>
+            <filter id="crayon" x="-5%" y="-5%" width="110%" height="110%">
+              <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3" result="n" />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" />
+            </filter>
+          </defs>
+          <g filter="url(#crayon)" stroke-linecap="round" stroke-linejoin="round" transform="translate(4 18)">
+            <circle cx="262" cy="34" r="18" fill="none" stroke="#f6b80f" stroke-width="5" />
+            <path d="M262 6v-6 M290 34h8 M282 14l6-6 M282 54l6 6 M236 14l-5-5" stroke="#f6b80f" stroke-width="4" />
+            <path d="M30 128 C 30 90, 200 86, 222 120 C 236 140, 214 170, 150 172 C 92 174, 40 166, 30 128 Z" fill="#7ab6ff" stroke="#1f5fb5" stroke-width="5" />
+            <path d="M222 122 C 246 104, 262 96, 272 86 C 270 104, 262 116, 248 124 C 262 128, 274 138, 280 152 C 262 148, 246 140, 228 136" fill="#7ab6ff" stroke="#1f5fb5" stroke-width="5" />
+            <circle cx="66" cy="128" r="5" fill="#111" />
+            <path d="M48 146 q 24 14 52 4" fill="none" stroke="#1f5fb5" stroke-width="4" />
+            <path d="M84 96 q -6 -26 6 -38 M84 96 q 10 -24 24 -28" fill="none" stroke="#7ab6ff" stroke-width="4" />
+            <rect x="80" y="80" width="34" height="22" fill="#e63b2e" stroke="#8b1c14" stroke-width="3" />
+            <rect x="118" y="80" width="34" height="22" fill="#26a65b" stroke="#16683a" stroke-width="3" />
+            <rect x="156" y="84" width="30" height="20" fill="#f07b1d" stroke="#8d4510" stroke-width="3" />
+            <rect x="98" y="58" width="34" height="22" fill="#f6b80f" stroke="#8d6a07" stroke-width="3" />
+            <rect x="136" y="58" width="34" height="22" fill="#8a4fd6" stroke="#4b2a7a" stroke-width="3" />
+            <path d="M8 196 q 18 -12 36 0 t 36 0 t 36 0 t 36 0 t 36 0 t 36 0 t 36 0 t 36 0" fill="none" stroke="#1f5fb5" stroke-width="4" />
+          </g>
+          <text x="14" y="34" font-family="'Gochi Hand', cursive" font-size="30" fill="#e63b2e" transform="rotate(-6 14 34)">MY WAIL</text>
+          <text x="128" y="30" font-family="'Gochi Hand', cursive" font-size="14" fill="#555" transform="rotate(-4 128 30)">he carrys the boxes</text>
+        </svg>
+        <figcaption class="star" aria-hidden="true">10/10<br />very<br />contain­erised</figcaption>
+      </figure>
+
+      <section class="mag pinned menu" data-mag="menu" style="--x:70.5%;--y:25%;--r:-1.5deg" aria-labelledby="menu-h">
+        <span class="dome" aria-hidden="true" style="--dc:#e63b2e"></span>
+        <header>
+          <span class="menu-kicker">Chinese &amp; Containers</span>
+          <h2 id="menu-h">Golden Whale</h2>
+          <span class="menu-kicker">Takeaway · Open late</span>
+        </header>
+        <ol>
+          {menu.map((m) => (
+            <li>
+              <a href={m.project.url} draggable="false">
+                <span class="no">{m.no}.</span>
+                <span class="dish">{m.project.name}</span>
+                <span class="dots" aria-hidden="true"></span>
+                <span class="price">0.00</span>
+                <span class="desc"><em>{m.note}</em> {m.project.blurb}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+        <p class="menu-foot">All dishes served in containers.<br />No MSG. Some YAML.</p>
+      </section>
+
+      <section class="mag pinned list" data-mag="list" style="--x:46%;--y:57%;--r:1.5deg" aria-labelledby="list-h">
+        <span class="clip" aria-hidden="true"></span>
+        <h2 id="list-h">also worked on:</h2>
+        <ul>
+          <li class="done" aria-hidden="true">milk</li>
+          {alsoWorkedOn.map((a) => (
+            <li><a href={a.url} draggable="false">{a.name}</a></li>
+          ))}
+        </ul>
+      </section>
+
+      <address class="mag pinned card" data-mag="card" style="--x:66%;--y:73%;--r:-2deg">
+        <span class="card-firm">Firshman &amp; Co.</span>
+        <span class="card-trade">Software · Containers · Command lines</span>
+        <span class="card-tag">No job too small. Emergency YAML call‑outs.</span>
+        <a class="card-email" href={`mailto:${email}`} draggable="false">{email}</a>
+        <span class="card-socials">
+          {socials.map((s) => (
+            <a href={s.url} draggable="false">{s.name}</a>
+          ))}
+        </span>
+      </address>
+
+      <p class="hint" aria-hidden="true">psst — the magnets move</p>
+
+      <div class="badge" aria-hidden="true">Firshmatic<small>3000 · frost free</small></div>
+    </div>
+
+    <div class="handle" aria-hidden="true"><span></span></div>
+    <button class="label tidy" type="button" id="tidy" hidden>tidy up</button>
+
+    <noscript><style>.hint{display:none}</style></noscript>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    color-scheme: light;
+    --enamel: #d7e9df;
+    --ink: #1b1b1b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--enamel);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+  }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+
+  /* ---------- the door ---------- */
+  .door {
+    position: relative;
+    font-size: clamp(11px, 1.12vw, 18px);
+    min-height: max(100vh, 56em);
+    overflow: hidden;
+    background:
+      radial-gradient(120% 70% at 18% 0%, rgba(255,255,255,.55), transparent 55%),
+      radial-gradient(80% 60% at 100% 100%, rgba(0,40,20,.10), transparent 60%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.10) 0 1px, rgba(0,0,0,0) 1px 3px, rgba(0,30,10,.025) 3px 4px),
+      linear-gradient(180deg, #dcede4, #cfe3d8);
+    box-shadow: inset -2.2em 0 2em -1.6em rgba(0,40,20,.25), inset 0 .3em .4em -.2em rgba(255,255,255,.8);
+    padding-right: 5em;
+  }
+  /* rounded fridge corners */
+  .door::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    border-radius: 0 0 2.4em 0;
+    box-shadow: inset 0 0 0 1px rgba(0,40,20,.06);
+  }
+
+  .handle {
+    position: fixed; right: 1.1vw; top: 22vh; height: 56vh; width: 22px;
+    pointer-events: none; z-index: 1;
+  }
+  .handle span {
+    position: absolute; inset: 0;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #8c9893, #f6fbf9 30%, #c7d1cd 55%, #7f8b86 85%, #aab5b0);
+    box-shadow: -6px 6px 12px rgba(0,40,20,.25), inset 0 0 0 1px rgba(0,0,0,.1);
+  }
+  .handle::before, .handle::after {
+    content: ""; position: absolute; left: -10px; width: 16px; height: 26px;
+    background: linear-gradient(90deg, #9aa6a1, #e9f0ed 50%, #a4afaa);
+    border-radius: 4px; top: 18px;
+  }
+  .handle::after { top: auto; bottom: 18px; }
+
+  .badge {
+    position: absolute; left: 50%; bottom: 1.4em; transform: translateX(-50%);
+    font: italic 700 1.1em/1 Georgia, serif; letter-spacing: .04em;
+    color: transparent;
+    background: linear-gradient(180deg, #fff 0%, #9aa6a1 45%, #f4f7f6 55%, #7d8984 100%);
+    -webkit-background-clip: text; background-clip: text;
+    text-align: center; filter: drop-shadow(0 1px 0 rgba(0,0,0,.25));
+    user-select: none;
+  }
+  .badge small { display: block; font: 600 .5em/1.6 -apple-system, sans-serif; letter-spacing: .25em; text-transform: uppercase; font-style: normal; color: rgba(0,40,20,.35); background: none; -webkit-background-clip: border-box; }
+
+  /* ---------- magnets: shared ---------- */
+  .mag {
+    --dx: 0px; --dy: 0px; --dr: 0deg; --wob: 0deg; --s: 1;
+    translate: var(--dx) var(--dy);
+    rotate: calc(var(--r, 0deg) + var(--dr) + var(--wob));
+    scale: var(--s);
+    filter: drop-shadow(0 .12em .1em rgba(0,30,15,.28)) drop-shadow(0 .4em .5em rgba(0,30,15,.10));
+    transition: rotate .25s cubic-bezier(.3,1.6,.5,1), scale .2s ease, filter .2s ease;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    cursor: grab;
+    color: inherit;
+  }
+  .mag.lifted {
+    --s: 1.06;
+    cursor: grabbing;
+    filter: drop-shadow(0 .5em .45em rgba(0,30,15,.22)) drop-shadow(0 1.6em 1.6em rgba(0,30,15,.18));
+  }
+  .door.tidying .mag { transition: translate .7s cubic-bezier(.3,1.3,.5,1), rotate .7s cubic-bezier(.3,1.3,.5,1); }
+  .pinned { position: absolute; left: var(--x); top: var(--y); }
+  .mag a, a.mag { cursor: inherit; }
+  img, svg { -webkit-user-drag: none; }
+
+  /* little magnet domes holding paper up */
+  .dome {
+    --dc: #1f6fd1;
+    position: absolute; left: 50%; top: -.7em; width: 1.7em; height: 1.7em; margin-left: -.85em;
+    border-radius: 50%; z-index: 2;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.85) 0 .18em, transparent .45em), radial-gradient(circle at 50% 60%, var(--dc), color-mix(in srgb, var(--dc) 65%, #000));
+    box-shadow: 0 .15em .2em rgba(0,0,0,.35);
+  }
+
+  /* ---------- letters ---------- */
+  .letters {
+    position: absolute; left: 4.5%; top: 4%;
+    margin: 0; font-weight: 400;
+    font: 700 6.4em/1 Fredoka, "Arial Rounded MT Bold", system-ui, sans-serif;
+    display: flex; gap: .45em; flex-wrap: wrap;
+    z-index: 3;
+  }
+  .word { display: inline-flex; gap: .04em; white-space: nowrap; }
+  .letter {
+    display: inline-block;
+    color: var(--c);
+    margin-top: var(--ly);
+    text-shadow:
+      0 .02em 0 color-mix(in srgb, var(--c) 80%, #000),
+      0 .04em 0 color-mix(in srgb, var(--c) 70%, #000),
+      .01em -.015em 0 color-mix(in srgb, var(--c) 55%, #fff);
+    -webkit-text-stroke: .012em color-mix(in srgb, var(--c) 85%, #000);
+    padding: 0 .02em;
+  }
+
+  /* ---------- sticky note ---------- */
+  .sticky {
+    width: 12em; min-height: 11em; padding: 1.4em 1.1em 1em;
+    background: linear-gradient(170deg, #fff59a, #ffe95c 70%, #f7dc48);
+    text-decoration: none;
+    font-family: Caveat, cursive;
+    display: flex; flex-direction: column; gap: .1em;
+    clip-path: polygon(0 0, 100% 0, 100% 92%, 93% 100%, 0 100%);
+  }
+  .sticky-k { font-size: 1.5em; font-weight: 700; letter-spacing: .04em; }
+  .sticky-v { font-size: 2.9em; font-weight: 700; line-height: .9; text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .12em; text-decoration-color: #e63b2e; }
+  .sticky-s { font-size: 1.35em; line-height: 1.05; margin-top: .25em; }
+  .sticky-p { font-size: 1.1em; opacity: .55; margin-top: auto; }
+
+  /* ---------- polaroids ---------- */
+  .polaroid {
+    display: block; width: 12.2em; padding: .7em .7em 0;
+    background: #fbfbf7;
+    text-decoration: none;
+  }
+  .photo { display: block; aspect-ratio: 160 / 140; overflow: hidden; background: #222; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+  .photo svg { display: block; width: 100%; height: 100%; filter: saturate(.85) contrast(1.02) sepia(.12); }
+  .caption {
+    display: block; padding: .35em .1em .6em; min-height: 3.2em;
+    font: 600 1.3em/1 Caveat, cursive; color: #2d2a26; text-align: center;
+  }
+  a.polaroid:hover .caption, a.polaroid:focus-visible .caption { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a.mag:focus-visible, .mag a:focus-visible, .label:focus-visible { outline: 3px solid #1f6fd1; outline-offset: 3px; }
+
+  /* ---------- drawing ---------- */
+  .drawing {
+    margin: 0; width: 17.5em; padding: .6em;
+    background: #fff;
+    background-image: radial-gradient(rgba(0,0,0,.03) 1px, transparent 1px);
+    background-size: 4px 4px;
+  }
+  .drawing svg { display: block; width: 100%; height: auto; }
+  .star {
+    position: absolute; right: -1.1em; bottom: -1.1em; width: 4.6em; height: 4.6em; margin: 0;
+    display: grid; place-items: center; text-align: center; border-radius: 50%;
+    font: 700 .62em/1 Fredoka, sans-serif; color: #6b4b00; text-transform: uppercase; letter-spacing: .02em;
+    background: radial-gradient(circle at 35% 30%, #fff6c4, #f6c431 55%, #d49a00);
+    box-shadow: 0 0 0 .25em #f6c431, 0 0 0 .32em #d49a00, 0 .3em .4em rgba(0,0,0,.25);
+    rotate: 12deg; font-size: .7em; width: 6.2em; height: 6.2em;
+  }
+
+  /* ---------- takeaway menu ---------- */
+  .menu {
+    width: 19.5em; padding: 1.3em 1.2em .9em;
+    background: #fffdf3;
+    border-top: .55em solid #c8102e;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  .menu header { text-align: center; border-bottom: 2px solid #c8102e; padding-bottom: .5em; margin-bottom: .5em; }
+  .menu h2 { margin: .1em 0; font: 700 2em/1 Georgia, serif; color: #c8102e; letter-spacing: .02em; text-transform: uppercase; }
+  .menu-kicker { display: block; font-size: .7em; letter-spacing: .2em; text-transform: uppercase; color: #8a6d1d; }
+  .menu ol { list-style: none; margin: 0; padding: 0; }
+  .menu li a {
+    display: grid; grid-template-columns: auto auto 1fr auto; column-gap: .3em; align-items: baseline;
+    padding: .45em 0; color: inherit; text-decoration: none; font-size: .95em;
+    border-bottom: 1px dotted rgba(0,0,0,.18);
+  }
+  .menu .no { color: #c8102e; font-weight: 700; }
+  .menu .dish { font-weight: 700; }
+  .menu .desc em { font-style: normal; font-variant: small-caps; letter-spacing: .04em; color: #c8102e; }
+  .menu .dots { border-bottom: 2px dotted rgba(0,0,0,.35); transform: translateY(-.25em); }
+  .menu .price { font-variant-numeric: tabular-nums; }
+  .menu .desc { grid-column: 2 / -1; font-size: .8em; font-style: italic; color: #555; }
+  .menu li a:hover .dish, .menu li a:focus-visible .dish { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  .menu-foot { margin: .7em 0 0; text-align: center; font-size: .78em; color: #8a6d1d; letter-spacing: .03em; }
+
+  /* ---------- shopping list ---------- */
+  .list {
+    width: 13.5em; padding: 1.6em 1em 1em 2em;
+    background:
+      linear-gradient(90deg, transparent 1.45em, rgba(230,59,46,.45) 1.45em 1.55em, transparent 1.55em),
+      repeating-linear-gradient(180deg, transparent 0 1.75em, rgba(31,111,209,.22) 1.75em calc(1.75em + 1px)),
+      #fffef9;
+    background-position: 0 0, 0 .95em, 0 0;
+    font-family: Caveat, cursive;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 92% 98.5%, 84% 100%, 75% 98.8%, 66% 100%, 56% 98.6%, 46% 100%, 37% 98.8%, 26% 100%, 17% 98.6%, 8% 100%, 0 98.8%);
+  }
+  .clip { position: absolute; top: -.6em; left: 50%; width: 3.2em; height: 1.5em; margin-left: -1.6em; background: linear-gradient(#e8ece9, #b8c2bd); border-radius: .3em .3em .2em .2em; box-shadow: 0 .1em .2em rgba(0,0,0,.3); }
+  .list h2 { margin: 0 0 .1em; font: 700 1.6em/1.1 Caveat, cursive; }
+  .list ul { list-style: none; margin: 0; padding: 0; font-size: 1.45em; line-height: 1.2; }
+  .list li { padding: .03em 0; }
+  .list li::before { content: "☐ "; font-family: system-ui, sans-serif; font-size: .7em; opacity: .55; }
+  .list li.done { text-decoration: line-through; text-decoration-thickness: 2px; color: #777; }
+  .list li.done::before { content: "☑ "; }
+  .list a { color: #1a3a8a; text-decoration: none; }
+  .list a:hover, .list a:focus-visible { text-decoration: underline; text-decoration-thickness: 1px; }
+
+  /* ---------- tradesman's business card magnet ---------- */
+  .card {
+    width: 19em; padding: 1em 1.2em 1.1em;
+    font-style: normal;
+    background: linear-gradient(135deg, #1b1b1b, #2c2c2c);
+    color: #fff;
+    border-radius: .35em;
+    display: grid; gap: .25em;
+    border: .2em solid #f6b80f;
+  }
+  .card-firm { font: 700 1.5em/1 Fredoka, sans-serif; color: #f6b80f; letter-spacing: .02em; }
+  .card-trade { font-size: .72em; text-transform: uppercase; letter-spacing: .14em; opacity: .85; }
+  .card-tag { font-size: .8em; font-style: italic; opacity: .7; margin-bottom: .3em; }
+  .card-email { font: 700 1.15em/1.2 ui-monospace, Menlo, monospace; color: #fff; text-decoration: none; }
+  .card-email::before { content: "☎ "; color: #f6b80f; }
+  .card-socials { display: flex; gap: .9em; font-size: .85em; }
+  .card a { color: #fff; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .card-email:hover, .card-email:focus-visible { text-decoration: underline; }
+
+  /* ---------- Dymo labels ---------- */
+  .label {
+    position: fixed; z-index: 1000;
+    font: 700 13px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .14em; text-transform: uppercase;
+    color: #fff; background: #1b1b1b;
+    padding: 7px 10px 6px;
+    border: 0; border-radius: 2px;
+    text-shadow: 0 1px 0 rgba(0,0,0,.6), 0 -1px 0 rgba(255,255,255,.15);
+    box-shadow: 0 2px 3px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.12);
+    text-decoration: none; cursor: pointer;
+  }
+  .label.back { position: absolute; left: 14px; top: 12px; rotate: -1.5deg; background: #1f6fd1; }
+  .label.tidy { left: 14px; bottom: 14px; rotate: 1deg; background: #c8102e; }
+  .label.tidy:hover { background: #a60d26; }
+
+  .hint {
+    position: absolute; left: 50%; top: 19%; margin: 0;
+    font: 600 1.3em/1 Caveat, cursive; color: rgba(0,40,20,.45); rotate: -3deg;
+    pointer-events: none;
+  }
+
+  /* ---------- phone: a slightly messy, scrollable column ---------- */
+  @media (max-width: 860px) {
+    .door {
+      font-size: 15px;
+      padding: 64px 40px 90px 16px;
+      display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start;
+      gap: 34px 14px;
+    }
+    .pinned, .letters { position: relative; left: auto; top: auto; }
+    .letters { width: 100%; font-size: 62px; justify-content: center; gap: .05em .4em; margin-bottom: 4px; }
+    .hint { position: relative; left: auto; top: auto; width: 100%; text-align: center; order: 1; margin-top: -20px; }
+    .sticky { order: 2; width: 13em; min-height: 0; }
+    .polaroid { width: calc(50% - 7px); max-width: 13em; font-size: 13px; }
+    [data-mag="p-clig"] { order: 3; }
+    [data-mag="p-jsnes"] { order: 3; margin-top: 18px; }
+    .drawing { order: 4; width: 100%; max-width: 20em; }
+    [data-mag="p-arxiv-vanity"] { order: 5; }
+    [data-mag="p-django"] { order: 5; margin-top: 22px; }
+    .menu { order: 6; width: 100%; max-width: 20em; }
+    [data-mag="p-ukhas"] { order: 7; }
+    .list { order: 7; width: calc(50% - 7px); font-size: 13px; padding-left: 1.8em; }
+    .card { order: 8; width: 100%; max-width: 20em; }
+    .badge { bottom: 22px; }
+    .handle { right: 6px; width: 14px; top: 26vh; height: 44vh; }
+    .handle::before, .handle::after { left: -6px; width: 10px; }
+  }
+  @media (max-width: 860px) and (min-width: 600px) {
+    .polaroid, .list { width: 14em; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mag, .door.tidying .mag { transition: none !important; }
+    .mag.lifted { --s: 1.02; }
+  }
+</style>
+
+<script>
+  const door = document.getElementById('door') as HTMLElement;
+  const tidy = document.getElementById('tidy') as HTMLButtonElement;
+  const hint = document.querySelector('.hint') as HTMLElement | null;
+  const small = matchMedia('(max-width: 860px)');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const items = Array.from(door.querySelectorAll<HTMLElement>('.mag[data-mag]'));
+
+  type Pos = [number, number, number]; // dx, dy, extra rotation
+  let store: Record<string, Pos> = {};
+  const key = () => 'fridge-door-v1:' + (small.matches ? 'phone' : 'wide');
+
+  function load() {
+    try { store = JSON.parse(localStorage.getItem(key()) || '{}') || {}; } catch { store = {}; }
+  }
+  function save() {
+    try { localStorage.setItem(key(), JSON.stringify(store)); } catch { /* private mode etc. */ }
+  }
+  function place(el: HTMLElement) {
+    const p = store[el.dataset.mag!] || [0, 0, 0];
+    el.style.setProperty('--dx', p[0] + 'px');
+    el.style.setProperty('--dy', p[1] + 'px');
+    el.style.setProperty('--dr', p[2] + 'deg');
+  }
+  function placeAll() { items.forEach(place); tidy.hidden = Object.keys(store).length === 0; }
+
+  load();
+  placeAll();
+  small.addEventListener('change', () => { load(); placeAll(); });
+
+  let z = 10;
+  type Drag = {
+    el: HTMLElement; id: string; pid: number; touch: boolean;
+    sx: number; sy: number; ox: number; oy: number; dr: number;
+    minX: number; maxX: number; minY: number; maxY: number;
+    active: boolean; moved: boolean; timer?: number; lastX: number; wob: number;
+  };
+  let drag: Drag | null = null;
+
+  function bounds(d: Drag) {
+    const er = d.el.getBoundingClientRect();
+    const dr = door.getBoundingClientRect();
+    const pad = 4;
+    d.minX = d.ox - (er.left - dr.left) + pad;
+    d.maxX = d.ox + (dr.right - er.right) - pad;
+    d.minY = d.oy - (er.top - dr.top) + pad;
+    d.maxY = d.oy + (dr.bottom - er.bottom) - pad;
+  }
+
+  function lift(d: Drag) {
+    d.active = true;
+    d.el.classList.add('lifted');
+    d.el.style.zIndex = String(++z);
+    const kick = reduce.matches ? 0 : (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 4);
+    d.el.style.setProperty('--wob', kick + 'deg');
+    d.wob = kick;
+    if (hint) hint.style.opacity = '0';
+  }
+
+  items.forEach((el) => {
+    el.addEventListener('dragstart', (e) => e.preventDefault());
+    el.querySelectorAll('a, img, svg').forEach((n) => n.setAttribute('draggable', 'false'));
+
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || drag) return;
+      const p = store[el.dataset.mag!] || [0, 0, 0];
+      const d: Drag = {
+        el, id: el.dataset.mag!, pid: e.pointerId, touch: e.pointerType !== 'mouse',
+        sx: e.clientX, sy: e.clientY, ox: p[0], oy: p[1], dr: p[2],
+        minX: -1e9, maxX: 1e9, minY: -1e9, maxY: 1e9,
+        active: false, moved: false, lastX: e.clientX, wob: 0,
+      };
+      bounds(d);
+      drag = d;
+      if (d.touch) {
+        // On touch, hold briefly to pick up, so the page can still scroll.
+        d.timer = window.setTimeout(() => {
+          if (drag === d && !d.moved) { lift(d); try { el.setPointerCapture(d.pid); } catch {} }
+        }, 170);
+      }
+    });
+
+    el.addEventListener('click', (e) => {
+      if (el.dataset.dragged) {
+        e.preventDefault();
+        e.stopPropagation();
+        delete el.dataset.dragged;
+      }
+    }, true);
+
+    el.addEventListener('contextmenu', (e) => { if (drag && drag.el === el && drag.active) e.preventDefault(); });
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    const d = drag;
+    if (!d || e.pointerId !== d.pid) return;
+    const mx = e.clientX - d.sx, my = e.clientY - d.sy;
+    if (!d.active) {
+      if (d.touch) {
+        if (Math.hypot(mx, my) > 8) { clearTimeout(d.timer); drag = null; } // it's a scroll
+        return;
+      }
+      if (Math.hypot(mx, my) < 4) return;
+      lift(d);
+      try { d.el.setPointerCapture(d.pid); } catch {}
+    }
+    if (!d.moved && Math.hypot(mx, my) < 3) return;
+    d.moved = true;
+    const x = Math.min(d.maxX, Math.max(d.minX, d.ox + mx));
+    const y = Math.min(d.maxY, Math.max(d.minY, d.oy + my));
+    d.el.style.setProperty('--dx', x + 'px');
+    d.el.style.setProperty('--dy', y + 'px');
+    if (!reduce.matches) {
+      const v = e.clientX - d.lastX;
+      d.wob = Math.max(-12, Math.min(12, d.wob * 0.8 + v * 0.6));
+      d.el.style.setProperty('--wob', d.wob.toFixed(2) + 'deg');
+    }
+    d.lastX = e.clientX;
+  });
+
+  function end(e: PointerEvent) {
+    const d = drag;
+    if (!d || e.pointerId !== d.pid) return;
+    clearTimeout(d.timer);
+    drag = null;
+    if (!d.active) return;
+    d.el.classList.remove('lifted');
+    d.el.style.setProperty('--wob', '0deg');
+    if (d.moved || d.touch) d.el.dataset.dragged = '1';
+    setTimeout(() => { delete d.el.dataset.dragged; }, 400);
+    if (!d.moved) return;
+    const x = parseFloat(d.el.style.getPropertyValue('--dx')) || 0;
+    const y = parseFloat(d.el.style.getPropertyValue('--dy')) || 0;
+    const settle = reduce.matches ? d.dr : Math.max(-8, Math.min(8, d.dr + (Math.random() * 6 - 3)));
+    store[d.id] = [Math.round(x), Math.round(y), Math.round(settle * 10) / 10];
+    d.el.style.setProperty('--dr', store[d.id][2] + 'deg');
+    save();
+    tidy.hidden = false;
+  }
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
+
+  // Stop the page scrolling while a magnet is held on touch screens.
+  document.addEventListener('touchmove', (e) => { if (drag && drag.active) e.preventDefault(); }, { passive: false });
+
+  tidy.addEventListener('click', () => {
+    store = {};
+    save();
+    door.classList.add('tidying');
+    placeAll();
+    setTimeout(() => door.classList.remove('tidying'), 750);
+  });
+</script>

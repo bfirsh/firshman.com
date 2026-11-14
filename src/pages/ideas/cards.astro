@@ -1,0 +1,613 @@
+---
+import { projects, now, email, socials, name, profileImage } from '../../data/bio';
+
+const p = Object.fromEntries(projects.map((x) => [x.slug, x]));
+
+type Card = {
+  id: string; name: string; url: string; linkLabel: string;
+  type: string; hue: string; hp: string; atk: string;
+  move: string; effect: string; flavour: string; rarity: 'common' | 'uncommon' | 'rare';
+};
+
+const types: Record<string, string> = {
+  Container: '#2f6bff', ML: '#8b5cf6', Web: '#0fa877', Retro: '#ef4444',
+  Manual: '#f59e0b', Sky: '#0ab4d6', Cloud: '#1d1d22', Human: '#c99a2e',
+};
+
+const host = (u: string) => u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+
+const list: Card[] = [
+  { id: 'cog', type: 'ML', hp: '512', atk: 'predict', move: 'Pack It Up', effect: 'Put a model in a container. It now runs on your machine and theirs.', rarity: 'uncommon' },
+  { id: 'clig', type: 'Manual', hp: '80', atk: '--help', move: 'Exit 0', effect: "Your opponent's CLI starts printing helpful errors.", rarity: 'common' },
+  { id: 'compose', type: 'Container', hp: '3×', atk: 'up -d', move: 'Orchestrate', effect: 'Summon every container in one YAML file at once.', rarity: 'uncommon' },
+  { id: 'machine', type: 'Container', hp: '64', atk: 'create', move: 'Provision', effect: 'Put a Docker host anywhere. Yes, even there.', rarity: 'common' },
+  { id: 'jsnes', type: 'Retro', hp: '8-bit', atk: '60fps', move: 'Emulate', effect: 'Play an entire games console inside a browser tab.', rarity: 'uncommon' },
+  { id: 'whalebrew', type: 'Container', hp: '42', atk: 'install', move: 'Brew', effect: 'Install a container as if it were a normal command.', rarity: 'common' },
+  { id: 'arxiv-vanity', type: 'Web', hp: '100', atk: 'reflow', move: 'Un-PDF', effect: 'A paper becomes a web page. Readable on phones.', rarity: 'common' },
+  { id: 'django', type: 'Web', hp: '1.0', atk: 'as_view()', move: 'Class-Based View', effect: 'Attacks in a reusable, composable manner.', rarity: 'common' },
+  { id: 'ukhas', type: 'Sky', hp: '0g', atk: '↑↑↑', move: 'Float', effect: 'Rises until the balloon pops. Then lands in a field.', rarity: 'common' },
+].map((c) => ({ ...c, name: p[c.id].name, url: p[c.id].url, linkLabel: host(p[c.id].url), flavour: p[c.id].blurb })) as Card[];
+
+list.push({
+  id: 'replicate', name: now.name, url: now.url, linkLabel: host(now.url), type: 'Cloud', hp: '∞', atk: 'run',
+  move: 'Now Playing', effect: 'Run any model with one API call. Active every turn.', flavour: now.blurb, rarity: 'uncommon',
+});
+list.push({
+  id: 'ben', name, url: `mailto:${email}`, linkLabel: email, type: 'Human', hp: '100', atk: 'ships',
+  move: 'Founder', effect: 'Co-founded Replicate. Made Fig, which became Docker Compose.', flavour: 'Dry. Bold. Mostly harmless.', rarity: 'rare',
+});
+
+const total = String(list.length).padStart(3, '0');
+const cards = list.map((c, i) => ({ ...c, no: `${String(i + 1).padStart(3, '0')}/${total}`, colour: types[c.type] }));
+
+// Gear for Cog
+const gear = (() => {
+  const pts: string[] = []; const teeth = 10; const cx = 50, cy = 35;
+  for (let i = 0; i < teeth * 4; i++) {
+    const a = (i / (teeth * 4)) * Math.PI * 2;
+    const r = i % 4 < 2 ? 24 : 18;
+    pts.push(`${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`);
+  }
+  return pts.join(' ');
+})();
+
+const art: Record<string, string> = {
+  cog: `<polygon points="${gear}" fill="#fff"/><circle cx="50" cy="35" r="8" fill="var(--c)"/>`,
+  clig: `<text x="50" y="47" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-weight="700" font-size="34" fill="#fff">&gt;_</text>`,
+  compose: `<g fill="#fff"><rect x="24" y="40" width="24" height="16" rx="1.5"/><rect x="52" y="40" width="24" height="16" rx="1.5"/><rect x="38" y="20" width="24" height="16" rx="1.5"/></g><g stroke="var(--c)" stroke-width="1.6"><path d="M30 43v10M36 43v10M42 43v10M58 43v10M64 43v10M70 43v10M44 23v10M50 23v10M56 23v10"/></g>`,
+  machine: `<rect x="30" y="16" width="40" height="40" rx="3" fill="#fff"/><g fill="var(--c)"><rect x="35" y="22" width="30" height="6" rx="1"/><rect x="35" y="32" width="30" height="6" rx="1"/><rect x="35" y="42" width="30" height="6" rx="1"/></g><g fill="#7CFFB2"><circle cx="61" cy="25" r="1.5"/><circle cx="61" cy="35" r="1.5"/><circle cx="61" cy="45" r="1.5"/></g>`,
+  jsnes: `<rect x="18" y="22" width="64" height="28" rx="4" fill="#fff"/><g fill="var(--c)"><rect x="27" y="33" width="14" height="5"/><rect x="31.5" y="28.5" width="5" height="14"/><circle cx="64" cy="38" r="4"/><circle cx="73" cy="34" r="4"/><rect x="45" y="34" width="5" height="2.4" rx="1"/><rect x="52" y="34" width="5" height="2.4" rx="1"/></g>`,
+  whalebrew: `<path d="M18 38 C18 26 62 24 70 36 C74 42 70 52 50 53 C32 54 18 50 18 38Z M70 36 C76 32 80 30 84 26 C84 32 81 36 77 38 C82 40 85 44 86 48 C80 46 74 43 70 42Z" fill="#fff"/><circle cx="28" cy="38" r="2" fill="var(--c)"/><g fill="#fff"><rect x="34" y="16" width="10" height="7"/><rect x="45" y="16" width="10" height="7"/><rect x="39.5" y="9" width="10" height="6.5"/></g>`,
+  'arxiv-vanity': `<rect x="20" y="12" width="30" height="44" fill="#fff"/><g fill="var(--c)"><rect x="24" y="17" width="16" height="3"/><rect x="24" y="24" width="22" height="1.6"/><rect x="24" y="28" width="22" height="1.6"/><rect x="24" y="32" width="10" height="1.6"/><rect x="36" y="32" width="10" height="1.6"/><rect x="24" y="36" width="10" height="1.6"/><rect x="36" y="36" width="10" height="1.6"/><rect x="24" y="40" width="10" height="1.6"/><rect x="36" y="40" width="10" height="1.6"/></g><path d="M53 34h8m-3-3 3 3-3 3" stroke="#fff" stroke-width="2" fill="none"/><rect x="64" y="16" width="18" height="36" rx="3" fill="#fff"/><g fill="var(--c)"><rect x="67" y="21" width="10" height="2.4"/><rect x="67" y="26" width="12" height="1.4"/><rect x="67" y="29" width="12" height="1.4"/><rect x="67" y="32" width="9" height="1.4"/><rect x="67" y="36" width="12" height="1.4"/><rect x="67" y="39" width="12" height="1.4"/></g>`,
+  django: `<text x="50" y="45" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="28" fill="#fff">{% %}</text>`,
+  ukhas: `<path d="M0 70 Q50 46 100 70Z" fill="rgba(255,255,255,.35)"/><ellipse cx="50" cy="24" rx="13" ry="15" fill="#fff"/><path d="M50 39 q-3 6 0 12" stroke="#fff" stroke-width="1" fill="none"/><rect x="46.5" y="50" width="7" height="5" fill="#fff"/><g fill="#fff"><circle cx="18" cy="12" r=".9"/><circle cx="80" cy="18" r=".9"/><circle cx="86" cy="8" r=".7"/><circle cx="28" cy="28" r=".6"/></g>`,
+  replicate: `<g fill="none" stroke="#fff" stroke-width="2.4"><rect x="30" y="14" width="26" height="26" rx="3" opacity=".35"/><rect x="36" y="20" width="26" height="26" rx="3" opacity=".6"/><rect x="42" y="26" width="26" height="26" rx="3"/></g>`,
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman — Trading cards</title>
+    <meta name="description" content="Ben Firshman's projects as a booster pack of holographic collectible cards. Contains one rare human." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <header class="top">
+      <a class="home" href="/ideas">← all ideas</a>
+      <h1>{name}</h1>
+      <p class="sub">Collectible cards · Series 1 · {list.length} to collect</p>
+    </header>
+
+    <section class="pack-stage" id="stage" aria-label="Booster pack">
+      <button class="pack" id="pack" type="button" aria-label="Open booster pack">
+        <span class="pack-crimp top" aria-hidden="true"></span>
+        <span class="pack-strip" id="strip" aria-hidden="true">
+          <span class="tear">✂ tear here</span>
+        </span>
+        <span class="pack-body" id="packBody" aria-hidden="true">
+          <span class="pack-holo"></span>
+          <span class="pack-kicker">Booster pack</span>
+          <span class="pack-title">FIRSH<br />MAN</span>
+          <span class="pack-q">?</span>
+          <span class="pack-meta">{list.length} cards · 1 rare human<sup>*</sup></span>
+          <span class="pack-fine"><sup>*</sup>guaranteed. Not suitable for children under 3 (choking hazard: YAML).</span>
+        </span>
+        <span class="pack-crimp bottom" aria-hidden="true"></span>
+      </button>
+      <button class="open-btn" id="openBtn" type="button">Open booster pack</button>
+    </section>
+
+    <main class="binder" id="binder">
+      <ol class="cards">
+        {cards.map((c) => (
+          <li class={`card ${c.rarity}`} data-id={c.id} style={`--c:${c.colour}`}>
+            <div class="card-tilt">
+              <div class="card-inner">
+                <button class="face front" type="button" aria-label={`${c.name} card. Flip to see link.`}>
+                  <span class="frame">
+                    <span class="head">
+                      <span class="cname">{c.name}</span>
+                      <span class="hp"><small>HP</small>{c.hp}</span>
+                    </span>
+                    <span class="art">
+                      {c.id === 'ben'
+                        ? <img src={profileImage} alt="" width="512" height="512" loading="lazy" draggable="false" />
+                        : <svg viewBox="0 0 100 70" preserveAspectRatio="xMidYMid meet" aria-hidden="true" set:html={art[c.id]} />}
+                      <span class="sparkles" aria-hidden="true"></span>
+                    </span>
+                    <span class="typeline">
+                      <span class="type">{c.type}</span>
+                      <span class="atk"><small>ATK</small> {c.atk}</span>
+                    </span>
+                    <span class="move">
+                      <b>{c.move}</b>
+                      <span>{c.effect}</span>
+                    </span>
+                    <span class="flavour">“{c.flavour}”</span>
+                    <span class="foot">
+                      <span class="rarity" title={c.rarity}>{c.rarity === 'rare' ? '★' : c.rarity === 'uncommon' ? '◆' : '●'}</span>
+                      <span class="no">{c.no}</span>
+                      <span class="series">Firshman · S1</span>
+                    </span>
+                  </span>
+                  <span class="foil" aria-hidden="true"></span>
+                  <span class="glare" aria-hidden="true"></span>
+                </button>
+                <div class="face back">
+                  <span class="back-emblem" aria-hidden="true">BF</span>
+                  <span class="back-no">{c.no} · {c.name}</span>
+                  <a class="back-link" href={c.url}>
+                    <span>{c.id === 'ben' ? 'Email' : c.id === 'replicate' ? 'Play now' : 'Visit'}</span>
+                    <b>{c.linkLabel}</b>
+                  </a>
+                  {c.id === 'ben' && (
+                    <span class="back-socials">
+                      {socials.map((s) => <a href={s.url}>{s.name}</a>)}
+                    </span>
+                  )}
+                  <button class="flip-back" type="button">↺ flip back</button>
+                </div>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <div class="after">
+        <button class="reseal" id="reseal" type="button">Open another pack</button>
+      </div>
+
+      <section class="checklist" aria-labelledby="cl-h">
+        <h2 id="cl-h">Checklist</h2>
+        <ol>
+          {cards.map((c) => (
+            <li>
+              <span class="cl-no">{c.no}</span>
+              <a href={c.url}>{c.name}</a>
+              <span class="cl-type">{c.type}</span>
+              <span class="cl-r">{c.rarity === 'rare' ? '★' : c.rarity === 'uncommon' ? '◆' : '●'}</span>
+            </li>
+          ))}
+        </ol>
+        <p class="contact">
+          Trades: <a href={`mailto:${email}`}>{email}</a> ·
+          {socials.map((s, i) => <>{i > 0 && ' · '}<a href={s.url}>{s.name}</a></>)}
+        </p>
+        <p class="legal">● common · ◆ uncommon · ★ rare. Stats are made up. Do not attempt to battle.</p>
+      </section>
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    color-scheme: dark;
+    --bg: #0f0f12;
+    --ink: #f4f1ea;
+    --muted: #8d8a83;
+    --w: 232px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #23232b 0%, transparent 70%),
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,.05) 1px, transparent 0) 0 0 / 22px 22px,
+      var(--bg);
+    color: var(--ink);
+    font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+  .top { text-align: center; padding: 28px 16px 8px; position: relative; }
+  .home { position: absolute; left: 16px; top: 16px; font: 500 13px/1 "JetBrains Mono", monospace; color: var(--muted); text-decoration: none; }
+  .home:hover { color: var(--ink); }
+  h1 { margin: 22px 0 6px; font-size: clamp(40px, 7vw, 92px); font-weight: 800; letter-spacing: -.035em; line-height: .95; }
+  .sub { margin: 0; font: 500 13px/1.4 "JetBrains Mono", monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+  /* ---------------- booster pack ---------------- */
+  .pack-stage { display: none; }
+  .js .pack-stage { display: grid; justify-items: center; gap: 22px; padding: 28px 16px 64px; }
+  .js .opened .pack-stage, .js.opened .pack-stage { display: none; }
+  .pack {
+    --px: 50%; --py: 50%;
+    position: relative; width: 270px; height: 390px; padding: 0; border: 0; background: none; cursor: pointer;
+    color: #111; font: inherit; display: block;
+    filter: drop-shadow(0 30px 40px rgba(0,0,0,.6));
+    animation: bob 3.2s ease-in-out infinite;
+  }
+  .pack:hover { animation-duration: 1.4s; }
+  .pack:focus-visible { outline: 3px solid #fff; outline-offset: 8px; border-radius: 6px; }
+  @keyframes bob { 50% { transform: translateY(-8px) rotate(-1.2deg); } }
+
+  .pack-crimp {
+    position: absolute; left: 0; right: 0; height: 16px; z-index: 2;
+    background: repeating-linear-gradient(90deg, #cfd2d8 0 3px, #9aa0aa 3px 6px);
+  }
+  .pack-crimp.top { top: 0; clip-path: polygon(0 100%, 0 30%, 2.5% 0, 5% 30%, 7.5% 0, 10% 30%, 12.5% 0, 15% 30%, 17.5% 0, 20% 30%, 22.5% 0, 25% 30%, 27.5% 0, 30% 30%, 32.5% 0, 35% 30%, 37.5% 0, 40% 30%, 42.5% 0, 45% 30%, 47.5% 0, 50% 30%, 52.5% 0, 55% 30%, 57.5% 0, 60% 30%, 62.5% 0, 65% 30%, 67.5% 0, 70% 30%, 72.5% 0, 75% 30%, 77.5% 0, 80% 30%, 82.5% 0, 85% 30%, 87.5% 0, 90% 30%, 92.5% 0, 95% 30%, 97.5% 0, 100% 30%, 100% 100%); }
+  .pack-crimp.bottom { bottom: 0; clip-path: polygon(0 0, 100% 0, 100% 70%, 97.5% 100%, 95% 70%, 92.5% 100%, 90% 70%, 87.5% 100%, 85% 70%, 82.5% 100%, 80% 70%, 77.5% 100%, 75% 70%, 72.5% 100%, 70% 70%, 67.5% 100%, 65% 70%, 62.5% 100%, 60% 70%, 57.5% 100%, 55% 70%, 52.5% 100%, 50% 70%, 47.5% 100%, 45% 70%, 42.5% 100%, 40% 70%, 37.5% 100%, 35% 70%, 32.5% 100%, 30% 70%, 27.5% 100%, 25% 70%, 22.5% 100%, 20% 70%, 17.5% 100%, 15% 70%, 12.5% 100%, 10% 70%, 7.5% 100%, 5% 70%, 2.5% 100%, 0 70%); }
+  .pack-strip {
+    position: absolute; left: 0; right: 0; top: 14px; height: 34px; z-index: 3;
+    background: linear-gradient(180deg, #e9ebef, #b9bec7);
+    border-bottom: 2px dashed rgba(0,0,0,.35);
+    display: grid; place-items: center;
+    transform-origin: 100% 100%;
+  }
+  .tear { font: 700 10px/1 "JetBrains Mono", monospace; letter-spacing: .2em; text-transform: uppercase; color: rgba(0,0,0,.55); }
+  .pack-body {
+    position: absolute; left: 0; right: 0; top: 48px; bottom: 14px; overflow: hidden;
+    background: linear-gradient(160deg, #f5f5f7 0%, #c9ccd3 35%, #fafafa 50%, #aeb3bd 75%, #e7e8ec 100%);
+    display: flex; flex-direction: column; align-items: center; padding: 20px 18px 16px; text-align: center;
+  }
+  .pack-holo {
+    position: absolute; inset: 0; pointer-events: none; mix-blend-mode: multiply; opacity: .55;
+    background:
+      repeating-linear-gradient(120deg, #ff8ab3 0 8%, #ffe27a 8% 16%, #7dffc3 16% 24%, #7cc6ff 24% 32%, #c39bff 32% 40%);
+    background-size: 260% 260%;
+    background-position: var(--px) var(--py);
+    transition: background-position .2s;
+  }
+  .pack-kicker { position: relative; font: 700 11px/1 "JetBrains Mono", monospace; letter-spacing: .3em; text-transform: uppercase; }
+  .pack-title { position: relative; margin-top: 14px; font-size: 64px; font-weight: 800; letter-spacing: -.05em; line-height: .82; }
+  .pack-q {
+    position: relative; margin: 16px 0 auto; width: 92px; height: 92px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 62px; font-weight: 800; color: #fff; background: #111;
+    box-shadow: 0 0 0 4px rgba(255,255,255,.6);
+  }
+  .pack-meta { position: relative; font: 700 12px/1.3 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .06em; }
+  .pack-fine { position: relative; margin-top: 6px; font-size: 9.5px; line-height: 1.25; opacity: .7; max-width: 22ch; }
+  .open-btn, .reseal {
+    font: 700 15px/1 "Bricolage Grotesque", sans-serif; letter-spacing: .01em;
+    padding: 14px 22px; border-radius: 999px; border: 2px solid var(--ink); background: var(--ink); color: #111; cursor: pointer;
+    transition: transform .15s;
+  }
+  .open-btn:hover, .reseal:hover { transform: translateY(-2px); }
+  .reseal { background: transparent; color: var(--ink); }
+
+  /* ---------------- binder ---------------- */
+  .binder { padding: 24px 16px 60px; max-width: 1240px; margin: 0 auto; }
+  .js .binder .cards { display: none; }
+  .js .binder .after { display: none; }
+  .js.opened .binder .cards { display: flex; }
+  .js.opened .binder .after { display: flex; }
+  .cards {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 34px 28px;
+  }
+  .after { justify-content: center; margin: 40px 0 0; }
+
+  .card {
+    --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%; --hover: 0;
+    width: var(--w); aspect-ratio: 63 / 88;
+    font-size: calc(var(--w) / 22);
+    perspective: 900px;
+  }
+  .card-tilt {
+    width: 100%; height: 100%;
+    transform: rotateX(var(--rx)) rotateY(var(--ry));
+    transform-style: preserve-3d;
+    transition: transform .5s cubic-bezier(.2,.8,.2,1);
+  }
+  .card.tilting .card-tilt { transition: transform .08s linear; }
+  .card-inner {
+    position: relative; width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    transition: transform .7s cubic-bezier(.3,1.25,.4,1);
+  }
+  .card.flipped .card-inner { transform: rotateY(180deg); }
+  .face {
+    position: absolute; inset: 0; border-radius: .95em; overflow: hidden;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    box-shadow: 0 1.4em 2.4em rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .front {
+    display: block; width: 100%; padding: .55em; border: 0; margin: 0; cursor: pointer; text-align: left;
+    font: inherit; color: #16151a;
+    background: linear-gradient(150deg, color-mix(in srgb, var(--c) 70%, #fff), var(--c) 40%, color-mix(in srgb, var(--c) 70%, #000));
+  }
+  .front:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+  .frame {
+    display: grid; grid-template-rows: auto auto auto 1fr auto auto; height: 100%;
+    background: #f6f2e8; border-radius: .55em; padding: .55em .65em .45em;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
+  }
+  .head { display: flex; align-items: baseline; justify-content: space-between; gap: .4em; }
+  .cname { font-weight: 800; font-size: 1.35em; line-height: 1; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card[data-id="clig"] .cname, .card[data-id="ukhas"] .cname { font-size: 1.05em; white-space: normal; }
+  .hp { font: 700 1.25em/1 "JetBrains Mono", monospace; color: var(--c); white-space: nowrap; }
+  .hp small { font-size: .55em; margin-right: .15em; color: #16151a; }
+  .art {
+    position: relative; display: block; margin-top: .45em; aspect-ratio: 10 / 7.8; border-radius: .3em; overflow: hidden;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,.35), transparent 60%),
+      linear-gradient(135deg, color-mix(in srgb, var(--c) 80%, #fff), var(--c) 55%, color-mix(in srgb, var(--c) 60%, #000));
+    box-shadow: inset 0 0 0 .18em color-mix(in srgb, var(--c) 50%, #000), inset 0 .3em .8em rgba(0,0,0,.25);
+  }
+  .art svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+  .typeline { display: flex; justify-content: space-between; align-items: center; margin-top: .4em; font: 700 .72em/1 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .06em; }
+  .type { background: var(--c); color: #fff; padding: .3em .55em; border-radius: 99px; }
+  .atk small { color: var(--muted); font-size: .9em; }
+  .move { display: block; margin-top: .6em; font-size: .95em; line-height: 1.22; }
+  .move b { display: block; font-size: 1.12em; margin-bottom: .1em; }
+  .flavour { align-self: end; font-size: .74em; font-style: italic; line-height: 1.25; color: #55524c; border-top: 1px solid rgba(0,0,0,.12); padding-top: .4em; margin-top: .4em; }
+  .foot { display: flex; align-items: center; gap: .55em; margin-top: .35em; font: 500 .64em/1 "JetBrains Mono", monospace; color: #6c6962; }
+  .rarity { font-size: 1.3em; color: #16151a; }
+  .series { margin-left: auto; }
+
+  /* holo foil + glare */
+  .foil, .glare { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
+  .foil {
+    mix-blend-mode: color-dodge;
+    opacity: calc(.06 + var(--hover) * .45);
+    background:
+      repeating-linear-gradient(115deg,
+        hsl(330 90% 62%) 0%, hsl(40 95% 60%) 4%, hsl(140 80% 55%) 8%,
+        hsl(195 90% 58%) 12%, hsl(265 85% 66%) 16%, hsl(330 90% 62%) 20%),
+      repeating-linear-gradient(25deg, rgba(255,255,255,.0) 0 2px, rgba(255,255,255,.18) 2px 3px);
+    background-size: 400% 400%, 100% 100%;
+    background-position: var(--mx) var(--my), 0 0;
+    filter: brightness(.75) contrast(1.4) saturate(1.2);
+    transition: opacity .3s;
+  }
+  .glare {
+    mix-blend-mode: overlay;
+    opacity: var(--hover);
+    background: radial-gradient(farthest-corner circle at var(--mx) var(--my), rgba(255,255,255,.85) 0%, rgba(255,255,255,.25) 25%, rgba(0,0,0,.35) 90%);
+    transition: opacity .3s;
+  }
+
+  /* the shiny rare */
+  .card.rare .front {
+    background:
+      conic-gradient(from 210deg at var(--mx) var(--my), #f9e08a, #c99a2e, #fff2c0, #a87918, #f9e08a, #fff2c0, #c99a2e, #f9e08a);
+  }
+  .card.rare .frame { background: linear-gradient(170deg, #fffaf0, #f4ead2); }
+  .card.rare .foil {
+    opacity: calc(.35 + var(--hover) * .45);
+    background:
+      conic-gradient(from 0deg at var(--mx) var(--my), hsl(0 90% 65%), hsl(60 90% 65%), hsl(120 90% 60%), hsl(180 90% 60%), hsl(240 90% 70%), hsl(300 90% 65%), hsl(360 90% 65%)),
+      repeating-linear-gradient(45deg, rgba(0,0,0,.25) 0 1px, transparent 1px 6px),
+      repeating-linear-gradient(-45deg, rgba(0,0,0,.25) 0 1px, transparent 1px 6px);
+    background-size: 100% 100%, 100% 100%, 100% 100%;
+    filter: brightness(.7) contrast(1.6) saturate(1.1);
+  }
+  .card.rare .art img { filter: contrast(1.05) saturate(1.05); }
+  .sparkles { position: absolute; inset: 0; pointer-events: none; display: none; }
+  .card.rare .sparkles {
+    display: block; mix-blend-mode: color-dodge; opacity: calc(.4 + var(--hover) * .6);
+    background-image:
+      radial-gradient(circle at 18% 22%, #fff 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 74% 14%, #fff 0 1px, transparent 2px),
+      radial-gradient(circle at 86% 64%, #fff 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 30% 78%, #fff 0 1px, transparent 2px),
+      radial-gradient(circle at 58% 42%, #fff 0 1px, transparent 2px);
+    animation: twinkle 2.4s ease-in-out infinite alternate;
+  }
+  @keyframes twinkle { to { opacity: .15; } }
+  .card.rare .type { background: linear-gradient(90deg, #a87918, #e6bf55, #a87918); }
+  .card.rare .hp { color: #a87918; }
+
+  /* back */
+  .back {
+    transform: rotateY(180deg);
+    display: grid; place-items: center; align-content: center; gap: 1.1em; padding: 1.4em; text-align: center;
+    background:
+      radial-gradient(circle at 50% 38%, rgba(255,255,255,.12), transparent 50%),
+      repeating-conic-gradient(from 0deg at 50% 38%, rgba(255,255,255,.05) 0 10deg, transparent 10deg 20deg),
+      linear-gradient(160deg, #24242c, #101014);
+    border: .55em solid #2c2c35;
+    color: var(--ink);
+  }
+  .back-emblem {
+    width: 4.6em; height: 4.6em; border-radius: 50%; display: grid; place-items: center;
+    font-weight: 800; font-size: 1.7em; letter-spacing: -.06em;
+    background: var(--ink); color: #111; box-shadow: 0 0 0 .25em var(--c), 0 0 0 .5em rgba(255,255,255,.15);
+  }
+  .back-no { font: 500 .78em/1.3 "JetBrains Mono", monospace; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .back-link {
+    display: grid; gap: .25em; padding: .8em 1em; border-radius: .6em; text-decoration: none;
+    background: var(--c); color: #fff; box-shadow: 0 .4em 0 color-mix(in srgb, var(--c) 55%, #000);
+    max-width: 100%;
+  }
+  .card.rare .back-link { background: #c99a2e; color: #111; box-shadow: 0 .4em 0 #7a5a12; }
+  .back-link span { font: 700 .72em/1 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .12em; opacity: .85; }
+  .back-link b { font-size: 1.05em; overflow-wrap: anywhere; }
+  .back-link:hover b, .back-link:focus-visible b { text-decoration: underline; }
+  .back-socials { display: flex; gap: .9em; font-size: .9em; }
+  .flip-back { font: 500 .78em/1 "JetBrains Mono", monospace; color: var(--muted); background: none; border: 0; cursor: pointer; padding: .4em; }
+  .flip-back:hover { color: var(--ink); }
+
+  /* checklist (also the no-JS / accessible fallback) */
+  .checklist {
+    margin: 64px auto 0; max-width: 620px; padding: 22px 24px; border-radius: 14px;
+    background: #f6f2e8; color: #16151a;
+  }
+  .checklist h2 { margin: 0 0 10px; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+  .checklist ol { list-style: none; margin: 0; padding: 0; }
+  .checklist li { display: grid; grid-template-columns: 5.2em 1fr auto 1.4em; gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px solid rgba(0,0,0,.1); font-size: 15px; }
+  .cl-no, .cl-type { font: 500 12px/1 "JetBrains Mono", monospace; color: #6c6962; }
+  .cl-type { text-transform: uppercase; letter-spacing: .06em; }
+  .cl-r { text-align: center; }
+  .checklist li a { font-weight: 800; }
+  .contact { margin: 16px 0 4px; font-size: 15px; }
+  .contact a { font-weight: 800; }
+  .legal { margin: 8px 0 0; font: 500 11px/1.4 "JetBrains Mono", monospace; color: #6c6962; }
+
+  @media (max-width: 1100px) { :root { --w: 210px; } }
+  @media (max-width: 700px) {
+    :root { --w: calc((100vw - 32px - 14px) / 2); }
+    .cards { gap: 18px 14px; }
+    .card[data-id="ben"] { --w: min(78vw, 300px); order: -1; }
+    .top { padding-top: 40px; }
+    .back { gap: .7em; padding: .9em; }
+    .back-emblem { font-size: 1.2em; }
+    .checklist { padding: 16px; }
+    .checklist li { grid-template-columns: 4.6em 1fr 1.2em; }
+    .cl-type { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pack { animation: none; }
+    .card-tilt, .card-inner, .card.tilting .card-tilt { transition: none; }
+    .card.rare .sparkles { animation: none; }
+  }
+</style>
+
+<script>
+  const root = document.documentElement;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const pack = document.getElementById('pack') as HTMLButtonElement;
+  const openBtn = document.getElementById('openBtn') as HTMLButtonElement;
+  const reseal = document.getElementById('reseal') as HTMLButtonElement;
+  const strip = document.getElementById('strip') as HTMLElement;
+  const stage = document.getElementById('stage') as HTMLElement;
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('.card'));
+  const KEY = 'firshman-cards-opened';
+
+  const setBackInert = (card: HTMLElement, flipped: boolean) => {
+    const front = card.querySelector('.front') as HTMLElement;
+    const back = card.querySelector('.back') as HTMLElement;
+    front.inert = flipped;
+    back.inert = !flipped;
+  };
+  cards.forEach((c) => setBackInert(c, false));
+
+  let opened = false;
+  try { opened = sessionStorage.getItem(KEY) === '1'; } catch {}
+  if (opened) root.classList.add('opened');
+
+  // Pack foil follows the pointer too.
+  pack.addEventListener('pointermove', (e) => {
+    const r = pack.getBoundingClientRect();
+    pack.style.setProperty('--px', ((e.clientX - r.left) / r.width) * 100 + '%');
+    pack.style.setProperty('--py', ((e.clientY - r.top) / r.height) * 100 + '%');
+  });
+
+  async function openPack() {
+    if (opened) return;
+    opened = true;
+    try { sessionStorage.setItem(KEY, '1'); } catch {}
+    const pr = pack.getBoundingClientRect();
+    const px = pr.left + pr.width / 2, py = pr.top + pr.height / 2;
+
+    if (!reduce) {
+      pack.style.animation = 'none';
+      await strip.animate(
+        [
+          { transform: 'translate(0,0) rotate(0)' },
+          { transform: 'translate(10px,-6px) rotate(-4deg)', offset: .35 },
+          { transform: 'translate(160px,-140px) rotate(38deg)', opacity: 0 },
+        ],
+        { duration: 520, easing: 'cubic-bezier(.5,0,.6,1)', fill: 'forwards' },
+      ).finished;
+      await pack.animate(
+        [{ transform: 'translateY(0) scale(1)' }, { transform: 'translateY(40px) scale(.94)', opacity: 0 }],
+        { duration: 260, easing: 'ease-in', fill: 'forwards' },
+      ).finished;
+    }
+
+    root.classList.add('opened');
+    const scrollTarget = document.getElementById('binder')!;
+    if (reduce) return;
+
+    // FLIP: every card starts stacked where the pack was, then fans out to its place.
+    const n = cards.length;
+    cards.forEach((card, i) => {
+      const r = card.getBoundingClientRect();
+      const dx = px - (r.left + r.width / 2);
+      const dy = py - (r.top + r.height / 2);
+      const fan = (i - (n - 1) / 2) * 7;
+      const isRare = card.classList.contains('rare');
+      const delay = isRare ? n * 70 + 260 : i * 70;
+      card.animate(
+        [
+          { transform: `translate(${dx}px, ${dy}px) rotate(0deg) scale(.9)`, opacity: 0 },
+          { transform: `translate(${dx + fan * 6}px, ${dy - 60}px) rotate(${fan}deg) scale(.95)`, opacity: 1, offset: .35 },
+          { transform: 'translate(0,0) rotate(0) scale(1)', opacity: 1 },
+        ],
+        { duration: 900, delay, easing: 'cubic-bezier(.2,.9,.25,1.05)', fill: 'backwards' },
+      );
+      if (isRare) {
+        card.animate(
+          [{ filter: 'brightness(1) drop-shadow(0 0 0 #ffd76a)' }, { filter: 'brightness(1.4) drop-shadow(0 0 40px #ffd76a)' }, { filter: 'brightness(1) drop-shadow(0 0 0 #ffd76a)' }],
+          { duration: 1200, delay: delay + 700, easing: 'ease-out' },
+        );
+      }
+    });
+    void scrollTarget;
+  }
+  pack.addEventListener('click', openPack);
+  openBtn.addEventListener('click', openPack);
+
+  reseal.addEventListener('click', () => {
+    opened = false;
+    try { sessionStorage.removeItem(KEY); } catch {}
+    root.classList.remove('opened');
+    cards.forEach((c) => { c.classList.remove('flipped'); setBackInert(c, false); });
+    strip.getAnimations().forEach((a) => a.cancel());
+    pack.getAnimations().forEach((a) => a.cancel());
+    pack.style.animation = '';
+    stage.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+  });
+
+  // Tilt + foil + flip
+  cards.forEach((card) => {
+    const front = card.querySelector('.front') as HTMLElement;
+    const flipBack = card.querySelector('.flip-back') as HTMLElement;
+    const flip = (on: boolean) => {
+      card.classList.toggle('flipped', on);
+      setBackInert(card, on);
+      (on ? card.querySelector('.back-link') : front)?.focus({ preventScroll: true } as FocusOptions);
+    };
+    front.addEventListener('click', () => flip(true));
+    flipBack.addEventListener('click', () => flip(false));
+    card.querySelector('.back')!.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('a, button')) return;
+      flip(false);
+    });
+
+    if (!fine || reduce) return;
+    card.addEventListener('pointermove', (e) => {
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width;
+      const y = (e.clientY - r.top) / r.height;
+      card.classList.add('tilting');
+      card.style.setProperty('--ry', ((x - 0.5) * 24).toFixed(2) + 'deg');
+      card.style.setProperty('--rx', ((0.5 - y) * 20).toFixed(2) + 'deg');
+      card.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
+      card.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+      card.style.setProperty('--hover', '1');
+    });
+    card.addEventListener('pointerleave', () => {
+      card.classList.remove('tilting');
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+      card.style.setProperty('--hover', '0');
+    });
+  });
+
+  // On touch screens, let the rare card catch the light by itself.
+  if (!fine && !reduce) {
+    const rare = document.querySelector<HTMLElement>('.card.rare');
+    if (rare) {
+      let t = 0;
+      const loop = () => {
+        t += 0.012;
+        rare.style.setProperty('--mx', (50 + Math.sin(t) * 45).toFixed(1) + '%');
+        rare.style.setProperty('--my', (50 + Math.cos(t * 0.8) * 45).toFixed(1) + '%');
+        rare.style.setProperty('--hover', '0.6');
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    }
+  }
+</script>
