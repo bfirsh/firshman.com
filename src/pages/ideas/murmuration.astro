@@ -1,0 +1,157 @@
+---
+import { email, socials, now } from '../../data/bio';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman is working on Replicate. Before that: Cog, Docker Compose, JSNES, arXiv Vanity, the UK High Altitude Society and more." />
+    <meta name="theme-color" content="#24264a" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <canvas id="sky" aria-hidden="true"></canvas>
+
+    <main>
+      <h1>Ben Firshman</h1>
+
+      <p>I'm working on <a href={now.url}>Replicate</a>. Some other stuff I've done:</p>
+
+      <ul>
+        <li><a href="https://github.com/replicate/cog">Cog</a>, containers for machine learning.</li>
+        <li><a href="https://clig.dev">Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+        <li><a href="https://github.com/docker/compose">Docker Compose</a> and <a href="https://github.com/docker/machine">Docker Machine</a>.</li>
+        <li><a href="https://github.com/bfirsh/jsnes">JSNES</a>, one of the first JavaScript emulators.</li>
+        <li><a href="https://github.com/whalebrew/whalebrew">Whalebrew</a>, a Docker package manager.</li>
+        <li><a href="https://www.arxiv-vanity.com/">arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+        <li>I worked on <a href="https://gov.uk">GOV.UK</a>, <a href="https://www.youtube.com/watch?v=53ZJdJNsBto">The Guardian's iPad app</a>, <a href="https://www.thisismyjam.com">This Is My Jam</a>, <a href="https://en.wikipedia.org/wiki/Lanyrd">Lanyrd</a>, and <a href="https://spacelog.org">Spacelog</a>.</li>
+        <li>I worked on many parts of <a href="https://www.djangoproject.com/">Django</a>, including class-based views, feeds, and search.</li>
+        <li>I helped start the <a href="https://ukhas.org.uk/">UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+      </ul>
+
+      <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+        I'm also on {socials.map((s, i) => <>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>)}.</p>
+    </main>
+
+    <footer class="edition">
+      <button type="button" id="edition" title="Copy a link to this edition">No. <span id="seed"></span></button>
+      <a href="/ideas">ideas</a>
+    </footer>
+
+    <style is:global>
+      :root {
+        --ink: #fbf4ec;
+        --soft: rgba(251, 244, 236, 0.72);
+        --ground: #251f33;
+        --zen: #24264a;
+        --high: #55507a;
+      }
+      * { box-sizing: border-box; }
+      html { background: #24264a; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        background: linear-gradient(to bottom, #24264a 0%, #55507a 34%, #a9809f 56%, #f2a78b 66%, #ffd6ad 71%, #251f33 71.2%, #251f33 100%);
+        background-attachment: fixed;
+        font-family: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+        font-optical-sizing: auto;
+        font-size: 16.5px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      #sky {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        opacity: 0;
+        transition: opacity 2.6s ease;
+        z-index: 0;
+      }
+      #sky.on { opacity: 1; }
+      main {
+        position: relative;
+        z-index: 1;
+        max-width: 33rem;
+        padding: clamp(2rem, 6vh, 4.25rem) 1.5rem 3rem clamp(1.5rem, 6.5vw, 6.5rem);
+        text-shadow: 0 0 22px rgba(10, 8, 20, 0.45), 0 1px 2px rgba(10, 8, 20, 0.35);
+      }
+      main::before {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        inset: -4rem -6rem -5rem -10rem;
+        background: radial-gradient(closest-side, color-mix(in srgb, var(--high) 62%, transparent) 0%, color-mix(in srgb, var(--high) 40%, transparent) 55%, transparent 100%);
+        filter: blur(8px);
+        pointer-events: none;
+      }
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 500;
+        letter-spacing: -0.005em;
+        line-height: 1.2;
+        margin: 0 0 1.1rem;
+      }
+      p { margin: 0 0 0.95rem; }
+      ul { list-style: none; margin: 0 0 1.1rem; padding: 0; }
+      li { margin: 0 0 0.2rem; color: var(--soft); }
+      a {
+        color: var(--ink);
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.18em;
+        text-decoration-color: rgba(251, 244, 236, 0.32);
+        transition: text-decoration-color 0.2s;
+      }
+      a:hover, a:focus-visible { text-decoration-color: rgba(251, 244, 236, 0.95); }
+      a:focus-visible, button:focus-visible { outline: 1px solid rgba(251, 244, 236, 0.7); outline-offset: 3px; }
+      .edition {
+        position: fixed;
+        z-index: 2;
+        right: max(1rem, env(safe-area-inset-right));
+        bottom: max(0.85rem, env(safe-area-inset-bottom));
+        display: flex;
+        gap: 0.9rem;
+        align-items: baseline;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        font-variant-numeric: tabular-nums;
+      }
+      .edition button, .edition a {
+        font: inherit;
+        color: var(--ink);
+        background: none;
+        border: 0;
+        padding: 0;
+        cursor: pointer;
+        text-decoration: none;
+        opacity: 0.4;
+        transition: opacity 0.3s;
+      }
+      .edition a { opacity: 0.16; }
+      .edition button:hover, .edition button:focus-visible, .edition a:hover, .edition a:focus-visible { opacity: 0.9; }
+      /* Portrait screens: the sky and the flock fill the top of the screen, and the text rests on the water. */
+      @media (max-width: 820px) and (orientation: portrait) {
+        body { font-size: 16px; }
+        main { padding: calc(52svh + 1rem) 1.25rem 5rem; max-width: 36rem; }
+        main::before {
+          inset: 52svh -1.25rem 0 -1.25rem;
+          filter: none;
+          background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--ground) 55%, transparent) 5rem, color-mix(in srgb, var(--ground) 72%, transparent) 100%);
+        }
+      }
+    </style>
+
+    <script>
+      import { start } from '../../components/ideas/murmuration/main';
+      start();
+    </script>
+  </body>
+</html>

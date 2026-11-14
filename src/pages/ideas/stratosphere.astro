@@ -1,0 +1,150 @@
+---
+import { email, socials, now } from '../../data/bio';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman is working on Replicate. Before that: Cog, Docker Compose, JSNES, arXiv Vanity, the UK High Altitude Society and more." />
+    <meta name="theme-color" content="#000000" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <canvas id="sky" aria-hidden="true"></canvas>
+
+    <main>
+      <h1>Ben Firshman</h1>
+
+      <p>I'm working on <a href={now.url}>Replicate</a>. Some other stuff I've done:</p>
+
+      <ul>
+        <li><a href="https://github.com/replicate/cog">Cog</a>, containers for machine learning.</li>
+        <li><a href="https://clig.dev">Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+        <li><a href="https://github.com/docker/compose">Docker Compose</a> and <a href="https://github.com/docker/machine">Docker Machine</a>.</li>
+        <li><a href="https://github.com/bfirsh/jsnes">JSNES</a>, one of the first JavaScript emulators.</li>
+        <li><a href="https://github.com/whalebrew/whalebrew">Whalebrew</a>, a Docker package manager.</li>
+        <li><a href="https://www.arxiv-vanity.com/">arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+        <li>I worked on <a href="https://gov.uk">GOV.UK</a>, <a href="https://www.youtube.com/watch?v=53ZJdJNsBto">The Guardian's iPad app</a>, <a href="https://www.thisismyjam.com">This Is My Jam</a>, <a href="https://en.wikipedia.org/wiki/Lanyrd">Lanyrd</a>, and <a href="https://spacelog.org">Spacelog</a>.</li>
+        <li>I worked on many parts of <a href="https://www.djangoproject.com/">Django</a>, including class-based views, feeds, and search.</li>
+        <li>I helped start the <a href="https://ukhas.org.uk/">UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+      </ul>
+
+      <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+        I'm also on {socials.map((s, i) => <>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>)}.</p>
+    </main>
+
+    <footer class="edition">
+      <button type="button" id="edition" title="Copy a link to this edition">No. <span id="seed"></span></button>
+      <a href="/ideas">ideas</a>
+    </footer>
+
+    <style is:global>
+      :root {
+        color-scheme: dark;
+        --ink: rgba(255, 255, 255, 0.92);
+        --soft: rgba(255, 255, 255, 0.62);
+      }
+      * { box-sizing: border-box; }
+      html { background: #000; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #000;
+        color: var(--ink);
+        font-family: 'Inter Tight', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+        font-size: 15.5px;
+        line-height: 1.6;
+        letter-spacing: 0.004em;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      #sky {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        opacity: 0;
+        transition: opacity 2.4s ease;
+        z-index: 0;
+      }
+      #sky.on { opacity: 1; }
+      main {
+        position: relative;
+        z-index: 1;
+        max-width: 31rem;
+        padding: clamp(2.2rem, 7vh, 4.75rem) 1.5rem 3rem clamp(1.5rem, 6.5vw, 6.5rem);
+        text-shadow: 0 0 18px rgba(0, 0, 0, 0.85), 0 0 3px rgba(0, 0, 0, 0.6);
+      }
+      h1 {
+        font-size: 1.06rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        margin: 0 0 1.4rem;
+      }
+      p { margin: 0 0 1rem; }
+      ul { list-style: none; margin: 0 0 1.25rem; padding: 0; }
+      li { margin: 0 0 0.28rem; color: var(--soft); }
+      li a, p a { color: var(--ink); }
+      a {
+        color: var(--ink);
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.2em;
+        text-decoration-color: rgba(255, 255, 255, 0.28);
+        transition: text-decoration-color 0.2s;
+      }
+      a:hover, a:focus-visible { text-decoration-color: rgba(255, 255, 255, 0.9); }
+      a:focus-visible, button:focus-visible { outline: 1px solid rgba(255, 255, 255, 0.6); outline-offset: 3px; }
+      .edition {
+        position: fixed;
+        z-index: 2;
+        right: max(1rem, env(safe-area-inset-right));
+        bottom: max(0.85rem, env(safe-area-inset-bottom));
+        display: flex;
+        gap: 0.9rem;
+        align-items: baseline;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        font-variant-numeric: tabular-nums;
+      }
+      .edition button, .edition a {
+        font: inherit;
+        color: #fff;
+        background: none;
+        border: 0;
+        padding: 0;
+        cursor: pointer;
+        text-decoration: none;
+        opacity: 0.34;
+        transition: opacity 0.3s;
+      }
+      .edition a { opacity: 0.14; }
+      .edition button:hover, .edition button:focus-visible, .edition a:hover, .edition a:focus-visible { opacity: 0.85; }
+      @media (max-width: 640px) {
+        body { font-size: 15px; }
+        main {
+          padding: 2rem 1.25rem 4.5rem;
+          max-width: none;
+        }
+        main::before {
+          content: '';
+          position: absolute;
+          inset: -2rem -1.25rem 2.5rem -1.25rem;
+          z-index: -1;
+          background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.5) 68%, rgba(0,0,0,0.5) 88%, rgba(0,0,0,0) 100%);
+          pointer-events: none;
+        }
+      }
+    </style>
+
+    <script>
+      import { start } from '../../components/ideas/stratosphere/main';
+      start();
+    </script>
+  </body>
+</html>
