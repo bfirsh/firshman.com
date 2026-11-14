@@ -1,0 +1,207 @@
+---
+import { email, socials, alsoWorkedOn, name } from '../../data/bio';
+import { CARGO, ENGINE } from '../../components/ideas/ship/copy';
+const pretty = (u: string) => u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman — Cargo</title>
+    <meta name="description" content="The MV Firshman, a container ship ploughing through a dusk swell. Each container on deck is something Ben Firshman made: click one and its doors swing open." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800;900&family=Big+Shoulders+Stencil:wght@800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <a class="skip" href="#manifest">Skip to the cargo manifest: a plain list of every link</a>
+    <canvas id="c" role="img" aria-label="A container ship at sea at dusk. Each container is a project; the manifest lists them all."></canvas>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="top">
+      <a class="back" href="/ideas">← all ideas</a>
+      <div class="brand">
+        <p class="mv">MV Firshman</p>
+        <p class="sub">{name} · {CARGO.length} containers · bound for <a href={ENGINE.url}>{ENGINE.name}</a></p>
+      </div>
+      <div class="ctl">
+        <button id="weatherBtn" class="btn" aria-pressed="false" title="Toggle the weather">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 10a3.5 3.5 0 0 0 1 7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path class="bolt" d="m12.5 13-2 4h3l-2 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="lbl">Calm</span>
+        </button>
+        <button id="hornBtn" class="btn" title="Sound the foghorn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h3l9 5V5L6 10Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path class="waves" d="M18 9c1 .8 1.5 1.8 1.5 3s-.5 2.2-1.5 3M20.5 6.5C22 8 22.5 10 22.5 12s-.5 4-2 5.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <span class="lbl">Foghorn</span>
+        </button>
+        <button id="soundBtn" class="btn" aria-pressed="false" title="Sea sounds (off by default)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 14c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 18c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path class="mute" d="M4 4l16 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <span class="lbl">Sound off</span>
+        </button>
+        <button id="manifestBtn" class="btn solid" aria-expanded="false" aria-controls="manifest">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6Z M15 3v4h4 M9 11h7 M9 14.5h7 M9 18h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          <span>Manifest</span>
+        </button>
+      </div>
+    </header>
+
+    <p id="caption" class="caption" aria-hidden="true">
+      <span class="k">Now sailing</span>
+      Nine containers on deck. <b>Click one</b> to open its doors. The bridge keeps the captain's log; the funnel says what drives her.
+    </p>
+    <div id="tip" class="tip" aria-hidden="true"></div>
+    <aside id="card" class="card" aria-live="polite"></aside>
+
+    <section id="manifest" class="manifest" aria-labelledby="manifest-title">
+      <div class="m-in">
+        <button class="close" aria-label="Close the manifest">×</button>
+        <p class="m-k">Cargo manifest · MV Firshman · port of registry: localhost</p>
+        <h2 id="manifest-title" tabindex="-1">{name}</h2>
+        <table>
+          <thead><tr><th scope="col">Container</th><th scope="col">Contents</th></tr></thead>
+          <tbody>
+            <tr class="engine">
+              <td class="no">Funnel</td>
+              <td><span class="now">Now</span> <a href={ENGINE.url}>{ENGINE.name}</a>, {ENGINE.blurb}. <button class="opener js-only" data-open="funnel">Show</button></td>
+            </tr>
+            {CARGO.map((c) => (
+              <tr>
+                <td class="no"><i style={`background:${c.color}`}></i>{c.code}</td>
+                <td><a href={c.url}>{c.name}</a>, {c.blurb}. <button class="opener js-only" data-open={c.slug}>Open</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <h3>Previous voyages</h3>
+        <p class="plain">I also worked on {alsoWorkedOn.map((a, i) => (<>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>))}.</p>
+        <h3>Captain's log <button class="opener js-only" data-open="bridge">Show</button></h3>
+        <p class="plain">Email me at <a href={`mailto:${email}`}>{email}</a>. I'm also on {socials.map((s, i) => (<>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>))}.</p>
+        <p class="help js-only">Drag to walk the camera around the ship, scroll or pinch to zoom. Click a container to open it; arrow keys move between containers; Esc closes the doors.</p>
+      </div>
+    </section>
+
+    <noscript><style>.manifest{position:static!important;transform:none!important;visibility:visible!important;clip-path:none!important;width:auto!important;height:auto!important}#c,.ctl .btn:not(.solid),.caption,.grain{display:none!important}body{overflow:auto!important}</style></noscript>
+
+    <style is:global>
+      :root {
+        --ink: #0d1216;
+        --paper: #ece6da;
+        --amber: #ffb35c;
+        --rust: #c4462f;
+        --display: 'Big Shoulders', Impact, sans-serif;
+        --mono: 'IBM Plex Mono', ui-monospace, monospace;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body { background: #2b333c; color: var(--paper); font-family: var(--mono); overflow: hidden; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+      a { color: inherit; }
+      #c { position: fixed; inset: 0; width: 100vw; height: 100dvh; display: block; touch-action: none; cursor: grab; outline: none; }
+      #c.grabbing { cursor: grabbing; }
+      #c.pointing { cursor: pointer; }
+      .grain { position: fixed; inset: 0; pointer-events: none; background: linear-gradient(rgba(8, 11, 15, 0.55), transparent 130px), radial-gradient(130% 100% at 50% 40%, transparent 50%, rgba(5, 8, 12, 0.55)); }
+      .skip { position: fixed; left: 12px; top: -60px; z-index: 50; background: var(--paper); color: var(--ink); padding: 8px 12px; font-weight: 600; }
+      .skip:focus { top: 12px; }
+      :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+      .top { position: fixed; inset: 0 0 auto 0; display: flex; align-items: flex-start; gap: 16px; padding: max(16px, env(safe-area-inset-top)) 18px 0; z-index: 5; pointer-events: none; }
+      .top > * { pointer-events: auto; }
+      .back { font-size: 12px; text-decoration: none; color: rgba(236, 230, 218, 0.8); border: 1px solid rgba(236, 230, 218, 0.3); padding: 6px 10px; white-space: nowrap; }
+      .back:hover { color: var(--paper); border-color: var(--paper); }
+      .brand { flex: 1; min-width: 0; }
+      .mv { margin: 0; font: 800 30px/0.9 var(--display); letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 0 2px 20px rgba(0, 0, 0, 0.4); }
+      .sub { margin: 5px 0 0; font-size: 12px; color: rgba(236, 230, 218, 0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .sub a { color: var(--amber); text-underline-offset: 3px; }
+      .ctl { display: flex; gap: 6px; }
+      .btn { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; font: 500 12px var(--mono); letter-spacing: 0.04em; color: var(--paper); background: rgba(13, 18, 22, 0.55); border: 1px solid rgba(236, 230, 218, 0.28); backdrop-filter: blur(8px); cursor: pointer; text-transform: uppercase; }
+      .btn:hover { border-color: var(--paper); }
+      .btn svg { width: 18px; height: 18px; flex: none; }
+      .btn.solid { background: var(--paper); color: var(--ink); border-color: var(--paper); font-weight: 600; }
+      .btn.solid:hover { background: #fff; }
+      #weatherBtn .bolt { opacity: 0; transition: opacity 0.3s; }
+      #weatherBtn[aria-pressed='true'] { border-color: var(--amber); color: var(--amber); }
+      #weatherBtn[aria-pressed='true'] .bolt { opacity: 1; }
+      #soundBtn[aria-pressed='true'] .mute { opacity: 0; }
+      #soundBtn[aria-pressed='true'] { border-color: var(--amber); color: var(--amber); }
+      #hornBtn .waves { opacity: 0.35; }
+      #hornBtn.blowing { color: var(--amber); border-color: var(--amber); }
+      #hornBtn.blowing .waves { opacity: 1; animation: blow 0.5s ease-in-out infinite alternate; }
+      @keyframes blow { to { transform: translateX(1.5px); } }
+
+      .caption { position: fixed; left: 18px; bottom: max(20px, env(safe-area-inset-bottom)); max-width: 380px; margin: 0; z-index: 3; font-size: 13px; line-height: 1.55; color: rgba(236, 230, 218, 0.88); text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6); opacity: 0; transform: translateY(8px); transition: opacity 1.2s, transform 1.2s; pointer-events: none; }
+      .caption.show { opacity: 1; transform: none; }
+      html.focused .caption { opacity: 0; }
+      .caption .k { display: block; font: 700 13px var(--display); letter-spacing: 0.22em; text-transform: uppercase; color: var(--amber); margin-bottom: 4px; }
+      .caption b { color: #fff; font-weight: 600; }
+
+      .tip { position: fixed; left: 0; top: 0; z-index: 6; pointer-events: none; font: 600 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; background: var(--paper); color: var(--ink); padding: 5px 9px; opacity: 0; transition: opacity 0.15s; white-space: nowrap; }
+      .tip.show { opacity: 1; }
+
+      .card { position: fixed; right: 22px; bottom: 26px; width: 370px; z-index: 6; background: rgba(13, 18, 22, 0.86); backdrop-filter: blur(14px); border: 1px solid rgba(236, 230, 218, 0.18); border-top: 4px solid var(--accent, var(--amber)); padding: 18px 20px 16px; opacity: 0; transform: translateY(16px); visibility: hidden; transition: opacity 0.35s, transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0s 0.45s; }
+      .card.show { opacity: 1; transform: none; visibility: visible; transition: opacity 0.35s 0.35s, transform 0.5s 0.35s cubic-bezier(0.2, 0.9, 0.3, 1); }
+      .card .code { display: flex; justify-content: space-between; gap: 10px; margin: 0 0 10px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(236, 230, 218, 0.6); }
+      .card h2 { margin: 0; font: 800 44px/0.92 var(--display); letter-spacing: 0.01em; text-transform: uppercase; }
+      .card .blurb { margin: 8px 0 14px; font-size: 14px; line-height: 1.5; color: rgba(236, 230, 218, 0.92); }
+      .card .blurb a { color: var(--amber); }
+      .card .go { display: inline-flex; gap: 6px; font: 600 13px var(--mono); text-decoration: none; background: var(--paper); color: var(--ink); padding: 8px 13px; }
+      .card .go:hover { background: #fff; }
+      .card dl { margin: 16px 0 0; padding-top: 12px; border-top: 1px dashed rgba(236, 230, 218, 0.25); font-size: 12.5px; line-height: 1.5; }
+      .card dt { font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(236, 230, 218, 0.55); }
+      .card dd { margin: 2px 0 0; font-style: italic; }
+      .card .socials { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 0; }
+      .card .socials a { font-size: 12px; text-decoration: none; border: 1px solid rgba(236, 230, 218, 0.35); padding: 5px 9px; }
+      .card .socials a span { color: rgba(236, 230, 218, 0.55); }
+      .card .socials a:hover { border-color: var(--paper); }
+      .card .nav { display: flex; align-items: center; gap: 6px; margin-top: 16px; font-size: 11px; color: rgba(236, 230, 218, 0.6); }
+      .card .nav button { font: 500 12px var(--mono); color: var(--paper); background: none; border: 1px solid rgba(236, 230, 218, 0.3); height: 30px; min-width: 32px; padding: 0 9px; cursor: pointer; }
+      .card .nav button:hover { border-color: var(--paper); }
+      .card .nav .close { margin-left: auto; }
+      .card kbd { font: 500 10px var(--mono); opacity: 0.6; margin-left: 4px; }
+
+      .manifest { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100vw); z-index: 20; background: #ece6da; color: var(--ink); overflow-y: auto; overscroll-behavior: contain; transform: translateX(102%); visibility: hidden; transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0s 0.45s; box-shadow: -30px 0 60px rgba(0, 0, 0, 0.35); }
+      .manifest.open { transform: none; visibility: visible; transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1); }
+      html.js .manifest:not(.open) { visibility: visible; clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; transform: none; transition: none; }
+      .m-in { padding: 28px 26px 40px; background-image: repeating-linear-gradient(transparent 0 27px, rgba(13, 18, 22, 0.06) 27px 28px); }
+      .manifest .close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border: 1px solid var(--ink); background: transparent; font: 400 22px/1 var(--mono); cursor: pointer; color: var(--ink); }
+      .m-k { margin: 0; padding-right: 48px; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--rust); }
+      .manifest h2 { margin: 6px 0 18px; font: 900 52px/0.9 var(--display); text-transform: uppercase; letter-spacing: 0.02em; outline: none; }
+      .manifest table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.45; }
+      .manifest th { text-align: left; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; border-bottom: 2px solid var(--ink); padding: 6px 8px 6px 0; }
+      .manifest td { border-bottom: 1px solid rgba(13, 18, 22, 0.2); padding: 9px 8px 9px 0; vertical-align: top; }
+      .manifest td.no { white-space: nowrap; font-size: 11.5px; color: rgba(13, 18, 22, 0.7); width: 1%; }
+      .manifest td.no i { display: inline-block; width: 9px; height: 9px; margin-right: 7px; vertical-align: 0; border: 1px solid rgba(0, 0, 0, 0.3); }
+      .manifest td a, .plain a { font-weight: 600; text-underline-offset: 3px; }
+      .manifest .now { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; background: var(--rust); color: #fff; padding: 1px 5px; }
+      .manifest h3 { margin: 26px 0 8px; font: 800 20px var(--display); letter-spacing: 0.1em; text-transform: uppercase; border-bottom: 2px solid var(--ink); padding-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+      .plain { margin: 0; font-size: 13px; line-height: 1.6; }
+      .opener { font: 600 10.5px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; border: 1px solid var(--ink); background: none; padding: 2px 7px; margin-left: 4px; cursor: pointer; color: var(--ink); }
+      .opener:hover { background: var(--ink); color: var(--paper); }
+      .help { margin-top: 26px; font-size: 12px; line-height: 1.55; color: rgba(13, 18, 22, 0.65); }
+      html:not(.js) .js-only { display: none; }
+      html.no-webgl .manifest { transform: none; visibility: visible; clip-path: none; width: min(560px, 100vw); height: auto; }
+
+      @media (max-width: 760px) {
+        .top { flex-wrap: wrap; gap: 10px 12px; padding-left: 14px; padding-right: 14px; }
+        .brand { order: 3; flex-basis: 100%; }
+        .back { order: 1; }
+        .ctl { order: 2; margin-left: auto; }
+        .btn .lbl { display: none; }
+        .btn { padding: 0 9px; }
+        .mv { font-size: 26px; }
+        .sub { font-size: 11px; }
+        .caption { right: 16px; font-size: 12px; }
+        .card { left: 0; right: 0; bottom: 0; width: auto; padding: 16px 16px max(14px, env(safe-area-inset-bottom)); }
+        .card h2 { font-size: 36px; }
+        .card .blurb { margin: 6px 0 12px; font-size: 13px; }
+        .card dl { margin-top: 12px; padding-top: 10px; }
+        .card kbd { display: none; }
+        .manifest h2 { font-size: 42px; }
+        .m-in { padding: 24px 18px 40px; }
+      }
+    </style>
+
+    <script>
+      import '../../components/ideas/ship/sea';
+    </script>
+  </body>
+</html>

@@ -1,0 +1,208 @@
+---
+import { now, email, socials, alsoWorkedOn, name } from '../../data/bio';
+import { PLACES } from '../../components/ideas/island/copy';
+
+const ordered = PLACES.filter((p) => p.id !== 'bottle');
+const bottle = PLACES.find((p) => p.id === 'bottle')!;
+const pretty = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman — The island</title>
+    <meta name="description" content="A tiny low-poly island you can walk around. Every landmark is something Ben Firshman made: a lighthouse for Replicate, a container dock, a balloon launch pad, and a message in a bottle." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Fraunces:opsz,wght@9..144,600;9..144,800;9..144,900&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <a class="skip" href="#guide">Skip to the guidebook: a plain list of every link</a>
+
+    <canvas id="c" aria-label="A 3D island. Ben walks between landmarks; each one is a project. The guidebook lists them all." role="img"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <header class="top">
+      <a class="back" href="/ideas">← all ideas</a>
+      <p class="brand"><strong>{name}</strong><span> · now at <a href={now.url}>{now.name}</a></span></p>
+      <button id="guideBtn" class="pill" aria-expanded="false" aria-controls="guide">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4.5 8 3l4 1.5L17 3v12.5L12 17l-4-1.5L3 17Z M8 3v12.5 M12 4.5V17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <span>Guide<span class="long">book</span></span>
+      </button>
+    </header>
+
+    <div id="card" class="card" aria-live="polite"></div>
+    <div id="bubble" class="bubble" aria-hidden="true">Hi, I'm Ben. Have a wander.</div>
+    <p id="hint" class="hint" aria-hidden="true"></p>
+
+    <div class="mapwrap" aria-hidden="true">
+      <canvas id="map" title="Map: click a dot to walk there"></canvas>
+    </div>
+    <div id="joy" class="joy" aria-hidden="true"><div class="knob"></div></div>
+
+    <section id="guide" class="guide" aria-labelledby="guide-title">
+      <div class="guide-in">
+        <button class="close" aria-label="Close the guidebook">×</button>
+        <p class="eyebrow">Visitor guidebook</p>
+        <h2 id="guide-title" tabindex="-1">{name}</h2>
+        <p class="lede">A small island of things I've made. Walk around, or just use the links.</p>
+
+        <h3>Now</h3>
+        <ul>
+          <li>
+            <span class="where">The lighthouse</span>
+            <a href={now.url}>{now.name}</a>, {now.blurb}.
+            <button class="walk js-only" data-walk="lighthouse">Walk there</button>
+          </li>
+        </ul>
+
+        <h3>Landmarks</h3>
+        <ul>
+          {ordered.filter((p) => p.id !== 'lighthouse').map((p) => (
+            <li>
+              <span class="where">{p.place}</span>
+              {p.items.map((it, i) => (
+                <>{i > 0 && ' and '}<a href={it.url}>{it.name}</a></>
+              ))}{p.items.length === 1 ? `, ${p.items[0].blurb}.` : '.'}
+              <button class="walk js-only" data-walk={p.id}>Walk there</button>
+            </li>
+          ))}
+        </ul>
+
+        <h3>Also on the mainland</h3>
+        <p class="also">I also worked on {alsoWorkedOn.map((a, i) => (
+          <>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>
+        ))}.</p>
+
+        <h3>{bottle.place}</h3>
+        <p class="also">Email me at <a href={`mailto:${email}`}>{email}</a>. I'm also on {socials.map((s, i) => (
+          <>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>
+        ))}.
+          <button class="walk js-only" data-walk="bottle">Walk there</button>
+        </p>
+
+        <p class="controls js-only"><b>Getting about:</b> WASD or arrow keys walk, Q and E turn the camera. Click or tap the ground to walk there, drag to look around, scroll or pinch to zoom.</p>
+      </div>
+    </section>
+
+    <noscript><style>.guide{position:static!important;transform:none!important;opacity:1!important;visibility:visible!important;clip:auto!important;width:auto!important;height:auto!important;max-width:none!important}#c,.mapwrap,.joy,.hint,.vignette,.pill{display:none!important}body{overflow:auto!important;background:#ffe9d0!important}</style></noscript>
+
+    <style is:global>
+      :root {
+        --ink: #2b2118;
+        --paper: #fff8ea;
+        --sun: #ffdcbc;
+        --sea: #2a8cc0;
+        --display: 'Fraunces', Georgia, serif;
+        --sans: 'DM Sans', system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        background: linear-gradient(#6fb8e6, #ffdcbc 60%);
+        color: var(--ink);
+        font-family: var(--sans);
+        overflow: hidden;
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      a { color: inherit; }
+      #c { position: fixed; inset: 0; width: 100vw; height: 100dvh; display: block; touch-action: none; cursor: grab; outline: none; }
+      #c.grabbing { cursor: grabbing; }
+      #c.pointing { cursor: pointer; }
+      .vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(120, 60, 30, 0.22)); }
+      .skip { position: fixed; left: 12px; top: -60px; z-index: 50; background: var(--paper); border: 2px solid var(--ink); padding: 8px 12px; border-radius: 10px; font-weight: 700; }
+      .skip:focus { top: 12px; }
+
+      .top { position: fixed; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 14px; padding: max(14px, env(safe-area-inset-top)) 16px 0; pointer-events: none; z-index: 5; }
+      .top > * { pointer-events: auto; }
+      .back { font-size: 13px; font-weight: 500; text-decoration: none; background: rgba(255, 248, 234, 0.82); padding: 7px 11px; border-radius: 999px; backdrop-filter: blur(6px); }
+      .back:hover { background: var(--paper); }
+      .brand { margin: 0; font-family: var(--display); font-size: 19px; letter-spacing: -0.01em; color: var(--ink); text-shadow: 0 0 10px rgba(255, 248, 234, 0.8); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .brand span { font-family: var(--sans); font-size: 14px; font-weight: 500; }
+      .brand a { text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+      .pill { font: 700 14px var(--sans); color: var(--ink); background: var(--paper); border: 2px solid var(--ink); border-radius: 999px; padding: 8px 14px 8px 11px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; box-shadow: 0 3px 0 var(--ink); transition: transform 0.12s, box-shadow 0.12s; }
+      .pill svg { width: 18px; height: 18px; }
+      .pill:hover { transform: translateY(-1px); box-shadow: 0 4px 0 var(--ink); }
+      .pill:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+      :focus-visible { outline: 3px solid #ff7a3d; outline-offset: 2px; }
+
+      .card {
+        position: fixed; left: 0; top: 0; z-index: 4; width: max-content; max-width: min(330px, calc(100vw - 24px));
+        background: var(--paper); border: 2px solid var(--ink); border-radius: 16px; padding: 14px 16px 14px;
+        box-shadow: 0 5px 0 var(--ink), 0 18px 40px rgba(80, 40, 20, 0.25);
+        opacity: 0; visibility: hidden; transition: opacity 0.25s, visibility 0s 0.25s; will-change: transform;
+      }
+      .card.show { opacity: 1; visibility: visible; transition: opacity 0.25s; animation: pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1); }
+      @keyframes pop { from { scale: 0.85; } to { scale: 1; } }
+      .card::after { content: ''; position: absolute; left: var(--stem, 50%); bottom: -11px; width: 18px; height: 18px; background: var(--paper); border: 2px solid var(--ink); border-top: 0; border-left: 0; transform: translateX(-50%) rotate(45deg); border-radius: 0 0 4px 0; }
+      .card.nostem::after { display: none; }
+      .kicker { margin: 0 0 4px; font: 700 11px var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent, var(--ink)); }
+      .kicker b { background: var(--accent); color: var(--paper); padding: 1px 6px; border-radius: 4px; letter-spacing: 0.08em; }
+      .card h2 { margin: 0; font: 800 25px/1.08 var(--display); letter-spacing: -0.015em; }
+      .card .item + .item { margin-top: 10px; padding-top: 10px; border-top: 1.5px dashed rgba(43, 33, 24, 0.25); }
+      .card .blurb { margin: 4px 0 9px; font-size: 15px; line-height: 1.35; }
+      .card .go { display: inline-flex; gap: 4px; align-items: center; font-weight: 700; font-size: 14px; text-decoration: none; background: var(--accent, var(--ink)); color: #fff; padding: 6px 12px; border-radius: 999px; }
+      .card .go:hover { filter: brightness(1.1); }
+      .card .go.big { font-size: 16px; padding: 8px 14px; }
+      .card .plaque { margin: 10px 0 0; font: italic 600 14px/1.35 var(--display); color: rgba(43, 33, 24, 0.72); }
+      .card .socials { margin: 10px 0 0; display: flex; gap: 6px; flex-wrap: wrap; }
+      .card .socials a { font-size: 13px; font-weight: 700; text-decoration: none; border: 1.5px solid var(--ink); border-radius: 999px; padding: 4px 10px; }
+      .card .socials a span { font-weight: 400; opacity: 0.7; }
+      .card .socials a:hover { background: var(--ink); color: var(--paper); }
+
+      .bubble { position: fixed; left: 0; top: 0; z-index: 3; background: var(--paper); border: 2px solid var(--ink); border-radius: 14px; padding: 7px 12px; font: 600 15px var(--display); white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+      .bubble.show { opacity: 1; }
+      .bubble::after { content: ''; position: absolute; left: 50%; bottom: -8px; width: 12px; height: 12px; background: var(--paper); border: 2px solid var(--ink); border-top: 0; border-left: 0; transform: translateX(-50%) rotate(45deg); }
+
+      .hint { position: fixed; left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); transform: translate(-50%, 10px); margin: 0; z-index: 3; background: rgba(43, 33, 24, 0.82); color: var(--paper); font-size: 13.5px; padding: 9px 15px; border-radius: 999px; opacity: 0; transition: opacity 0.5s, transform 0.5s; pointer-events: none; white-space: nowrap; }
+      .hint.show { opacity: 1; transform: translate(-50%, 0); }
+      .hint.gone { opacity: 0 !important; }
+      .hint kbd { font: 700 11px var(--sans); background: var(--paper); color: var(--ink); border-radius: 4px; padding: 1px 5px; margin-right: 2px; }
+
+      .mapwrap { position: fixed; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 3; border-radius: 50%; border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--ink); background: #7fd3d6; line-height: 0; }
+      #map { cursor: pointer; border-radius: 50%; }
+
+      .joy { display: none; position: fixed; left: 22px; bottom: max(22px, env(safe-area-inset-bottom)); width: 116px; height: 116px; border-radius: 50%; background: rgba(255, 248, 234, 0.35); border: 2px solid rgba(255, 248, 234, 0.8); backdrop-filter: blur(4px); z-index: 3; touch-action: none; }
+      .joy .knob { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); box-shadow: 0 3px 0 var(--ink); transition: transform 0.15s; }
+      .joy.on .knob { transition: none; }
+      @media (pointer: coarse) { .joy { display: block; } .hint { bottom: 156px; white-space: normal; width: max-content; max-width: calc(100vw - 32px); text-align: center; } }
+
+      .guide { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100vw); z-index: 20; background: var(--paper); border-left: 2px solid var(--ink); overflow-y: auto; overscroll-behavior: contain; transform: translateX(105%); visibility: hidden; transition: transform 0.4s cubic-bezier(0.3, 1.2, 0.4, 1), visibility 0s 0.4s; }
+      .guide.open { transform: none; visibility: visible; transition: transform 0.4s cubic-bezier(0.3, 1.2, 0.4, 1); }
+      /* closed but still in the accessibility tree for screen readers */
+      html.js .guide:not(.open) { visibility: visible; clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; transform: none; transition: none; }
+      .guide-in { padding: 26px 24px 40px; }
+      .guide .close { position: absolute; top: 14px; right: 14px; width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--ink); background: var(--paper); font: 400 24px/1 var(--sans); cursor: pointer; }
+      .eyebrow { margin: 0; font: 700 11px var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: #e0503b; }
+      .guide h2 { margin: 4px 0 6px; font: 900 38px/1 var(--display); letter-spacing: -0.02em; outline: none; }
+      .lede { margin: 0 0 18px; font-size: 15px; line-height: 1.45; }
+      .guide h3 { margin: 22px 0 8px; font: 800 13px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
+      .guide ul { list-style: none; margin: 0; padding: 0; }
+      .guide li { padding: 9px 0; border-bottom: 1.5px dashed rgba(43, 33, 24, 0.2); font-size: 15px; line-height: 1.4; }
+      .guide li a, .also a { font-weight: 700; text-underline-offset: 3px; }
+      .where { display: block; font: italic 600 13px var(--display); color: rgba(43, 33, 24, 0.6); }
+      .also { margin: 0; font-size: 15px; line-height: 1.5; }
+      .walk { margin-left: 6px; font: 700 11px var(--sans); letter-spacing: 0.04em; background: none; border: 1.5px solid var(--ink); border-radius: 999px; padding: 2px 8px; cursor: pointer; vertical-align: 1px; }
+      .walk:hover { background: var(--ink); color: var(--paper); }
+      .controls { margin-top: 24px; font-size: 13px; line-height: 1.5; color: rgba(43, 33, 24, 0.7); }
+      html:not(.js) .js-only { display: none; }
+      html.no-webgl .guide { transform: none; visibility: visible; clip-path: none; width: min(420px, 100vw); height: auto; }
+
+      @media (max-width: 600px) {
+        .brand span, .pill .long { display: none; }
+        .brand { font-size: 17px; }
+        .card h2 { font-size: 21px; }
+        .card { padding: 12px 14px; }
+        .card .blurb { font-size: 14px; }
+        .card .plaque { font-size: 13px; }
+      }
+    </style>
+
+    <script>
+      import '../../components/ideas/island/world';
+    </script>
+  </body>
+</html>
