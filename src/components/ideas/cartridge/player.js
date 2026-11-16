@@ -1,6 +1,5 @@
 // Cartridge: JSNES driven by the sound card's clock, drawn through a CRT.
 import { NES, Controller } from 'jsnes';
-import romUrl from './demo.nes?url';
 import { KEYS, PAD_BUTTONS, PAD_DEADZONE, TOUCH, PLAYER_KEYS } from './keymap.js';
 import { CRT, fitTube, ASPECT, NES_W, NES_H, LOOK } from './crt.js';
 import { NesAudio } from './audio.js';
@@ -118,7 +117,7 @@ export function start(root) {
   // --- cartridge
   let romBytes = null;
   const romReady = (async () => {
-    let url = romUrl;
+    let url = root.dataset.rom;
     if (import.meta.env.DEV && params.get('rom') === 'test') url = (await import('./testpattern/testpattern.nes?url')).default;
     if (url.startsWith('data:')) {
       // an inlined ROM (standalone copies of the page): decode it here, since fetch() of

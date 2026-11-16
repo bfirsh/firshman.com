@@ -51,4 +51,9 @@ export const ideas = [
   { n: 49, slug: "cycle", title: "Cycle", pitch: "A pixel-art landscape animated entirely by palette cycling, like 256-colour graphics of old. Turn the hours and find the text hidden in the scene." },
   { n: 50, slug: "phosphor", title: "Phosphor", pitch: "A glowing oscilloscope. Turn the knobs to tune Lissajous figures until the beam draws each part of the site. You can hear the picture too." },
   { n: 51, slug: "cartridge", title: "Cartridge", pitch: "A real NES demo: an original ROM with its own chiptune, running full screen in JSNES through a CRT." },
+  { n: 52, slug: "groove", title: "Groove", pitch: "An NES cartridge: bold abstract shapes that dance to a funk, soul and jazz tune with a deep, walking bassline." },
+  { n: 53, slug: "caustic", title: "Caustic", pitch: "An NES cartridge: slow liquid light, ripples and interference in impossible gradients, over an ambient score." },
+  { n: 54, slug: "acid", title: "Acid", pitch: "An NES cartridge: real-time 3D geometry, strobing vectors and tunnels, driven by squelching acid techno." },
+  { n: 55, slug: "kaleido", title: "Kaleido", pitch: "An NES cartridge: kaleidoscopes, mandalas and an endless fractal zoom, set to a baroque chiptune fugue." },
+  { n: 56, slug: "rush", title: "Rush", pitch: "An NES cartridge: raw speed, with twisters, raster bars and tunnels racing to chopped drum'n'bass breaks." },
 ];
