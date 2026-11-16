@@ -1,0 +1,20 @@
+// Profile: CPU cycles per routine (nearest label) over a frame range. node tools/prof.mjs rom --from F --frames N
+import { NES } from 'jsnes';
+import fs from 'node:fs';
+const args = process.argv.slice(2);
+const opt = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
+const nes = new NES({ onFrame() {}, emulateSound: false });
+nes.loadROM(fs.readFileSync(args[0]).toString('binary'));
+const dbg = fs.readFileSync(args[0].replace(/\.nes$/, '.dbg'), 'utf8');
+const syms = [];
+for (const m of dbg.matchAll(/sym\tid=\d+,name="([^"@]+)",addrsize=\w+,(?:size=\d+,)?scope=\d+,def=[\d+]+(?:,ref=[\d+]+)?,val=(0x[0-9A-Fa-f]+),seg=(\d+),type=lab/g)) syms.push([parseInt(m[2]), m[1]]);
+syms.sort((a, b) => a[0] - b[0]);
+const name = (pc) => { let best = '?'; for (const [a, n] of syms) { if (a <= pc) best = n; else break; } return best; };
+const from = +opt('from', 200), n = +opt('frames', 60);
+for (let f = 0; f < from; f++) nes.frame();
+const h = {}; let total = 0;
+const cpu = nes.cpu;
+const em = cpu.emulate.bind(cpu);
+cpu.emulate = () => { const pc = (cpu.REG_PC + 1) & 0xffff; const c = em(); const k = pc < 0x8000 ? 'RAM' : name(pc); h[k] = (h[k] || 0) + c; total += c; return c; };
+for (let f = 0; f < n; f++) nes.frame();
+for (const [k, v] of Object.entries(h).sort((a, b) => b[1] - a[1]).slice(0, +opt('top', 25))) console.log(k.padEnd(20), (v / n).toFixed(0).padStart(7), (100 * v / total).toFixed(1) + '%');

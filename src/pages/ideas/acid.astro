@@ -1,0 +1,6 @@
+---
+// Acid: an NES demo cartridge (MMC5, CHR-RAM), running in JSNES through a CRT. Source: nes/carts/acid/.
+import CartridgePage from '../../components/ideas/cartridge/CartridgePage.astro';
+import rom from '../../components/ideas/cartridge/roms/acid.nes?url';
+---
+<CartridgePage title="Acid" description="An NES demo: real-time 3D in CHR-RAM, an acid techno cartridge." rom={rom} />

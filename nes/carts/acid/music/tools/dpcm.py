@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""Synthesise the DPCM drum samples (no third-party audio) and encode them for the NES DMC.
+
+usage: dpcm.py [-o dpcm.inc] [--preview DIR]
+
+Every sample starts and ends at the DMC rest level REST (music_init writes it to $4011), so the
+DMC output always comes back to the same level and the triangle/noise loudness stays constant.
+Samples are padded to 64-byte boundaries; the DPCM segment must start on one.
+"""
+import math
+import random
+import sys
+import wave
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+RATES = [4181.71, 4709.93, 5264.04, 5593.04, 6257.95, 7046.35, 7919.35, 8363.42,
+         9419.86, 11186.1, 12604.0, 13982.6, 16884.6, 21306.8, 24858.0, 33143.9]
+REST = 36
+
+
+def kick(sr):
+    """Punch layer for the triangle kick: a hard click and a short 60 Hz body."""
+    n = int(0.11 * sr)
+    out, ph = [], 0.0
+    for i in range(n):
+        t = i / sr
+        f = 55 + 160 * math.exp(-t / 0.018)
+        ph += 2 * math.pi * f / sr
+        a = min(1, t / 0.0015) * math.exp(-t / 0.045)
+        click = 0.7 * math.exp(-t / 0.0025)
+        out.append(a * math.sin(ph) + click)
+    return out
+
+
+def clap(sr, seed=5):
+    """Three quick noise bursts then a band-passed decaying tail."""
+    rnd = random.Random(seed)
+    n = int(0.16 * sr)
+    out, lp, hp = [], 0.0, 0.0
+    for i in range(n):
+        t = i / sr
+        w = rnd.uniform(-1, 1)
+        lp += 0.5 * (w - lp)
+        hp += 0.12 * (lp - hp)
+        x = lp - hp
+        env = 0.0
+        for k, at in enumerate((0.0, 0.009, 0.018)):
+            if t >= at:
+                env = max(env, (0.8 + 0.1 * k) * math.exp(-(t - at) / 0.004))
+        if t >= 0.026:
+            env = max(env, math.exp(-(t - 0.026) / 0.045))
+        out.append(1.3 * x * env)
+    return out
+
+
+def boom(sr, seed=11):
+    """Drop impact: a deep sub drop and a washy noise tail."""
+    rnd = random.Random(seed)
+    n = int(0.55 * sr)
+    out, ph, lp, lp2 = [], 0.0, 0.0, 0.0
+    for i in range(n):
+        t = i / sr
+        f = 38 + 110 * math.exp(-t / 0.04)
+        ph += 2 * math.pi * f / sr
+        sub = math.sin(ph) * math.exp(-t / 0.22) * min(1, t / 0.002)
+        w = rnd.uniform(-1, 1)
+        lp += 0.35 * (w - lp)
+        lp2 += 0.02 * (lp - lp2)
+        hiss = (lp - lp2) * 0.8 * math.exp(-t / 0.1)
+        out.append(0.9 * sub + hiss + 0.5 * math.exp(-t / 0.003))
+    return out
+
+
+def zap(sr):
+    """Acid percussion: a resonant blip that falls in pitch fast."""
+    n = int(0.07 * sr)
+    out, ph = [], 0.0
+    for i in range(n):
+        t = i / sr
+        f = 400 + 2400 * math.exp(-t / 0.012)
+        ph += 2 * math.pi * f / sr
+        out.append(math.sin(ph) * math.exp(-t / 0.022) * min(1, t / 0.001))
+    return out
+
+
+def rim(sr, seed=3):
+    """A short woody tick: two detuned partials and a breath of noise."""
+    rnd = random.Random(seed)
+    n = int(0.035 * sr)
+    out, p1, p2 = [], 0.0, 0.0
+    for i in range(n):
+        t = i / sr
+        p1 += 2 * math.pi * 1650 / sr
+        p2 += 2 * math.pi * 2490 / sr
+        e = math.exp(-t / 0.007)
+        out.append(e * (0.6 * math.sin(p1) + 0.4 * math.sin(p2) + 0.25 * rnd.uniform(-1, 1)))
+    return out
+
+
+def encode(sig, amp):
+    """Greedy delta-modulation encode of sig (floats about 0) scaled by amp DMC units.
+    Returns (bytes, decoded levels). Length is 16n+1 bytes, ending at REST."""
+    level, bits, dec = REST, [], []
+    target = [min(124, max(4, REST + amp * s)) for s in sig]   # never hit the DMC's 0/127 clamps
+    for y in target:
+        b = 1 if y > level else 0
+        if b and level <= 125:
+            level += 2
+        elif not b and level >= 2:
+            level -= 2
+        bits.append(b)
+        dec.append(level)
+    # walk back to REST, then alternate (holds level)
+    while level != REST:
+        b = 1 if level < REST else 0
+        level += 2 if b else -2
+        bits.append(b)
+        dec.append(level)
+    nbytes = (len(bits) + 7) // 8
+    nbytes = ((nbytes - 1 + 15) // 16) * 16 + 1
+    alt = 0
+    while len(bits) < nbytes * 8:
+        bits.append(alt)
+        level += 2 if alt else -2
+        dec.append(level)
+        alt ^= 1
+    # the last two bits must leave the level at REST: an even number of alternating bits does
+    out = bytearray()
+    for i in range(nbytes):
+        v = 0
+        for k in range(8):
+            v |= bits[i * 8 + k] << k   # DMC plays bit 0 first
+        out.append(v)
+    return bytes(out), dec, level
+
+
+SAMPLES = [  # name, synth, rate index, amplitude in DMC units (rates match song.txt)
+    ('kick', kick, 12, 30),
+    ('clap', clap, 14, 24),
+    ('boom', boom, 10, 38),
+    ('zap', zap, 14, 18),
+    ('rim', rim, 15, 16),
+]
+
+
+def main():
+    args = sys.argv[1:]
+    out = ROOT / 'dpcm.inc'
+    preview = None
+    if '-o' in args:
+        out = Path(args[args.index('-o') + 1])
+    if '--preview' in args:
+        preview = Path(args[args.index('--preview') + 1])
+    L = ['; Generated by nes/music/tools/dpcm.py (synthesised drums). Do not edit.',
+         f'; DMC rest level: {REST}. Each sample starts on a 64-byte boundary.', '']
+    total = 0
+    for name, fn, rate, amp in SAMPLES:
+        sr = RATES[rate]
+        data, dec, end = encode(fn(sr), amp)
+        assert end == REST, (name, end)
+        assert len(data) % 16 == 1
+        L.append(f'dpcm_{name}:')
+        for i in range(0, len(data), 16):
+            L.append('  .byte ' + ','.join(f'${b:02X}' for b in data[i:i + 16]))
+        L.append(f'dpcm_{name}_end:')
+        pad = (-len(data)) % 64
+        if pad:
+            L.append(f'  .res {pad}, $00')
+        total += len(data) + pad
+        print(f'  {name}: {len(data)} bytes at rate {rate} ({sr:.0f} Hz), {len(data) * 8 / sr * 1000:.0f} ms, '
+              f'level range {min(dec)}..{max(dec)}')
+        if preview:
+            preview.mkdir(parents=True, exist_ok=True)
+            with wave.open(str(preview / f'dpcm_{name}.wav'), 'wb') as w:
+                w.setnchannels(1); w.setsampwidth(2); w.setframerate(int(sr))
+                w.writeframes(b''.join(int((d - REST) * 250).to_bytes(2, 'little', signed=True) for d in dec))
+    L.append(f'DPCM_REST = {REST}')
+    out.write_text('\n'.join(L) + '\n')
+    print(f'{out}: {total} bytes of DPCM (limit 4096)')
+    assert total <= 4096
+
+
+if __name__ == '__main__':
+    main()
