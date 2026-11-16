@@ -1,0 +1,41 @@
+; Kaleido: hardware registers and constants.
+PPUCTRL   = $2000
+PPUMASK   = $2001
+PPUSTATUS = $2002
+OAMADDR   = $2003
+PPUSCROLL = $2005
+PPUADDR   = $2006
+PPUDATA   = $2007
+OAMDMA    = $4014
+JOY1      = $4016
+
+MMC5_PRGMODE = $5100
+MMC5_CHRMODE = $5101
+MMC5_RAMPROT1 = $5102
+MMC5_RAMPROT2 = $5103
+MMC5_EXMODE  = $5104
+MMC5_NTMAP   = $5105
+MMC5_PRG6    = $5113
+MMC5_PRG8    = $5114
+MMC5_PRGA    = $5115
+MMC5_PRGC    = $5116
+MMC5_PRGE    = $5117
+MMC5_CHR0    = $5120
+MMC5_CHRHI   = $5130
+MMC5_SPLIT   = $5200
+MMC5_IRQLINE = $5203
+MMC5_IRQSTAT = $5204
+MMC5_MULA    = $5205
+MMC5_MULB    = $5206
+EXRAM        = $5C00
+
+EX_NT   = 0
+EX_ATTR = 1
+EX_RAM  = 2
+
+; the song: 9 frames per row, 64 rows per pattern, 14 patterns
+FPR = 9
+BEAT = 36
+BAR = 144
+PAT = 576
+SONG_LEN = 8064

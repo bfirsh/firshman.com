@@ -1,0 +1,11 @@
+import { NES } from 'jsnes';
+import fs from 'node:fs';
+const nes = new NES({ onFrame() {}, emulateSound: false });
+nes.loadROM(fs.readFileSync(process.argv[2]).toString('binary'));
+const N = +process.argv[3];
+for (let f = 0; f < N; f++) nes.frame();
+const ex = nes.mmap.exram;
+for (let r = 0; r < 30; r += 3) console.log(r, Array.from(ex.slice(r * 32, r * 32 + 32)).map(v => v.toString(16).padStart(2, '0')).join(' '));
+const m = nes.cpu.mem;
+console.log('lut3', Array.from(m.slice(0x300, 0x340)).map(v => v.toString(16)).join(' '));
+console.log('lut4', Array.from(m.slice(0x400, 0x440)).map(v => v.toString(16)).join(' '));
