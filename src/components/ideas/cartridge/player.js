@@ -120,6 +120,14 @@ export function start(root) {
   const romReady = (async () => {
     let url = romUrl;
     if (import.meta.env.DEV && params.get('rom') === 'test') url = (await import('./testpattern/testpattern.nes?url')).default;
+    if (url.startsWith('data:')) {
+      // an inlined ROM (standalone copies of the page): decode it here, since fetch() of
+      // data: URLs can be blocked by a content security policy
+      const bin = atob(url.slice(url.indexOf(',') + 1));
+      romBytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) romBytes[i] = bin.charCodeAt(i);
+      return;
+    }
     const r = await fetch(url);
     if (!r.ok) throw new Error(`ROM ${r.status}`);
     romBytes = new Uint8Array(await r.arrayBuffer());
