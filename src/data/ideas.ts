@@ -42,4 +42,12 @@ export const ideas = [
   { n: 40, slug: "strata", title: "Strata", pitch: "A reaction-diffusion pattern whose history stacks into 3D layers, like agate, coral or lichen. Each visit a new species." },
   { n: 41, slug: "mycelium", title: "Mycelium", pitch: "A slime-mould simulation: millions of agents leaving trails that self-organise into glowing networks around the text." },
   { n: 42, slug: "chladni", title: "Chladni", pitch: "Sand on a vibrating plate, migrating into resonant figures as the tone slowly shifts. Each visit plays a different piece." },
+  { n: 43, slug: "unfold", title: "Unfold", pitch: "A dense voxel cube you can twist like a puzzle. Each face unfolds like origami into a tiny diorama that holds part of the site." },
+  { n: 44, slug: "excavate", title: "Excavate", pitch: "A block of coloured strata. Brush and blow the sand away to uncover the projects, carved like fossils. Almost a game." },
+  { n: 45, slug: "lantern", title: "Lantern", pitch: "A voxel meadow at night. Your cursor is a lantern; gather fireflies and they light up constellations that spell out the site." },
+  { n: 46, slug: "terraform", title: "Terraform", pitch: "Raise land out of a voxel sea. Rain falls, rivers carve, forests grow, and tiny settlements named after projects light up." },
+  { n: 47, slug: "marble", title: "Marble", pitch: "Tilt a voxel labyrinth to roll a glass marble from room to room. Each room holds a piece of the site. A small game." },
+  { n: 48, slug: "copper", title: "Copper", pitch: "A demoscene demo in the 16-bit tradition: copper bars, plasma, a sine scroller carrying the bio, greetings, and a chiptune you can turn on." },
+  { n: 49, slug: "cycle", title: "Cycle", pitch: "A pixel-art landscape animated entirely by palette cycling, like 256-colour graphics of old. Turn the hours and find the text hidden in the scene." },
+  { n: 50, slug: "phosphor", title: "Phosphor", pitch: "A glowing oscilloscope. Turn the knobs to tune Lissajous figures until the beam draws each part of the site. You can hear the picture too." },
 ];
