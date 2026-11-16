@@ -50,4 +50,5 @@ export const ideas = [
   { n: 48, slug: "copper", title: "Copper", pitch: "A demoscene demo in the 16-bit tradition: copper bars, plasma, a sine scroller carrying the bio, greetings, and a chiptune you can turn on." },
   { n: 49, slug: "cycle", title: "Cycle", pitch: "A pixel-art landscape animated entirely by palette cycling, like 256-colour graphics of old. Turn the hours and find the text hidden in the scene." },
   { n: 50, slug: "phosphor", title: "Phosphor", pitch: "A glowing oscilloscope. Turn the knobs to tune Lissajous figures until the beam draws each part of the site. You can hear the picture too." },
+  { n: 51, slug: "cartridge", title: "Cartridge", pitch: "A real NES demo: an original ROM with its own chiptune, running full screen in JSNES through a CRT." },
 ];

@@ -13,6 +13,7 @@
   "dependencies": {
     "@astrojs/cloudflare": "12",
     "astro": "^5.2.5",
+    "jsnes": "^3.0.0",
     "three": "^0.187.0"
   },
   "devDependencies": {
