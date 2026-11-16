@@ -1,0 +1,731 @@
+---
+import { name, email, now, projects, alsoWorkedOn, socials } from '../../data/bio';
+import { STATIONS } from '../../components/ideas/phosphor/stations';
+import { PHOSPHORS } from '../../components/ideas/phosphor/phosphors';
+
+const p = Object.fromEntries(projects.map((x) => [x.slug, x]));
+const [gov, guardian, jam, lanyrd, spacelog] = alsoWorkedOn;
+const x = socials.find((s) => s.name === 'X')!;
+const gh = socials.find((s) => s.name === 'GitHub')!;
+const li = socials.find((s) => s.name === 'LinkedIn')!;
+const phos = PHOSPHORS.map((f) => [f.id, f.ui]);
+
+// Printed scales around each knob, computed here so they are crisp SVG.
+type Scale = { ticks: { a: number; r0: number; r1: number; w: number }[]; labels: { a: number; t: string }[] };
+const arcScale = (from: number, to: number, majors: number, minorPer: number, label = true): Scale => {
+  const ticks: Scale['ticks'] = [], labels: Scale['labels'] = [];
+  const n = (majors - 1) * minorPer;
+  for (let i = 0; i <= n; i++) {
+    const a = -135 + (270 * i) / n;
+    const maj = i % minorPer === 0;
+    ticks.push({ a, r0: maj ? 35 : 36.5, r1: maj ? 41 : 39, w: maj ? 1.1 : 0.7 });
+    if (maj && label) labels.push({ a, t: String(from + ((to - from) * i) / n) });
+  }
+  return { ticks, labels };
+};
+const phaseScale: Scale = {
+  ticks: Array.from({ length: 24 }, (_, i) => ({ a: i * 15, r0: i % 6 === 0 ? 35 : 36.5, r1: i % 6 === 0 ? 41 : 39, w: i % 6 === 0 ? 1.1 : 0.7 })),
+  labels: [0, 90, 180, 270].map((a) => ({ a, t: String(a) })),
+};
+const freq = arcScale(1, 8, 8, 2);
+const mod = arcScale(0, 8, 9, 2);
+const trim = arcScale(0, 10, 11, 1, false);
+const pol = (a: number, r: number) => [Math.sin((a * Math.PI) / 180) * r, -Math.cos((a * Math.PI) / 180) * r];
+
+const bigKnobs = [
+  { id: 'k-x', label: 'X', aria: 'X frequency', scale: freq, min: 1, max: 8 },
+  { id: 'k-y', label: 'Y', aria: 'Y frequency', scale: freq, min: 1, max: 8 },
+  { id: 'k-p', label: 'Phase', aria: 'Phase', scale: phaseScale, min: 0, max: 360 },
+  { id: 'k-m', label: 'Mod', aria: 'Modulation', scale: mod, min: 0, max: 8 },
+];
+const trims = [
+  { id: 'k-f', label: 'Focus', aria: 'Focus', scale: trim, min: 0, max: 100 },
+  { id: 'k-q', label: 'Persist', aria: 'Persistence', scale: trim, min: 0, max: 100 },
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman is working on Replicate. Previously Docker Compose, Cog, JSNES, arXiv Vanity, Django and the UK High Altitude Society." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ phos }}>
+      (function () {
+        var q = new URLSearchParams(location.search);
+        var seed = parseInt(q.get('seed') || '', 10);
+        if (!(seed > 0)) seed = 1 + Math.floor(Math.random() * 99999);
+        var a = seed | 0; a = (a + 0x6d2b79f5) | 0;
+        var t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        var r = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        var i = r < 0.44 ? 0 : r < 0.74 ? 1 : 2;
+        var d = document.documentElement;
+        d.dataset.seed = String(seed);
+        d.dataset.ph = String(i);
+        d.style.setProperty('--ui', phos[i][1]);
+        d.classList.add('js');
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="room" id="room">
+      <section class="scope" aria-label="An oscilloscope. Tune the X and Y knobs to find stations.">
+        <div class="bezel">
+          <div class="screen" id="screen">
+            <canvas id="crt" aria-hidden="true"></canvas>
+            <p class="hint" id="hint" aria-hidden="true">drag the screen · turn the knobs</p>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="plate">
+            <span class="brand">Phosphor</span>
+            <span class="model" id="model">XY</span>
+            <span class="eye" id="eye" aria-hidden="true" title="Tuning"></span>
+          </div>
+          <div class="bigknobs">
+            {bigKnobs.map((k) => (
+              <div class="kc">
+                <div class="knob big" id={k.id} role="slider" tabindex="0" aria-label={k.aria} aria-valuemin={k.min} aria-valuemax={k.max}>
+                  <svg class="scale" viewBox="-52 -52 104 104" aria-hidden="true">
+                    {k.scale.ticks.map((t) => { const [x0, y0] = pol(t.a, t.r0); const [x1, y1] = pol(t.a, t.r1); return <line x1={x0.toFixed(2)} y1={y0.toFixed(2)} x2={x1.toFixed(2)} y2={y1.toFixed(2)} stroke-width={t.w} />; })}
+                    {k.scale.labels.map((l) => { const [lx, ly] = pol(l.a, 47.5); return <text x={lx.toFixed(2)} y={(ly + 2.6).toFixed(2)}>{l.t}</text>; })}
+                  </svg>
+                  <span class="skirt"><span class="rot"></span></span>
+                  <span class="cap"></span>
+                </div>
+                <span class="lab">{k.label}</span>
+                <output class="val" id={`${k.id}-v`}></output>
+              </div>
+            ))}
+          </div>
+          <div class="trims">
+            {trims.map((k) => (
+              <div class="kc small">
+                <div class="knob" id={k.id} role="slider" tabindex="0" aria-label={k.aria} aria-valuemin={0} aria-valuemax={1}>
+                  <svg class="scale" viewBox="-52 -52 104 104" aria-hidden="true">
+                    {k.scale.ticks.map((t) => { const [x0, y0] = pol(t.a, t.r0 + 1); const [x1, y1] = pol(t.a, t.r1 + 3); return <line x1={x0.toFixed(2)} y1={y0.toFixed(2)} x2={x1.toFixed(2)} y2={y1.toFixed(2)} stroke-width={t.w * 1.6} />; })}
+                  </svg>
+                  <span class="skirt"><span class="rot"></span></span>
+                  <span class="cap"></span>
+                </div>
+                <span class="lab">{k.label}</span>
+                <output class="val" id={`${k.id}-v`} hidden></output>
+              </div>
+            ))}
+            <button type="button" class="switch" id="sound" aria-pressed="false"><span class="led" aria-hidden="true"></span>sound</button>
+          </div>
+        </div>
+
+        <div class="dial">
+          <span class="dial-l">Stations</span>
+          <div class="marks" role="group" aria-label="Stations found so far">
+            {STATIONS.map((s, i) => (
+              <button type="button" data-s={s.id} disabled aria-label={`Station ${i + 1}, not found yet`}><i></i></button>
+            ))}
+          </div>
+          <span class="count" id="count">0/{STATIONS.length}</span>
+        </div>
+      </section>
+
+      <div class="captions" aria-live="polite">
+        <p class="cap" data-s="name" inert aria-hidden="true"><span class="cap-k"></span>Hello. I'm <strong>{name}</strong>.</p>
+        <p class="cap" data-s="replicate" inert aria-hidden="true"><span class="cap-k"></span>I'm working on <a href={now.url}>{now.name}</a>: {now.blurb}.</p>
+        <p class="cap" data-s="cog" inert aria-hidden="true"><span class="cap-k"></span><a href={p.cog.url}>{p.cog.name}</a>, {p.cog.blurb}.</p>
+        <p class="cap" data-s="clig" inert aria-hidden="true"><span class="cap-k"></span><a href={p.clig.url}>{p.clig.name}</a>, {p.clig.blurb}.</p>
+        <p class="cap" data-s="docker" inert aria-hidden="true"><span class="cap-k"></span><a href={p.compose.url}>{p.compose.name}</a> and <a href={p.machine.url}>{p.machine.name}</a>: {p.compose.blurb}, and {p.machine.blurb}.</p>
+        <p class="cap" data-s="jsnes" inert aria-hidden="true"><span class="cap-k"></span><a href={p.jsnes.url}>{p.jsnes.name}</a>, {p.jsnes.blurb}.</p>
+        <p class="cap" data-s="whalebrew" inert aria-hidden="true"><span class="cap-k"></span><a href={p.whalebrew.url}>{p.whalebrew.name}</a>, {p.whalebrew.blurb}.</p>
+        <p class="cap" data-s="arxiv" inert aria-hidden="true"><span class="cap-k"></span><a href={p['arxiv-vanity'].url}>{p['arxiv-vanity'].name}</a>, which {p['arxiv-vanity'].blurb}.</p>
+        <p class="cap" data-s="django" inert aria-hidden="true"><span class="cap-k"></span>I worked on many parts of <a href={p.django.url}>{p.django.name}</a>, including class-based views, feeds, and search.</p>
+        <p class="cap" data-s="ukhas" inert aria-hidden="true"><span class="cap-k"></span>I helped start the <a href={p.ukhas.url}>{p.ukhas.name}</a>, a group for amateur near-space exploration.</p>
+        <p class="cap" data-s="greets" inert aria-hidden="true"><span class="cap-k"></span>Greets to <a href={gov.url}>{gov.name}</a>, <a href={guardian.url}>{guardian.name}</a>, <a href={jam.url}>{jam.name}</a>, <a href={lanyrd.url}>{lanyrd.name}</a> and <a href={spacelog.url}>{spacelog.name}</a>, which I also worked on.</p>
+        <p class="cap" data-s="contact" inert aria-hidden="true"><span class="cap-k"></span>Email me at <a href={`mailto:${email}`}>{email}</a>. I'm also on <a href={x.url}>{x.name}</a>, <a href={gh.url}>{gh.name}</a> and <a href={li.url}>{li.name}</a>.</p>
+        <p class="done">All twelve stations logged. Thanks for tuning in.</p>
+      </div>
+    </div>
+
+    <footer class="corner">
+      <a href="#about" id="read-link">read</a>
+      <a href="/ideas">ideas</a>
+      <span id="edition"></span>
+    </footer>
+
+    <div id="read-panel" class="read">
+      <article class="sheet" id="about" tabindex="-1" aria-label="About Ben Firshman">
+        <button type="button" class="close" id="read-close" aria-label="Close">close</button>
+        <h1>{name}</h1>
+
+        <p>I'm working on <a href={now.url}>{now.name}</a>. Some other stuff I've done:</p>
+
+        <ul>
+          <li><a href={p.cog.url}>{p.cog.name}</a>, {p.cog.blurb}.</li>
+          <li><a href={p.clig.url}>{p.clig.name}</a>, {p.clig.blurb}.</li>
+          <li><a href={p.compose.url}>{p.compose.name}</a> and <a href={p.machine.url}>{p.machine.name}</a>.</li>
+          <li><a href={p.jsnes.url}>{p.jsnes.name}</a>, {p.jsnes.blurb}.</li>
+          <li><a href={p.whalebrew.url}>{p.whalebrew.name}</a>, {p.whalebrew.blurb}.</li>
+          <li><a href={p['arxiv-vanity'].url}>{p['arxiv-vanity'].name}</a>, which {p['arxiv-vanity'].blurb}.</li>
+          <li>I worked on <a href={gov.url}>{gov.name}</a>, <a href={guardian.url}>{guardian.name}</a>, <a href={jam.url}>{jam.name}</a>, <a href={lanyrd.url}>{lanyrd.name}</a>, and <a href={spacelog.url}>{spacelog.name}</a>.</li>
+          <li>I worked on many parts of <a href={p.django.url}>{p.django.name}</a>, including class-based views, feeds, and search.</li>
+          <li>I helped start the <a href={p.ukhas.url}>{p.ukhas.name}</a>, a group for amateur near-space exploration.</li>
+        </ul>
+
+        <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+          I'm also on <a href={x.url}>{x.name}</a>, <a href={gh.url}>{gh.name}</a>, and <a href={li.url}>{li.name}</a>.</p>
+      </article>
+    </div>
+
+    <script>
+      import { start } from '../../components/ideas/phosphor/main';
+      import { PHOSPHORS } from '../../components/ideas/phosphor/phosphors';
+
+      const root = document.documentElement;
+      const seed = root.dataset.seed || '1';
+      const ph = PHOSPHORS[+(root.dataset.ph || 0)];
+      const ed = document.getElementById('edition')!;
+      ed.textContent = `No. ${seed}`;
+      ed.title = `Edition ${seed}, ${ph.name}. Add ?seed=${seed} to the address to tune this one again.`;
+      document.getElementById('model')!.textContent = ph.id;
+
+      // --- the read panel
+      const panel = document.getElementById('read-panel')!;
+      const sheet = document.getElementById('about')!;
+      const link = document.getElementById('read-link')!;
+      let back: HTMLElement | null = null;
+      const open = () => {
+        back = document.activeElement as HTMLElement;
+        panel.classList.add('open');
+        document.getElementById('room')!.setAttribute('inert', '');
+        sheet.focus({ preventScroll: true });
+      };
+      const close = () => {
+        panel.classList.remove('open');
+        document.getElementById('room')!.removeAttribute('inert');
+        if (location.hash === '#about') history.replaceState(null, '', location.pathname + location.search);
+        back?.focus?.({ preventScroll: true });
+      };
+      link.addEventListener('click', (e) => { e.preventDefault(); panel.classList.contains('open') ? close() : open(); });
+      document.getElementById('read-close')!.addEventListener('click', close);
+      panel.addEventListener('click', (e) => { if (!sheet.contains(e.target as Node)) close(); });
+      window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel.classList.contains('open')) close(); });
+      if (location.hash === '#about') open();
+
+      let ok = false;
+      try { ok = start(); } catch (e) { console.warn('phosphor:', e); }
+      if (!ok) root.classList.add('nogl');
+      else requestAnimationFrame(() => root.classList.add('on'));
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --ui: #7dffa8;
+    --ink: #e8e3d6;
+    --dim: #8f8a7f;
+    --room-a: #191816;
+    --room-b: #0a0a09;
+    --metal: #262523;
+    --sh: min(520px, 62vh, calc((100vw - 440px) * 0.8));
+    --kn: 66px;
+    --kt: 38px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--room-b); }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100svh;
+    background:
+      radial-gradient(70% 60% at 50% 42%, var(--room-a), var(--room-b) 75%),
+      var(--room-b);
+    color: var(--ink);
+    font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ---------------------------------------------------------------- room */
+  .room { display: none; }
+  .js:not(.nogl) .room {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: 40px 16px 56px;
+    opacity: 0;
+    transition: opacity 0.9s ease;
+  }
+  .js.on .room { opacity: 1; }
+
+  /* ---------------------------------------------------------------- instrument */
+  .scope {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas: 'bezel controls' 'dial controls';
+    gap: 16px 30px;
+    padding: 22px 26px 18px 22px;
+    border-radius: 22px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 40%),
+      linear-gradient(180deg, #252422, #1b1a19 55%, #171615);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.015),
+      0 2px 3px rgba(0, 0, 0, 0.5),
+      0 30px 60px -18px rgba(0, 0, 0, 0.75),
+      0 70px 120px -40px rgba(0, 0, 0, 0.6);
+    position: relative;
+    max-width: 100%;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  @media (min-width: 1300px) and (min-height: 820px) { :root { --kn: 72px; --kt: 40px; } .controls { width: 250px; } }
+  .bezel {
+    grid-area: bezel;
+    padding: 11px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #0c0c0b, #121211);
+    box-shadow:
+      inset 0 2px 5px rgba(0, 0, 0, 0.85),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+      0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .screen {
+    position: relative;
+    width: calc(var(--sh) * 1.25);
+    height: var(--sh);
+    border-radius: 9px;
+    overflow: hidden;
+    background: #070807;
+    touch-action: none;
+    cursor: crosshair;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.9);
+  }
+  .screen.grab { cursor: grabbing; }
+  #crt { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  /* curved glass catches the room light */
+  .screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 80% at 18% -10%, rgba(255, 255, 255, 0.05), transparent 45%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 30%);
+    box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.55), inset 0 0 2px rgba(0, 0, 0, 0.9);
+  }
+  .hint {
+    position: absolute;
+    left: 0; right: 0; top: 10px;
+    margin: 0;
+    text-align: center;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: lowercase;
+    color: color-mix(in srgb, var(--ui) 55%, #888);
+    opacity: 0.55;
+    pointer-events: none;
+    transition: opacity 1.2s ease;
+  }
+  .hint.gone { opacity: 0; }
+
+  /* ---------------------------------------------------------------- controls */
+  .controls {
+    grid-area: controls;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 18px;
+    width: 236px;
+    padding: 4px 0 2px;
+  }
+  .plate { display: flex; align-items: center; gap: 10px; }
+  .brand {
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #b9b3a6;
+    font-weight: 500;
+  }
+  .model {
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+    padding: 1px 5px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+  }
+
+  /* magic eye: the dark wedge closes as you near a station */
+  .eye {
+    --sig: 0;
+    --open: calc((1 - var(--sig)) * 120deg + 6deg);
+    margin-left: auto;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    position: relative;
+    background:
+      radial-gradient(circle, #0b0b0a 0 31%, transparent 33%),
+      conic-gradient(from calc(var(--open) / -2), rgba(4, 6, 5, 0.94) 0 var(--open), color-mix(in srgb, var(--ui) 80%, #fff 20%) calc(var(--open) + 4deg), color-mix(in srgb, var(--ui) 70%, #000 30%) 100%);
+    box-shadow:
+      0 0 0 2px #0e0e0d,
+      0 0 0 3px rgba(255, 255, 255, 0.06),
+      0 0 calc(4px + var(--sig) * 14px) color-mix(in srgb, var(--ui) calc(15% + var(--sig) * 45%), transparent);
+    filter: saturate(0.85) brightness(calc(0.55 + var(--sig) * 0.6));
+  }
+  .eye::after {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.28), transparent 38%);
+  }
+
+  .bigknobs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 26px 18px;
+    justify-items: center;
+  }
+  .trims {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .kc { display: grid; justify-items: center; gap: 2px; }
+  .kc.small .lab { margin-top: 8px; font-size: 8.5px; }
+  .lab {
+    margin-top: 12px;
+    font-size: 9.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #a29c90;
+  }
+  .val {
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: color-mix(in srgb, var(--ui) 75%, #999);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--ui) 35%, transparent);
+    min-width: 5ch;
+    text-align: center;
+  }
+
+  .knob {
+    --rot: 0deg;
+    position: relative;
+    width: var(--kn);
+    height: var(--kn);
+    border-radius: 50%;
+    touch-action: none;
+    cursor: grab;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .knob.grab { cursor: grabbing; }
+  .kc.small .knob { width: var(--kt); height: var(--kt); }
+  .knob .scale {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 162.5%; height: 162.5%;
+    transform: translate(-50%, -50%);
+    overflow: visible;
+    pointer-events: none;
+  }
+  .knob .scale line { stroke: rgba(232, 227, 214, 0.36); stroke-linecap: round; }
+  .knob .scale text {
+    fill: rgba(232, 227, 214, 0.42);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 7.4px;
+    text-anchor: middle;
+  }
+  .knob .skirt {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 30%, #3b3a37, #1c1b1a 72%);
+    box-shadow:
+      0 9px 14px -4px rgba(0, 0, 0, 0.75),
+      0 3px 4px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      inset 0 -2px 3px rgba(0, 0, 0, 0.55);
+  }
+  .knob .rot {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    transform: rotate(var(--rot));
+    background: repeating-conic-gradient(rgba(255, 255, 255, 0.07) 0 2.5deg, rgba(0, 0, 0, 0.22) 2.5deg 5deg);
+    -webkit-mask: radial-gradient(closest-side, transparent 0 79%, #000 82%);
+    mask: radial-gradient(closest-side, transparent 0 79%, #000 82%);
+  }
+  /* the luminous pointer line */
+  .knob .skirt::after {
+    content: '';
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 2px; height: 47%;
+    margin-left: -1px;
+    transform-origin: 50% 0;
+    transform: rotate(calc(var(--rot) + 180deg));
+    border-radius: 1px;
+    background: linear-gradient(180deg, transparent 44%, var(--ui) 47%);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--ui) 70%, transparent);
+    opacity: 0.9;
+    z-index: 2;
+  }
+  .knob .cap {
+    position: absolute; inset: 21%;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0) 0 30%, rgba(0, 0, 0, 0.25) 100%),
+      conic-gradient(from 20deg, #3a3936, #55534f 12%, #34332f 25%, #4c4a46 40%, #2f2e2b 55%, #57554f 68%, #33322f 82%, #3a3936);
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.18),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.5),
+      0 1px 2px rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .knob:focus-visible .skirt { box-shadow: 0 0 0 2px #111, 0 0 0 3px color-mix(in srgb, var(--ui) 70%, transparent), 0 9px 14px -4px rgba(0, 0, 0, 0.75); }
+  .knob.bump .skirt { animation: bump 0.18s ease-out; }
+  @keyframes bump { 0% { transform: scale(0.985); } 100% { transform: scale(1); } }
+
+  .switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 10px 6px 8px;
+    border-radius: 8px;
+    border: 0;
+    font: inherit;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: #a29c90;
+    background: linear-gradient(180deg, #2a2927, #1d1c1b);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 4px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+  }
+  .switch .led {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #2b2a28;
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .switch[aria-pressed='true'] { color: var(--ink); }
+  .switch[aria-pressed='true'] .led { background: var(--ui); box-shadow: 0 0 6px var(--ui), 0 0 1px #fff; }
+  .switch:focus-visible { outline: 1px solid color-mix(in srgb, var(--ui) 70%, transparent); outline-offset: 3px; }
+  .switch[hidden] { display: none; }
+
+  /* ---------------------------------------------------------------- dial */
+  .dial {
+    grid-area: dial;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 4px;
+  }
+  .dial-l, .count {
+    font-size: 9.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #8a8478;
+    font-variant-numeric: tabular-nums;
+  }
+  .marks {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 22px;
+    padding: 0 10px;
+    border-radius: 11px;
+    background: linear-gradient(180deg, #0d0d0c, #131312);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .marks button {
+    width: 16px; height: 22px;
+    padding: 0; border: 0; background: none;
+    display: grid; place-items: center;
+    cursor: default;
+  }
+  .marks button i {
+    width: 1px; height: 8px;
+    background: rgba(232, 227, 214, 0.22);
+    transition: all 0.4s ease;
+  }
+  .marks button.found { cursor: pointer; }
+  .marks button.found i {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: color-mix(in srgb, var(--ui) 70%, #000);
+    box-shadow: 0 0 4px color-mix(in srgb, var(--ui) 40%, transparent);
+  }
+  .marks button.here i {
+    background: var(--ui);
+    box-shadow: 0 0 8px var(--ui), 0 0 2px #fff;
+  }
+  .marks button:focus-visible { outline: 1px solid color-mix(in srgb, var(--ui) 70%, transparent); outline-offset: -2px; border-radius: 4px; }
+  .complete .marks { box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 18px -4px color-mix(in srgb, var(--ui) 40%, transparent); }
+
+  /* ---------------------------------------------------------------- captions */
+  .captions {
+    display: grid;
+    width: min(640px, 100%);
+    min-height: 4.6em;
+    text-align: center;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #c9c3b6;
+  }
+  .cap, .done {
+    grid-area: 1 / 1;
+    margin: 0;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    pointer-events: none;
+  }
+  .cap.on { opacity: 1; transform: none; pointer-events: auto; transition-delay: 0.25s; }
+  .done { align-self: end; font-size: 11px; letter-spacing: 0.08em; color: var(--dim); }
+  .complete .done { opacity: 0.8; transform: none; transition-delay: 1.4s; }
+  .cap-k {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 9.5px;
+    letter-spacing: 0.24em;
+    color: color-mix(in srgb, var(--ui) 70%, #888);
+  }
+  .cap strong { font-weight: 500; color: var(--ink); }
+  .captions a, .corner a, .read a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--ui) 55%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.22em;
+    transition: text-decoration-color 0.2s, color 0.2s;
+  }
+  .captions a:hover, .captions a:focus-visible { color: #fff; text-decoration-color: var(--ui); }
+
+  /* ---------------------------------------------------------------- corner */
+  .corner {
+    position: fixed;
+    left: 16px; bottom: 12px;
+    display: flex; gap: 14px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--dim);
+    opacity: 0.42;
+    transition: opacity 0.3s;
+    z-index: 5;
+  }
+  .corner:hover, .corner:focus-within { opacity: 0.9; }
+  .corner a { color: inherit; text-decoration-color: rgba(255, 255, 255, 0.25); }
+  .js:not(.nogl) .corner { display: flex; }
+  :root:not(.js) .corner #read-link, .nogl .corner #read-link, :root:not(.js) #edition, .nogl #edition { display: none; }
+
+  /* ---------------------------------------------------------------- read panel */
+  .read {
+    font-family: 'Newsreader', Georgia, 'Iowan Old Style', serif;
+    font-size: 19px;
+    line-height: 1.55;
+    color: #e9e4d8;
+  }
+  .sheet { max-width: 34rem; margin: 0 auto; padding: 12vh 24px 80px; outline: none; }
+  .sheet h1 { font-size: 2rem; font-weight: 500; line-height: 1.1; margin: 0 0 1.2rem; letter-spacing: 0.002em; }
+  .sheet p { margin: 0 0 1rem; }
+  .sheet ul { list-style: none; margin: 0 0 1.2rem; padding: 0; }
+  .sheet li { margin: 0 0 0.45rem; padding-left: 1.1em; text-indent: -1.1em; }
+  .sheet li::before { content: '–'; display: inline-block; width: 1.1em; text-indent: 0; color: var(--dim); }
+  .read a { text-decoration-color: color-mix(in srgb, var(--ui) 45%, transparent); }
+  .read a:hover, .read a:focus-visible { text-decoration-color: var(--ui); }
+  .close { display: none; }
+
+  .js:not(.nogl) .read {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 6vh 16px;
+    background: rgba(6, 6, 5, 0.7);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0s linear 0.35s;
+  }
+  .js:not(.nogl) .read.open { opacity: 1; visibility: visible; transition: opacity 0.35s ease; }
+  .js:not(.nogl) .sheet {
+    position: relative;
+    margin: auto;
+    width: 100%;
+    max-width: 36rem;
+    padding: 44px 44px 34px;
+    border-radius: 6px;
+    background: #12110f;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 30px 80px rgba(0, 0, 0, 0.6);
+    transform: translateY(8px);
+    transition: transform 0.35s ease;
+  }
+  .js:not(.nogl) .read.open .sheet { transform: none; }
+  .js:not(.nogl) .close {
+    display: block;
+    position: absolute;
+    top: 14px; right: 16px;
+    border: 0; background: none;
+    font: 11px 'IBM Plex Mono', monospace;
+    letter-spacing: 0.08em;
+    color: var(--dim);
+    cursor: pointer;
+    padding: 4px;
+  }
+  .close:hover, .close:focus-visible { color: var(--ink); }
+
+  /* ---------------------------------------------------------------- small screens */
+  @media (max-width: 820px) {
+    :root { --sh: min(calc((100vw - 32px - 46px) * 0.8), 60vh); --kn: 50px; --kt: 34px; }
+    .js:not(.nogl) .room { justify-content: safe center; padding-top: 18px; gap: 16px; }
+    .scope {
+      grid-template-columns: auto;
+      grid-template-areas: 'bezel' 'controls' 'dial';
+      padding: 14px 12px 14px;
+      gap: 16px;
+      border-radius: 18px;
+    }
+    .bezel { padding: 9px; border-radius: 13px; }
+    .controls { width: auto; gap: 16px; padding: 0 6px; }
+    .bigknobs { grid-template-columns: repeat(4, 1fr); gap: 0 6px; }
+    .lab { margin-top: 10px; font-size: 9px; letter-spacing: 0.16em; }
+    .val { font-size: 10px; }
+    .bigknobs .knob .scale { width: 150%; height: 150%; }
+    .bigknobs .knob .scale text { display: none; }
+    .trims { justify-content: space-around; }
+    .plate { order: 3; }
+    .trims { order: 2; }
+    .marks { padding: 0 6px; }
+    .marks button { width: 14px; }
+    .dial { gap: 10px; padding: 0 6px; }
+    .captions { font-size: 13px; padding: 0 6px; }
+    .js:not(.nogl) .sheet { padding: 40px 22px 26px; }
+    .read { font-size: 18px; }
+  }
+  @media (max-width: 380px) {
+    .dial-l { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cap, .done, .js .room, .hint, .read, .sheet { transition-duration: 0.01s !important; }
+    .knob.bump .skirt { animation: none; }
+  }
+</style>
