@@ -275,6 +275,10 @@ export function startBloom({ canvas, seed, palette, reduce }: Opts) {
     renderer.render(scene, camera);
   }
 
+  // declared before pregrow(): it can call back synchronously when the growth is already done
+  let last = 0;
+  let aim = 0, aimNow = 0;
+
   pregrow(() => {
     const n = growth.n;
     setFrame();
@@ -295,12 +299,10 @@ export function startBloom({ canvas, seed, palette, reduce }: Opts) {
   });
 
   // cursor: the view turns a few degrees toward it
-  let aim = 0, aimNow = 0;
   if (!reduce && matchMedia('(pointer: fine)').matches) {
     window.addEventListener('pointermove', (e) => { aim = (e.clientX / window.innerWidth - 0.5) * 0.22; }, { passive: true });
   }
 
-  let last = 0;
   function frame(now: number) {
     if (!running) return;
     const dt = Math.min(0.05, (now - last) / 1000);
