@@ -2,3 +2,4 @@ out/
 *.o
 *.dbg
 *.map
+__pycache__/
