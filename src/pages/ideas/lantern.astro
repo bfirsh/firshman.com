@@ -1,0 +1,210 @@
+---
+import { name, now, email, socials, alsoWorkedOn } from '../../data/bio';
+import { ITEMS } from '../../components/ideas/lantern/shapes';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman works on Replicate. Here, his projects are constellations over a voxel meadow at night: carry a lantern, gather fireflies, and lead them up into the stars." />
+    <meta name="theme-color" content="#04060f" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <canvas id="scene" aria-hidden="true"></canvas>
+
+    <header class="title ui">
+      <h1>{name}</h1>
+      <p>I'm working on <a href={now.url}>{now.name}</a>.</p>
+    </header>
+
+    <p class="hint" aria-hidden="true">move slowly, and the fireflies will follow. lead them to the stars.</p>
+
+    <div class="labels" aria-live="polite">
+      {ITEMS.map((it) => (
+        <div class="lbl ui" data-id={it.id} hidden>
+          <span class="k">{it.kicker}</span>
+          {it.id === 'greets' ? (
+            <>
+              <span class="t">greetings to</span>
+              <span class="g">{it.links!.map((l, i) => <>{i > 0 && <span class="dot" aria-hidden="true"> · </span>}<a href={l.url}>{l.text}</a></>)}</span>
+            </>
+          ) : it.id === 'hello' ? (
+            <>
+              <a class="t" href={it.url}>say hello</a>
+              <span class="b"><a href={it.url}>{it.blurb}</a></span>
+              <span class="g">{it.links!.map((l, i) => <>{i > 0 && <span class="dot" aria-hidden="true"> · </span>}<a href={l.url}>{l.text}</a></>)}</span>
+            </>
+          ) : (
+            <>
+              <a class="t" href={it.url}>{it.title}</a>
+              <span class="b more">{it.blurb}</span>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+
+    <div class="finale ui" aria-live="polite">
+      <p class="full">the sky is full. thank you for the light.</p>
+      <div class="scroller"><div class="track">
+        {[0, 1].map((k) => (
+          <span class="run" aria-hidden={k === 1 ? 'true' : undefined}>
+            <b>{name}</b> ✦ working on <a href={now.url} tabindex={k ? -1 : undefined}>{now.name}</a> ✦ greetings to {alsoWorkedOn.map((a, i) => <>{i > 0 && ' · '}<a href={a.url} tabindex={k ? -1 : undefined}>{a.name}</a></>)} ✦ <a href={`mailto:${email}`} tabindex={k ? -1 : undefined}>{email}</a> ✦ <a class="another" href="?" tabindex={k ? -1 : undefined}>another night →</a> ✦&nbsp;
+          </span>
+        ))}
+      </div></div>
+    </div>
+
+    <nav class="corner ui" aria-label="Page">
+      <span id="edition" class="ed"></span>
+      <span id="count" class="ct" title="constellations lit">0 / {ITEMS.length}</span>
+      <button type="button" id="soundBtn" aria-pressed="false">sound</button>
+      <a href="#read" id="readBtn">read</a>
+      <a href="/ideas">ideas</a>
+    </nav>
+
+    <section id="read" class="panel" role="dialog" aria-modal="true" aria-label={`${name}, as plain text`}>
+      <div class="panel-in" tabindex="-1">
+        <button type="button" class="close" aria-label="Close">close</button>
+        <h1>{name}</h1>
+        <p>I'm working on <a href="https://replicate.com">Replicate</a>. Some other stuff I've done:</p>
+        <ul>
+          <li><a href="https://github.com/replicate/cog">Cog</a>, containers for machine learning.</li>
+          <li><a href="https://clig.dev">Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+          <li><a href="https://github.com/docker/compose">Docker Compose</a> and <a href="https://github.com/docker/machine">Docker Machine</a>.</li>
+          <li><a href="https://github.com/bfirsh/jsnes">JSNES</a>, one of the first JavaScript emulators.</li>
+          <li><a href="https://github.com/whalebrew/whalebrew">Whalebrew</a>, a Docker package manager.</li>
+          <li><a href="https://www.arxiv-vanity.com/">arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+          <li>I worked on {alsoWorkedOn.map((a, i) => <>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>)}.</li>
+          <li>I worked on many parts of <a href="https://www.djangoproject.com/">Django</a>, including class-based views, feeds, and search.</li>
+          <li>I helped start the <a href="https://ukhas.org.uk/">UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+        </ul>
+        <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+          I'm also on {socials.map((s, i) => <>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>)}.</p>
+        <p class="colophon">Lantern: a voxel meadow at night. Carry the light slowly and the fireflies gather; lead them up to the faint shapes in the sky and they become constellations, one for each thing above. Move fast and they scatter. Arrow keys and space work too.</p>
+      </div>
+    </section>
+
+    <noscript><style>#scene, .title, .hint, .labels, .finale, .corner { display: none !important; }</style></noscript>
+
+    <style is:global>
+      :root {
+        color-scheme: dark;
+        --ink: #efe6d6;
+        --dim: rgba(239, 230, 214, 0.62);
+        --warm: #ffc37a;
+        --bg: #04060f;
+        --serif: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+        --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
+      html.gl, html.gl body { overflow: hidden; overscroll-behavior: none; }
+      body { font: 400 17px/1.5 var(--serif); -webkit-font-smoothing: antialiased; }
+      a { color: var(--warm); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+      :focus-visible { outline: 1px solid var(--warm); outline-offset: 3px; }
+      #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: none; cursor: none; touch-action: none; -webkit-tap-highlight-color: transparent; }
+      html.gl #scene { display: block; }
+      html:not(.gl) .title, html:not(.gl) .hint, html:not(.gl) .labels, html:not(.gl) .finale, html:not(.gl) .corner #count, html:not(.gl) .corner #soundBtn, html:not(.gl) .corner #edition, html:not(.gl) .corner #readBtn { display: none; }
+
+      .title { position: fixed; bottom: max(18px, env(safe-area-inset-bottom)); left: 24px; z-index: 3; pointer-events: none; opacity: 0; animation: titleIn 2.4s 0.7s ease forwards; }
+      .title h1 { margin: 0; font: 500 30px/1 var(--serif); letter-spacing: 0.02em; color: var(--ink); text-shadow: 0 0 24px rgba(120, 160, 255, 0.25); }
+      .title p { margin: 6px 0 0; font: italic 400 18px/1.3 var(--serif); color: var(--dim); }
+      .title a { pointer-events: auto; }
+      html.played .title { opacity: 0.62; transition: opacity 3s; }
+      html.played .title:hover { opacity: 1; }
+      @keyframes titleIn { from { opacity: 0; transform: translateY(6px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+
+      .hint { position: fixed; left: 50%; top: max(18px, env(safe-area-inset-top)); transform: translateX(-50%); margin: 0; z-index: 3; width: max-content; max-width: calc(100vw - 32px); text-align: center;
+        font: italic 400 17px/1.3 var(--serif); color: rgba(239, 230, 214, 0.55); pointer-events: none; opacity: 0; animation: fadeIn 2s 2.4s ease forwards; transition: opacity 2s; }
+      @keyframes fadeIn { to { opacity: 1; } }
+      html.hinted .hint { opacity: 0 !important; animation: none; }
+
+      .labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+      .lbl { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; text-align: center; width: max-content; max-width: min(250px, 64vw);
+        opacity: 0; transition: opacity 1.6s ease; will-change: transform; }
+      .lbl[hidden] { display: none; }
+      .lbl.on { opacity: 1; pointer-events: auto; }
+      .lbl .k, .lbl .b.more { display: block; max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.6s ease, opacity 0.6s ease; }
+      .lbl.fresh .k, .lbl.fresh .b.more, .lbl:hover .k, .lbl:hover .b.more, .lbl:focus-within .k, .lbl:focus-within .b.more { max-height: 4em; opacity: 1; }
+      .lbl .k { font: 400 9px/1 var(--mono); letter-spacing: 0.24em; text-transform: uppercase; color: rgba(255, 210, 150, 0.6); padding-bottom: 5px; }
+      .lbl .t { max-width: 190px; font: italic 500 19px/1.05 var(--serif); color: #fff3df; text-decoration: none; text-wrap: balance; text-shadow: 0 0 14px rgba(255, 190, 110, 0.5), 0 0 2px rgba(255, 200, 140, 0.5), 0 1px 3px rgba(0, 0, 20, 0.8); }
+      .lbl a.t:hover { text-decoration: underline; text-decoration-thickness: 1px; }
+      .lbl .b { font: italic 400 14px/1.2 var(--serif); color: rgba(239, 230, 214, 0.72); padding-top: 3px; text-wrap: balance; text-shadow: 0 1px 3px rgba(0, 0, 20, 0.9); }
+      .lbl .g { font: italic 400 15px/1.3 var(--serif); color: rgba(239, 230, 214, 0.7); margin-top: 3px; text-wrap: balance; text-shadow: 0 1px 3px rgba(0, 0, 20, 0.9); }
+      .lbl .g a, .lbl .b a { color: #ffdcae; text-decoration: none; }
+      .lbl .g a:hover, .lbl .b a:hover { text-decoration: underline; }
+      .lbl .dot { color: rgba(255, 210, 150, 0.4); }
+
+      .corner { position: fixed; right: 14px; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 5; display: flex; gap: 12px; align-items: baseline;
+        font: 400 10.5px/1 var(--mono); letter-spacing: 0.06em; color: rgba(239, 230, 214, 0.36); }
+      .corner a, .corner button { color: rgba(239, 230, 214, 0.48); text-decoration: none; background: none; border: 0; padding: 4px 0; font: inherit; letter-spacing: inherit; cursor: pointer; }
+      .corner a:hover, .corner button:hover, .corner button[aria-pressed="true"] { color: var(--warm); }
+      .corner .ct { color: rgba(255, 210, 150, 0.5); }
+
+      .finale { position: fixed; left: 0; right: 0; bottom: calc(max(10px, env(safe-area-inset-bottom)) + 26px); z-index: 4; text-align: center; opacity: 0; visibility: hidden; transition: opacity 3s, visibility 3s; }
+      html.skyfull .finale { opacity: 1; visibility: visible; }
+      html.skyfull .title, html.skyfull .hint { opacity: 0 !important; visibility: hidden; transition: opacity 2s, visibility 2s; }
+      .finale .full { margin: 0 0 8px; font: italic 400 20px/1.2 var(--serif); color: #fff1d8; text-shadow: 0 0 20px rgba(255, 190, 110, 0.5), 0 1px 4px rgba(0, 0, 20, 0.9); }
+      .scroller { overflow: hidden; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+      .track { display: inline-flex; animation: scroll 60s linear infinite; }
+      .scroller:hover .track, .scroller:focus-within .track { animation-play-state: paused; }
+      .run { font: 400 12px/1.6 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(239, 230, 214, 0.7); padding-right: 0.5em; text-shadow: 0 1px 3px rgba(0, 0, 20, 0.9); }
+      .run b { color: #fff1d8; font-weight: 500; }
+      .run a { color: #ffd39a; text-decoration: none; }
+      .run a:hover { text-decoration: underline; }
+      @keyframes scroll { to { transform: translateX(-50%); } }
+
+      /* the plain-text panel */
+      .panel { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 24px 16px; background: rgba(3, 5, 12, 0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        opacity: 0; transition: opacity 0.35s; overflow-y: auto; }
+      .panel:not(.open) { clip-path: inset(50%); pointer-events: none; }
+      .panel.open { opacity: 1; }
+      .panel-in { position: relative; width: 100%; max-width: 600px; padding: 40px 40px 34px; background: #f3ecdf; color: #231d18; border-radius: 3px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); outline: none;
+        font: 400 19px/1.55 var(--serif); transform: translateY(8px); transition: transform 0.35s; max-height: calc(100vh - 48px); overflow-y: auto; }
+      .panel.open .panel-in { transform: none; }
+      .panel-in h1 { margin: 0 0 14px; font: 500 34px/1 var(--serif); letter-spacing: 0.01em; }
+      .panel-in a { color: #8b3a12; }
+      .panel-in ul { padding-left: 1.1em; margin: 0 0 1em; }
+      .panel-in li { margin: 0.2em 0; }
+      .panel-in .colophon { margin-top: 1.4em; padding-top: 1em; border-top: 1px solid rgba(35, 29, 24, 0.15); font-style: italic; font-size: 16px; color: #6a5d50; }
+      .panel .close { position: absolute; top: 14px; right: 16px; background: none; border: 0; font: 400 11px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: #6a5d50; cursor: pointer; padding: 6px; }
+      .panel .close:hover { color: #000; }
+
+      /* no JS, or no WebGL: the text is the page */
+      html:not(.gl) body { overflow: auto; background: radial-gradient(120% 80% at 50% 0%, #0d1630 0%, #04060f 70%); }
+      html:not(.gl) .panel { position: static; opacity: 1; clip-path: none; pointer-events: auto; background: none; backdrop-filter: none; min-height: 100vh; }
+      html:not(.gl) .panel .close { display: none; }
+      html:not(.gl) .panel-in { transform: none; max-height: none; }
+      html:not(.gl) .corner { position: fixed; }
+
+      @media (max-width: 640px) {
+        .title { left: 16px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 26px); }
+        .hint { font-size: 15.5px; }
+        .title h1 { font-size: 24px; }
+        .title p { font-size: 16px; }
+        .lbl .t { font-size: 17px; }
+        .lbl .b, .lbl .g { font-size: 13.5px; }
+        .corner { right: 12px; gap: 10px; }
+        .corner .ed { display: none; }
+        .panel-in { padding: 30px 22px 24px; font-size: 17.5px; }
+        .panel-in h1 { font-size: 28px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .title, .hint { animation-duration: 0.01s; animation-delay: 0s; }
+        .track { animation-duration: 240s; }
+      }
+    </style>
+
+    <script>
+      import { start } from '../../components/ideas/lantern/main';
+      start();
+    </script>
+  </body>
+</html>
