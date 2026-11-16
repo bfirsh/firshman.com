@@ -1,0 +1,275 @@
+---
+// Terraform: raise land from a voxel sea; the world grows towns named after Ben's projects.
+import { name, email, socials } from '../../data/bio';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman is working on Replicate. Before that: Cog, Command Line Interface Guidelines, Docker Compose, JSNES, arXiv Vanity, Django and the UK High Altitude Society." />
+    <meta name="theme-color" content="#d8e9ec" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script is:inline>
+      (function () {
+        var d = document.documentElement;
+        try {
+          var c = document.createElement('canvas');
+          if (c.getContext('webgl2')) d.classList.add('gl');
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <canvas id="tf" tabindex="0" aria-label="A voxel sea on a diorama. Press and drag to raise land; right-drag, shift-drag or two fingers to lower it. Keyboard: arrow keys move, space raises, X lowers, Q and E turn. Towns appear as the land grows; the read link has everything in plain text."></canvas>
+
+    <div class="hud" aria-hidden="true">
+      <p class="name">{name}</p>
+      <p class="prog" id="prog"></p>
+    </div>
+
+    <div id="sites" class="sites"></div>
+
+    <p id="hint" class="hint" aria-hidden="true"><span class="fine">press and drag to raise land · right-drag to lower</span><span class="coarse">drag to raise land · two fingers to lower</span></p>
+    <p id="credits" class="credits" aria-live="polite"><span>Ten towns, five ships and a lighthouse.</span><span class="sub">Thank you for building. — Ben</span></p>
+
+    <nav class="corner" aria-label="Page">
+      <button type="button" id="readBtn" aria-controls="read" aria-expanded="false">read</button>
+      <a href="/ideas">ideas</a>
+      <span class="gl-only"><button type="button" id="sound" aria-pressed="false">sound</button></span>
+      <span class="gl-only daywrap"><button type="button" id="cycle" aria-pressed="true">day</button><input id="time" type="range" min="0" max="1000" value="650" aria-label="Time of day" /></span>
+      <button type="button" id="edition" class="gl-only" title="Copy a link to this edition"></button>
+    </nav>
+
+    <section id="read" class="read" aria-labelledby="read-title">
+      <div class="sheet" role="document">
+        <button type="button" class="close gl-only" aria-label="Close">×</button>
+        <main>
+          <h1 id="read-title" tabindex="-1">Ben Firshman</h1>
+
+          <p>I'm working on <a href="https://replicate.com">Replicate</a>. Some other stuff I've done:</p>
+
+          <ul>
+            <li><a href="https://github.com/replicate/cog">Cog</a>, containers for machine learning.</li>
+            <li><a href="https://clig.dev">Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+            <li><a href="https://github.com/docker/compose">Docker Compose</a> and <a href="https://github.com/docker/machine">Docker Machine</a>.</li>
+            <li><a href="https://github.com/bfirsh/jsnes">JSNES</a>, one of the first JavaScript emulators.</li>
+            <li><a href="https://github.com/whalebrew/whalebrew">Whalebrew</a>, a Docker package manager.</li>
+            <li><a href="https://www.arxiv-vanity.com/">arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+            <li>I worked on <a href="https://gov.uk">GOV.UK</a>, <a href="https://www.youtube.com/watch?v=53ZJdJNsBto">The Guardian's iPad app</a>, <a href="https://www.thisismyjam.com">This Is My Jam</a>, <a href="https://en.wikipedia.org/wiki/Lanyrd">Lanyrd</a>, and <a href="https://spacelog.org">Spacelog</a>.</li>
+            <li>I worked on many parts of <a href="https://www.djangoproject.com/">Django</a>, including class-based views, feeds, and search.</li>
+            <li>I helped start the <a href="https://ukhas.org.uk/">UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+          </ul>
+
+          <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+            I'm also on {socials.map((s, i) => <>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>)}.</p>
+
+          <p class="howto gl-only">On the diorama: press and drag to raise land, right-drag or shift-drag (two fingers on a phone) to lower it, drag the space around it to turn. Keys: arrows move, space raises, X lowers, Q and E turn, [ and ] change the hour. Towns are founded on flat ground by the water as the land grows; hover or tap one for its story.</p>
+        </main>
+      </div>
+    </section>
+
+    <style is:global>
+      :root {
+        --ink: #23303a;
+        --soft: rgba(35, 48, 58, 0.6);
+        --paper: #fbf7ef;
+        --serif: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+        --mono: 'DM Mono', ui-monospace, Menlo, monospace;
+        color-scheme: light;
+      }
+      html.night { --ink: #eef0f6; --soft: rgba(238, 240, 246, 0.6); }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      html { background: #e3ebe9; -webkit-text-size-adjust: 100%; }
+      body {
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: var(--serif);
+        font-optical-sizing: auto;
+        -webkit-font-smoothing: antialiased;
+        background: linear-gradient(#f6ecdc, #d4e6e8 70%, #b9d6d8);
+        background-attachment: fixed;
+        overflow-x: hidden;
+      }
+      html.gl body { overflow: hidden; overscroll-behavior: none; height: 100dvh; -webkit-tap-highlight-color: transparent; }
+      html:not(.gl) .gl-only, html:not(.gl) #tf, html:not(.gl) .hud, html:not(.gl) .hint, html:not(.gl) .credits, html:not(.gl) #readBtn { display: none !important; }
+
+      #tf { position: fixed; inset: 0; width: 100vw; height: 100dvh; display: block; touch-action: none; outline: none; opacity: 0; transition: opacity 1.6s ease; cursor: crosshair; }
+      #tf.on { opacity: 1; }
+      #tf:focus-visible { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.5); }
+
+      .hud { position: fixed; left: max(18px, env(safe-area-inset-left)); top: max(14px, env(safe-area-inset-top)); margin: 0; pointer-events: none; z-index: 3; transition: color 1.5s; }
+      .hud p { margin: 0; }
+      .hud .name { font-size: 21px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; }
+      .hud .prog { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: var(--soft); margin-top: 3px; }
+
+      .hint { position: fixed; left: 50%; bottom: max(54px, calc(env(safe-area-inset-bottom) + 46px)); transform: translate(-50%, 6px); margin: 0; z-index: 3; font-family: var(--mono); font-size: 12px; letter-spacing: 0.03em; color: var(--ink); background: rgba(251, 247, 239, 0.66); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: 7px 13px; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity 0.8s, transform 0.8s; white-space: nowrap; }
+      html.night .hint { background: rgba(20, 26, 44, 0.6); }
+      .hint.show { opacity: 1; transform: translate(-50%, 0); }
+      .hint.gone { opacity: 0 !important; transition-duration: 0.4s; }
+      .hint .coarse { display: none; }
+      @media (pointer: coarse) { .hint .fine { display: none; } .hint .coarse { display: inline; } }
+
+      .credits { position: fixed; left: 50%; top: max(64px, 11%); transform: translate(-50%, 8px); margin: 0; z-index: 3; text-align: center; font-size: clamp(19px, 2.4vw, 26px); font-weight: 400; letter-spacing: -0.01em; color: var(--ink); opacity: 0; pointer-events: none; transition: opacity 1.6s, transform 1.6s; text-shadow: 0 0 18px rgba(255, 255, 255, 0.55); width: max-content; max-width: calc(100vw - 32px); }
+      html.night .credits { text-shadow: 0 0 18px rgba(0, 0, 0, 0.5); }
+      .credits span { display: block; }
+      .credits .sub { font-style: italic; font-size: 0.68em; margin-top: 4px; color: var(--soft); }
+      .credits.show { opacity: 1; transform: translate(-50%, 0); }
+
+      .corner { position: fixed; z-index: 6; left: max(16px, env(safe-area-inset-left)); bottom: max(10px, env(safe-area-inset-bottom)); display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.03em; max-width: calc(100vw - 32px); }
+      .corner a, .corner button { color: var(--ink); opacity: 0.38; text-decoration: none; font: inherit; background: none; border: 0; padding: 5px 0; cursor: pointer; transition: opacity 0.25s, color 1.5s; }
+      .corner a:hover, .corner button:hover, .corner a:focus-visible, .corner button:focus-visible, .corner button[aria-pressed='true']#sound { opacity: 0.85; }
+      .corner :focus-visible { outline: 1px solid currentColor; outline-offset: 3px; border-radius: 2px; }
+      .daywrap { display: inline-flex; align-items: center; gap: 8px; }
+      #time { -webkit-appearance: none; appearance: none; width: 64px; height: 14px; background: transparent; opacity: 0.45; cursor: pointer; margin: 0; }
+      #time:hover, #time:focus-visible { opacity: 0.85; }
+      #time::-webkit-slider-runnable-track { height: 1px; background: var(--ink); }
+      #time::-moz-range-track { height: 1px; background: var(--ink); }
+      #time::-webkit-slider-thumb { -webkit-appearance: none; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); margin-top: -4px; border: 0; }
+      #time::-moz-range-thumb { width: 9px; height: 9px; border-radius: 50%; background: var(--ink); border: 0; }
+
+      /* settlements, ships and the lighthouse */
+      .sites { position: fixed; inset: 0; pointer-events: none; z-index: 4; overflow: hidden; }
+      .site { position: absolute; left: 0; top: 0; width: 0; height: 0; will-change: transform; }
+      .site.hidden { visibility: hidden; }
+      .pin { position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; color: #fff; }
+      .pin .dot { position: absolute; left: 10px; top: 10px; width: 8px; height: 8px; border-radius: 50%; background: #fffaf0; box-shadow: 0 0 0 1.5px rgba(30, 36, 48, 0.55), 0 1px 6px rgba(0, 0, 0, 0.25); transition: transform 0.25s cubic-bezier(.3, 1.6, .5, 1); animation: pop 0.6s cubic-bezier(.3, 1.6, .5, 1); }
+      .site.boat .dot { background: #e9f6ff; width: 6px; height: 6px; left: 11px; top: 11px; }
+      .site.keeper .dot { background: #ffe2a8; }
+      .pin:hover .dot, .site.open .dot, .pin:focus-visible .dot { transform: scale(1.5); }
+      .pin:focus-visible { outline: none; }
+      .pin:focus-visible .dot { box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(30, 36, 48, 0.8); }
+      .site.fresh .dot::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 1.5px solid rgba(255, 250, 240, 0.9); animation: ring 1.4s ease-out 3; }
+      @keyframes ring { from { transform: scale(0.4); opacity: 1; } to { transform: scale(2.4); opacity: 0; } }
+      @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+      .pin .tag { position: absolute; left: 50%; bottom: 28px; transform: translate(-50%, 4px); white-space: nowrap; font-family: var(--serif); font-size: 13.5px; font-weight: 500; color: #1d2630; background: rgba(251, 247, 239, 0.88); padding: 3px 9px 4px; border-radius: 999px; opacity: 0; transition: opacity 0.5s, transform 0.5s; pointer-events: none; box-shadow: 0 2px 10px rgba(30, 30, 50, 0.12); }
+      .site.fresh:not(.open) .tag { opacity: 1; transform: translate(-50%, 0); }
+      .card {
+        position: absolute; left: 0; bottom: 18px; width: max-content; max-width: min(270px, calc(100vw - 24px));
+        transform: translate(calc(-50% + var(--shift, 0px)), 6px); opacity: 0; visibility: hidden; pointer-events: none;
+        background: rgba(251, 247, 239, 0.95); color: #1f2a33; border-radius: 12px; padding: 11px 14px 12px;
+        box-shadow: 0 10px 34px rgba(25, 35, 55, 0.22), 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+        backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        transition: opacity 0.22s, transform 0.3s cubic-bezier(.3, 1.4, .5, 1), visibility 0s 0.22s;
+      }
+      .site.below .card { bottom: auto; top: 18px; }
+      .site.open .card { opacity: 1; visibility: visible; pointer-events: auto; transform: translate(calc(-50% + var(--shift, 0px)), 0); transition: opacity 0.22s, transform 0.3s cubic-bezier(.3, 1.4, .5, 1); }
+      .card .kick { margin: 0 0 3px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(31, 42, 51, 0.55); }
+      .card h3 { margin: 0; font-size: 19px; font-weight: 500; line-height: 1.15; letter-spacing: -0.01em; }
+      .card .blurb { margin: 5px 0 8px; font-size: 14.5px; line-height: 1.38; }
+      .card a { color: #1f2a33; font-family: var(--mono); font-size: 12px; text-decoration: underline; text-decoration-color: rgba(31, 42, 51, 0.3); text-underline-offset: 3px; display: inline-block; margin-top: 4px; }
+      .card a:hover, .card a:focus-visible { text-decoration-color: currentColor; }
+      .card .mail { font-size: 13px; }
+      .card .soc { margin: 6px 0 0; display: flex; gap: 12px; }
+
+      /* the plain-text panel */
+      .read { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: rgba(25, 32, 44, 0.32); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); opacity: 0; pointer-events: none; transition: opacity 0.35s, clip-path 0s 0.35s; }
+      /* closed: visually hidden but still read by screen readers; tabbing into it opens it */
+      html.gl .read:not(.open) { clip-path: inset(50%); }
+      .read.open { opacity: 1; pointer-events: auto; transition: opacity 0.35s; }
+      .sheet { position: relative; background: var(--paper); color: #24303a; width: min(36rem, 100%); max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain; border-radius: 4px; padding: 44px clamp(22px, 6vw, 52px) 40px; box-shadow: 0 30px 80px rgba(20, 30, 50, 0.3); transform: translateY(10px); transition: transform 0.45s cubic-bezier(.2, .9, .3, 1); }
+      .read.open .sheet { transform: none; }
+      .sheet .close { position: absolute; top: 10px; right: 12px; width: 36px; height: 36px; border: 0; background: none; font: 300 26px/1 var(--serif); color: rgba(36, 48, 58, 0.5); cursor: pointer; border-radius: 50%; }
+      .sheet .close:hover, .sheet .close:focus-visible { color: #24303a; background: rgba(36, 48, 58, 0.06); }
+      .sheet main { font-size: 17.5px; line-height: 1.58; }
+      .sheet h1 { font-size: 30px; font-weight: 500; letter-spacing: -0.015em; margin: 0 0 18px; line-height: 1.1; outline: none; }
+      .sheet p, .sheet ul { margin: 0 0 16px; }
+      .sheet ul { padding: 0; list-style: none; }
+      .sheet li { position: relative; padding-left: 20px; margin-bottom: 7px; }
+      .sheet li::before { content: ''; position: absolute; left: 2px; top: 0.78em; width: 8px; height: 1px; background: rgba(36, 48, 58, 0.45); }
+      .sheet a { color: inherit; text-decoration: underline; text-decoration-color: rgba(36, 48, 58, 0.3); text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+      .sheet a:hover, .sheet a:focus-visible { text-decoration-color: currentColor; }
+      .sheet .howto { margin-top: 26px; padding-top: 16px; border-top: 1px solid rgba(36, 48, 58, 0.14); font-size: 13.5px; line-height: 1.5; color: rgba(36, 48, 58, 0.66); }
+
+      /* no WebGL / no JS: the text is the page */
+      html:not(.gl) .read { position: static; opacity: 1; pointer-events: auto; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: clamp(28px, 9vh, 96px) 16px 80px; display: block; }
+      html:not(.gl) .sheet { margin: 0 auto; transform: none; max-height: none; overflow: visible; box-shadow: 0 24px 70px rgba(30, 60, 70, 0.14); }
+      html:not(.gl) .corner { position: fixed; }
+      html:not(.gl) body { background-attachment: scroll; }
+      html:not(.gl) { background: #b9d6d8; }
+
+      @media (max-width: 520px) {
+        .hud .name { font-size: 18px; }
+        .corner { gap: 12px; font-size: 11px; }
+        #time { width: 52px; }
+        .sheet main { font-size: 16.5px; }
+        .sheet h1 { font-size: 26px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #tf, .read, .sheet, .card, .hint, .credits { transition-duration: 0.01s !important; }
+        .pin .dot, .site.fresh .dot::after { animation: none !important; }
+      }
+    </style>
+
+    <script>
+      import { startTerraform } from '../../components/ideas/terraform/main';
+
+      const d = document.documentElement;
+      const q = new URLSearchParams(location.search);
+      let seed = parseInt(q.get('seed') || '', 10);
+      if (!(seed > 0 && seed < 100000)) seed = 1 + Math.floor(Math.random() * 99999);
+
+      // the read panel
+      const read = document.getElementById('read')!;
+      const readBtn = document.getElementById('readBtn') as HTMLButtonElement;
+      let lastFocus: HTMLElement | null = null;
+      const isOpen = () => read.classList.contains('open');
+      const openRead = () => {
+        if (isOpen() || !d.classList.contains('gl')) return;
+        lastFocus = document.activeElement as HTMLElement;
+        read.classList.add('open');
+        readBtn.setAttribute('aria-expanded', 'true');
+        (document.getElementById('read-title') as HTMLElement).focus({ preventScroll: true });
+      };
+      const closeRead = () => {
+        if (!isOpen()) return;
+        read.classList.remove('open');
+        readBtn.setAttribute('aria-expanded', 'false');
+        lastFocus?.focus?.({ preventScroll: true });
+      };
+      readBtn.addEventListener('click', () => (isOpen() ? closeRead() : openRead()));
+      read.querySelector('.close')!.addEventListener('click', closeRead);
+      read.addEventListener('click', (e) => { if (e.target === read) closeRead(); });
+      read.addEventListener('focusin', () => { if (!isOpen() && d.classList.contains('gl')) { read.classList.add('open'); readBtn.setAttribute('aria-expanded', 'true'); } });
+      addEventListener('keydown', (e) => { if (e.key === 'Escape') closeRead(); });
+
+      const ed = document.getElementById('edition') as HTMLButtonElement;
+      const label = `No. ${seed}`;
+      ed.textContent = label;
+      ed.addEventListener('click', async () => {
+        const url = new URL(location.href);
+        url.searchParams.set('seed', String(seed));
+        history.replaceState(null, '', url);
+        try { await navigator.clipboard.writeText(url.toString()); ed.textContent = 'link copied'; } catch { ed.textContent = label; }
+        setTimeout(() => (ed.textContent = label), 1600);
+      });
+
+      if (d.classList.contains('gl')) {
+        const canvas = document.getElementById('tf') as HTMLCanvasElement;
+        try {
+          startTerraform(
+            canvas,
+            {
+              sites: document.getElementById('sites')!,
+              hint: document.getElementById('hint')!,
+              prog: document.getElementById('prog')!,
+              sound: document.getElementById('sound') as HTMLButtonElement,
+              time: document.getElementById('time') as HTMLInputElement,
+              cycle: document.getElementById('cycle') as HTMLButtonElement,
+              credits: document.getElementById('credits')!,
+              isOpen,
+            },
+            { seed, reduced: matchMedia('(prefers-reduced-motion: reduce)').matches },
+          );
+        } catch (e) {
+          console.error(e);
+          d.classList.remove('gl');
+        }
+      }
+    </script>
+  </body>
+</html>
