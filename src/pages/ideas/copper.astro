@@ -1,0 +1,282 @@
+---
+// Copper: a demo in eight parts, at 320x256 in 64 colours, with a four-channel chiptune.
+import { name, email, now, socials } from '../../data/bio';
+const partNames = ['title', 'plasma', 'bobs', 'rotozoom', 'glenz', 'voxel', 'greets', 'credits'];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman works on Replicate. Before that: Cog, Command Line Interface Guidelines, Docker Compose, JSNES, and more. Presented as a demo in eight parts." />
+    <meta name="theme-color" content="#07060b" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+    <script is:inline>
+      (function () {
+        var d = document.documentElement, q = new URLSearchParams(location.search);
+        var s = parseInt(q.get('seed') || '', 10);
+        if (!(s > 0 && s < 100000)) s = 1 + Math.floor(Math.random() * 99999);
+        d.dataset.seed = s;
+        d.classList.add('js');
+      })();
+    </script>
+    <style is:global>
+      :root {
+        --bg: #07060b;
+        --ink: #d9c8b6;
+        --soft: #8a7a70;
+        --dim: #5b4f4b;
+        --cu: #ffb36b;
+        --sw: 960px;
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      html { background: var(--bg); -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0; min-height: 100vh; min-height: 100svh; color: var(--ink);
+        background: radial-gradient(120% 90% at 50% 40%, #120d16 0%, var(--bg) 62%);
+        font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 13px; line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a { color: var(--cu); text-decoration: underline; text-decoration-color: rgba(255, 179, 107, 0.35); text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+      a:hover, a:focus-visible { text-decoration-color: currentColor; color: #ffd6a3; }
+      :focus-visible { outline: 1px solid var(--cu); outline-offset: 3px; border-radius: 2px; }
+
+      .stage { display: none; }
+      .js .stage {
+        min-height: 100vh; min-height: 100svh;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 20px 12px 52px; gap: 14px;
+      }
+      .screen { position: relative; isolation: isolate; }
+      .screen canvas#amb {
+        position: absolute; left: -9%; top: -11%; width: 118%; height: 122%;
+        filter: blur(46px) saturate(1.5); opacity: 0.42; z-index: -1; pointer-events: none;
+        transition: opacity 0.6s;
+      }
+      .wrap {
+        position: relative; width: 320px; height: 256px; overflow: hidden; border-radius: 3px;
+        background: #000; touch-action: none; cursor: crosshair;
+        box-shadow: 0 0 0 1px rgba(255, 220, 190, 0.05), 0 30px 80px -30px rgba(0, 0, 0, 0.9);
+        user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+      }
+      .wrap.grab { cursor: grabbing; }
+      .wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      #scr { image-rendering: pixelated; image-rendering: crisp-edges; }
+      @supports (image-rendering: pixelated) { #scr { image-rendering: pixelated; } }
+      #bloom { filter: blur(calc(var(--sw) / 110)) saturate(1.35); mix-blend-mode: screen; opacity: 0.34; pointer-events: none; transition: opacity 0.6s; }
+      #scan { pointer-events: none; transition: opacity 0.6s; }
+      .nocrt #bloom, .nocrt #scan { opacity: 0; }
+      .nocrt canvas#amb { opacity: 0.16; }
+
+      .deck { width: var(--sw); max-width: 100%; display: grid; gap: 10px; }
+      .now {
+        margin: 0; min-height: 3em; display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+        column-gap: 0.6em; row-gap: 0; text-align: center; color: var(--soft); text-wrap: balance;
+      }
+      .now .pre { color: var(--dim); }
+      .now .lbl { font-weight: 500; }
+      .now span.lbl { color: var(--ink); }
+      .now .blurb::before { content: '— '; color: var(--dim); }
+      .now .lnk { color: var(--soft); text-decoration-color: rgba(138, 122, 112, 0.4); }
+      .now .lnk.on { color: var(--cu); text-decoration-color: currentColor; }
+      .now.tick > * { animation: tick 0.42s cubic-bezier(.2, .9, .2, 1.2) both; }
+      .now.tick > :nth-child(2) { animation-delay: 0.03s; }
+      .now.tick > :nth-child(3) { animation-delay: 0.06s; }
+      @keyframes tick { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+      .ctl { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .parts { display: flex; gap: 2px; flex-wrap: wrap; }
+      button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+      .parts button {
+        min-width: 26px; height: 26px; padding: 0 7px; border-radius: 3px; color: var(--dim);
+        font-variant-numeric: tabular-nums; transition: color 0.2s, background 0.2s;
+      }
+      .parts button:hover { color: var(--ink); background: rgba(255, 220, 190, 0.05); }
+      .parts button.on { color: var(--cu); background: rgba(255, 179, 107, 0.08); }
+      .parts button.on::after { content: ' ' attr(data-name); color: var(--soft); }
+      .tog { display: flex; gap: 4px; }
+      .tog button { height: 26px; padding: 0 9px; border-radius: 3px; color: var(--dim); display: inline-flex; align-items: center; gap: 7px; }
+      .tog button:hover { color: var(--ink); }
+      .tog button::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.35; }
+      .tog button[aria-pressed='true'] { color: var(--ink); }
+      .tog button[aria-pressed='true']::before { background: var(--cu); opacity: 1; box-shadow: 0 0 8px var(--cu); }
+      #snd[aria-pressed='true']::before { animation: led 0.48s steps(2) infinite; }
+      @keyframes led { 50% { opacity: 0.55; } }
+
+      .corner {
+        position: fixed; left: 14px; bottom: 10px; z-index: 3; display: none; gap: 14px; align-items: baseline;
+        font-size: 11px; letter-spacing: 0.02em;
+      }
+      .js .corner { display: flex; }
+      .corner a, .corner button { color: var(--ink); opacity: 0.26; text-decoration: none; padding: 4px 0; transition: opacity 0.3s; }
+      .corner a:hover, .corner a:focus-visible, .corner button:hover, .corner button:focus-visible { opacity: 0.8; }
+
+      /* the plain-text read panel; with no JS it is simply the page */
+      .read { padding: 9vh 24px 12vh; }
+      .read .sheet { max-width: 36rem; margin: 0 auto; position: relative; font-size: 14px; line-height: 1.7; }
+      .read h1 { font-size: 14px; font-weight: 500; margin: 0 0 1.7em; color: var(--cu); letter-spacing: 0.04em; }
+      .read h1::after { content: ''; display: block; width: 7ch; height: 1px; background: currentColor; opacity: 0.5; margin-top: 0.6em; }
+      .read p, .read ul { margin: 0 0 1.2em; }
+      .read ul { list-style: none; padding: 0; }
+      .read li { padding-left: 2ch; text-indent: -2ch; margin-bottom: 0.35em; }
+      .read li::before { content: '* '; color: var(--dim); }
+      .read .x { display: none; }
+      .js .read {
+        position: fixed; inset: 0; z-index: 10; overflow-y: auto; overscroll-behavior: contain;
+        background: rgba(5, 4, 8, 0.78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+        opacity: 0; visibility: hidden; transition: opacity 0.25s, visibility 0s 0.25s;
+        display: flex; align-items: flex-start; justify-content: center;
+      }
+      .js .read.open { opacity: 1; visibility: visible; transition: opacity 0.25s; }
+      .js .read .sheet {
+        width: 100%; background: #0d0b10; border: 1px solid rgba(255, 220, 190, 0.08); border-radius: 4px;
+        padding: 34px 34px 26px; margin-top: 0; box-shadow: 0 40px 120px -40px #000;
+        transform: translateY(8px); transition: transform 0.3s cubic-bezier(.2, .8, .2, 1);
+      }
+      .js .read.open .sheet { transform: none; }
+      .js .read .x { display: block; position: absolute; right: 14px; top: 10px; color: var(--dim); font-size: 12px; padding: 4px; }
+      .js .read .x:hover { color: var(--ink); }
+      @media (max-width: 560px) {
+        .js .read { padding: 16px 12px; }
+        .js .read .sheet { padding: 26px 20px 18px; font-size: 13px; }
+        .parts button { min-width: 24px; padding: 0 5px; }
+        .parts button.on::after { content: ''; }
+        .js .stage { justify-content: flex-start; padding-top: max(28px, 7vh); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .now.tick > * { animation: none; }
+        #snd[aria-pressed='true']::before { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stage" id="stage">
+      <div class="screen">
+        <canvas id="amb" width="64" height="52" aria-hidden="true"></canvas>
+        <div class="wrap" id="wrap">
+          <canvas id="scr" width="320" height="256" role="img" aria-label="Copper, a demo: copper bars, plasma, vector bobs, a rotozoomer, glenz vectors, a voxel landscape, greetings and credits. The text is mirrored below."></canvas>
+          <canvas id="bloom" width="160" height="128" aria-hidden="true"></canvas>
+          <canvas id="scan" aria-hidden="true"></canvas>
+        </div>
+      </div>
+      <div class="deck">
+        <p class="now" id="now" aria-live="polite"></p>
+        <div class="ctl">
+          <nav class="parts" aria-label="Parts">
+            {partNames.map((n, i) => <button type="button" data-name={n} aria-label={`Part ${i + 1}: ${n}`} title={`${i + 1} · ${n}`}>{i + 1}</button>)}
+          </nav>
+          <div class="tog">
+            <button type="button" id="snd" aria-pressed="false">sound</button>
+            <button type="button" id="crt" aria-pressed="true">crt</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div class="corner">
+      <button type="button" id="read-btn" aria-controls="read" aria-expanded="false">read</button>
+      <a href="/ideas">ideas</a>
+      <button type="button" id="edition" hidden></button>
+    </div>
+
+    <section class="read" id="read" aria-labelledby="read-title">
+      <div class="sheet" tabindex="-1">
+        <button type="button" class="x" id="read-x" aria-label="Close">esc</button>
+        <h1 id="read-title">{name}</h1>
+
+        <p>I'm working on <a href={now.url}>Replicate</a>. Some other stuff I've done:</p>
+
+        <ul>
+          <li><a href="https://github.com/replicate/cog">Cog</a>, containers for machine learning.</li>
+          <li><a href="https://clig.dev">Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+          <li><a href="https://github.com/docker/compose">Docker Compose</a> and <a href="https://github.com/docker/machine">Docker Machine</a>.</li>
+          <li><a href="https://github.com/bfirsh/jsnes">JSNES</a>, one of the first JavaScript emulators.</li>
+          <li><a href="https://github.com/whalebrew/whalebrew">Whalebrew</a>, a Docker package manager.</li>
+          <li><a href="https://www.arxiv-vanity.com/">arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+          <li>I worked on <a href="https://gov.uk">GOV.UK</a>, <a href="https://www.youtube.com/watch?v=53ZJdJNsBto">The Guardian's iPad app</a>, <a href="https://www.thisismyjam.com">This Is My Jam</a>, <a href="https://en.wikipedia.org/wiki/Lanyrd">Lanyrd</a>, and <a href="https://spacelog.org">Spacelog</a>.</li>
+          <li>I worked on many parts of <a href="https://www.djangoproject.com/">Django</a>, including class-based views, feeds, and search.</li>
+          <li>I helped start the <a href="https://ukhas.org.uk/">UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+        </ul>
+
+        <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+          I'm also on {socials.map((s, i) => <>{i === socials.length - 1 ? 'and ' : ''}<a href={s.url}>{s.name}</a>{i < socials.length - 1 ? ', ' : '.'}</>)}</p>
+      </div>
+    </section>
+
+    <script>
+      import { startCopper } from '../../components/ideas/copper/main';
+
+      const d = document.documentElement;
+      const seed = parseInt(d.dataset.seed || '1', 10);
+      const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+      // edition number: copy a link to this seed
+      const ed = $<HTMLButtonElement>('edition');
+      const label = `No. ${seed}`;
+      ed.textContent = label;
+      ed.title = 'Copy a link to this edition';
+      ed.hidden = false;
+      ed.addEventListener('click', async () => {
+        const url = new URL(location.href);
+        url.searchParams.set('seed', String(seed));
+        history.replaceState(null, '', url);
+        try { await navigator.clipboard.writeText(url.toString()); ed.textContent = 'link copied'; }
+        catch { ed.textContent = label; }
+        setTimeout(() => (ed.textContent = label), 1600);
+      });
+
+      // read panel
+      const panel = $('read'), sheet = panel.querySelector('.sheet') as HTMLElement, btn = $<HTMLButtonElement>('read-btn');
+      let opener: HTMLElement | null = null;
+      const isOpen = () => panel.classList.contains('open');
+      const open = () => {
+        opener = document.activeElement as HTMLElement;
+        panel.classList.add('open');
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+        btn.setAttribute('aria-expanded', 'true');
+        sheet.focus({ preventScroll: true });
+      };
+      const close = () => {
+        panel.classList.remove('open');
+        panel.removeAttribute('role');
+        panel.removeAttribute('aria-modal');
+        btn.setAttribute('aria-expanded', 'false');
+        (opener || btn).focus({ preventScroll: true });
+      };
+      btn.addEventListener('click', () => (isOpen() ? close() : open()));
+      $('read-x').addEventListener('click', close);
+      panel.addEventListener('click', (e) => { if (!sheet.contains(e.target as Node)) close(); });
+      window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isOpen()) close(); });
+
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      try {
+        startCopper(
+          {
+            wrap: $('wrap'),
+            scr: $<HTMLCanvasElement>('scr'),
+            bloom: $<HTMLCanvasElement>('bloom'),
+            amb: $<HTMLCanvasElement>('amb'),
+            scan: $<HTMLCanvasElement>('scan'),
+            now: $('now'),
+            nav: [...document.querySelectorAll<HTMLButtonElement>('.parts button')],
+            sound: $<HTMLButtonElement>('snd'),
+            crt: $<HTMLButtonElement>('crt'),
+            isModal: isOpen,
+          },
+          seed,
+          reduced,
+        );
+      } catch (err) {
+        console.error(err);
+        d.classList.remove('js');
+      }
+    </script>
+  </body>
+</html>
