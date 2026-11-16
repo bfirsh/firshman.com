@@ -1,0 +1,224 @@
+---
+import { name, email, now, projects, alsoWorkedOn, socials } from '../../data/bio';
+import { SECTIONS } from '../../components/ideas/unfold/sections';
+const P = Object.fromEntries(projects.map((p) => [p.slug, p]));
+const join = (n: number, i: number) => (i === 0 ? '' : i === n - 1 ? ', and ' : ', ');
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman works on Replicate. This is a voxel puzzle box: spin it, twist its slices, and tap a face to unfold the things he has made." />
+    <meta name="theme-color" content="#16131a" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <canvas id="gl" aria-hidden="true"></canvas>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="name">
+      <p class="who">{name}</p>
+      <p class="sub">a puzzle box of things</p>
+    </header>
+
+    <aside id="panel" class="panel" aria-live="polite">
+      {SECTIONS.map((s, si) => (
+        <section id={`sec-${s.id}`} class="sec" hidden aria-labelledby={`h-${s.id}`}>
+          <p class="kicker">face {si + 1} of 6</p>
+          <h2 id={`h-${s.id}`}>{s.title}</h2>
+          <p class="lede">{s.lede}</p>
+          <ul>
+            {s.items.map((it, k) => (
+              <li><a href={it.url} data-fig={k}>{it.name}</a>{it.blurb && <span>{it.blurb}</span>}</li>
+            ))}
+          </ul>
+          <button type="button" class="fold" data-close>fold it back</button>
+        </section>
+      ))}
+    </aside>
+
+    <nav class="pips" aria-label="Unfold a face">
+      {SECTIONS.map((s, i) => (
+        <button type="button" data-sec={s.id} title={s.title}><i aria-hidden="true"></i><span class="vh">Unfold {s.title}</span><b aria-hidden="true">{s.title.toLowerCase()}</b></button>
+      ))}
+    </nav>
+    <p id="hint" class="hint">drag to spin · grab a slice to twist · tap a face to unfold</p>
+    <p id="done" class="done" role="status">all six faces unfolded. thank you for playing.</p>
+
+    <div class="corner">
+      <button type="button" id="sound" aria-pressed="false">sound</button>
+      <button type="button" id="readBtn" aria-controls="read" aria-expanded="false">read</button>
+      <a href="/ideas">ideas</a>
+      <span id="edition" class="ed"></span>
+    </div>
+
+    <div id="read" class="read" role="dialog" aria-modal="true" aria-labelledby="read-title">
+      <main class="read-inner">
+        <button type="button" class="read-x" id="readClose" aria-label="Close">×</button>
+        <h1 id="read-title">{name}</h1>
+        <p>I'm working on <a href={now.url}>{now.name}</a>. Some other stuff I've done:</p>
+        <ul>
+          <li><a href={P.cog.url}>Cog</a>, containers for machine learning.</li>
+          <li><a href={P.clig.url}>Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+          <li><a href={P.compose.url}>Docker Compose</a> and <a href={P.machine.url}>Docker Machine</a>.</li>
+          <li><a href={P.jsnes.url}>JSNES</a>, one of the first JavaScript emulators.</li>
+          <li><a href={P.whalebrew.url}>Whalebrew</a>, a Docker package manager.</li>
+          <li><a href={P['arxiv-vanity'].url}>arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+          <li>I worked on {alsoWorkedOn.map((a, i) => <>{join(alsoWorkedOn.length, i)}<a href={a.url}>{a.name}</a></>)}.</li>
+          <li>I worked on many parts of <a href={P.django.url}>Django</a>, including class-based views, feeds, and search.</li>
+          <li>I helped start the <a href={P.ukhas.url}>UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+        </ul>
+        <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+          I'm also on {socials.map((s, i) => <>{join(socials.length, i)}<a href={s.url}>{s.name}</a></>)}.</p>
+      </main>
+    </div>
+
+    <style is:global>
+      :root {
+        color-scheme: dark;
+        --bg: #121015;
+        --accent: #e8b860;
+        --ink: #f3ede4;
+        --dim: rgba(243, 237, 228, 0.6);
+        --card: rgba(22, 19, 26, 0.62);
+        --line: rgba(243, 237, 228, 0.14);
+        --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+        --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      }
+      :root.lightbg {
+        color-scheme: light;
+        --ink: #2a2230;
+        --dim: rgba(42, 34, 48, 0.6);
+        --card: rgba(255, 252, 247, 0.66);
+        --line: rgba(42, 34, 48, 0.14);
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
+      body { font: 400 15px/1.5 var(--mono); -webkit-font-smoothing: antialiased; overflow: hidden; }
+      a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+      button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+      :focus-visible { outline: 1.5px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+      .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+      #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; outline: none; }
+      #gl.hot { cursor: pointer; }
+      #gl.grabbing { cursor: grabbing; }
+      .grain {
+        position: fixed; inset: -50%; pointer-events: none; opacity: 0.07; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      }
+
+      .name { position: fixed; top: max(18px, env(safe-area-inset-top)); left: 22px; margin: 0; pointer-events: none; opacity: 0; transform: translateY(-6px); transition: opacity 1.2s ease 0.2s, transform 1.2s ease 0.2s; }
+      .ready .name { opacity: 1; transform: none; }
+      .who { margin: 0; font: 400 26px/1 var(--serif); letter-spacing: 0.01em; }
+      .sub { margin: 5px 0 0; font-size: 11px; letter-spacing: 0.08em; color: var(--dim); }
+
+      .panel {
+        position: fixed; right: 22px; top: 50%; width: min(330px, 34vw);
+        transform: translate(16px, -50%); opacity: 0; visibility: hidden; pointer-events: none;
+        transition: opacity 0.5s ease, transform 0.7s cubic-bezier(.2,.9,.25,1.15), visibility 0s linear 0.5s;
+        padding: 24px 24px 20px; border-radius: 4px; background: var(--card); border: 1px solid var(--line);
+        backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+        max-height: calc(100vh - 140px); overflow: auto;
+      }
+      .panel.on { opacity: 1; visibility: visible; pointer-events: auto; transform: translate(0, -50%); transition-delay: 0.85s, 0.85s, 0s; }
+      .kicker { margin: 0 0 6px; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+      .sec h2 { margin: 0 0 6px; font: 400 40px/1 var(--serif); letter-spacing: 0.005em; }
+      .lede { margin: 0 0 14px; color: var(--dim); font-size: 12.5px; }
+      .sec ul { list-style: none; margin: 0; padding: 0; }
+      .sec li { padding: 9px 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 1px; }
+      .sec li a { font: 400 20px/1.2 var(--serif); text-decoration: none; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size 0.35s ease; align-self: flex-start; }
+      .sec li a:hover, .sec li a:focus-visible, .sec li a.flash { background-size: 100% 1px; }
+      .sec li a.flash { animation: flash 1.2s ease; }
+      @keyframes flash { 0% { color: var(--accent); } 100% { color: inherit; } }
+      .sec li span { font-size: 11.5px; color: var(--dim); }
+      .fold { margin-top: 14px; font-size: 11px; letter-spacing: 0.08em; color: var(--dim); }
+      .fold::before { content: '↩ '; }
+      .fold:hover { color: var(--ink); }
+
+      .pips { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 6px; opacity: 0; transition: opacity 1s ease 0.6s; }
+      .ready .pips { opacity: 1; }
+      .pips button { position: relative; width: 26px; height: 26px; display: grid; place-items: center; }
+      .pips i { width: 9px; height: 9px; border-radius: 1.5px; background: var(--c); opacity: 0.38; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15); transition: opacity 0.3s, transform 0.35s cubic-bezier(.3,1.6,.5,1); }
+      .pips button:hover i, .pips button:focus-visible i { opacity: 1; transform: scale(1.3); }
+      .pips button.seen i { opacity: 0.95; }
+      .pips b { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); font-weight: 400; font-size: 10.5px; letter-spacing: 0.08em; color: var(--dim); opacity: 0; pointer-events: none; transition: opacity 0.25s; white-space: nowrap; }
+      .pips button:hover b, .pips button:focus-visible b { opacity: 1; }
+
+      .hint { position: fixed; left: 50%; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 38px); transform: translateX(-50%); margin: 0; font-size: 11px; letter-spacing: 0.06em; color: var(--dim); white-space: nowrap; opacity: 0; transition: opacity 1.2s ease; pointer-events: none; }
+      .hint.show { opacity: 0.85; }
+      .hint.gone { opacity: 0 !important; transition-duration: 0.6s; }
+      .done { position: fixed; left: 50%; top: 18%; transform: translate(-50%, 8px); margin: 0; font: italic 400 22px/1.2 var(--serif); opacity: 0; transition: opacity 1.4s ease, transform 1.4s ease; pointer-events: none; text-align: center; width: max-content; max-width: calc(100vw - 32px); }
+      .done.on { opacity: 1; transform: translate(-50%, 0); }
+
+      .corner { position: fixed; right: 18px; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; gap: 12px; align-items: baseline; font-size: 11px; letter-spacing: 0.06em; opacity: 0.45; transition: opacity 0.3s; }
+      .corner:hover, .corner:focus-within { opacity: 0.95; }
+      .corner a { text-decoration: none; }
+      .corner button[aria-pressed='true'] { color: var(--accent); }
+      .ed { color: var(--dim); font-size: 10px; }
+
+      .read { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 24px 16px; background: rgba(10, 9, 12, 0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); opacity: 0; visibility: hidden; transition: opacity 0.35s ease, visibility 0s linear 0.35s; }
+      .reading .read { opacity: 1; visibility: visible; transition-delay: 0s; }
+      .read-inner { position: relative; width: min(620px, 100%); max-height: calc(100vh - 48px); overflow: auto; padding: 40px 44px 34px; background: #f7f2e9; color: #2a2421; border-radius: 3px; box-shadow: 0 30px 80px rgba(0,0,0,0.35); font: 400 16px/1.6 var(--mono); }
+      .read-inner h1 { font: 400 44px/1 var(--serif); margin: 0 0 22px; }
+      .read-inner p, .read-inner li { font-size: 14.5px; }
+      .read-inner ul { padding-left: 18px; margin: 14px 0 18px; }
+      .read-inner li { margin: 5px 0; }
+      .read-inner li::marker { color: #b8a58c; }
+      .read-inner a { color: #2a2421; text-decoration-color: #c4ac8a; }
+      .read-x { position: absolute; top: 12px; right: 16px; font-size: 22px; line-height: 1; color: #8a7d70; padding: 4px 6px; }
+
+      /* without JS or WebGL the text is the page */
+      html:not(.js) #gl, html:not(.js) .grain, html:not(.js) .pips, html:not(.js) .corner button, html:not(.js) .name, html:not(.js) .hint, html:not(.js) .panel, html:not(.js) .read-x,
+      .nogl #gl, .nogl .grain, .nogl .pips, .nogl .corner button, .nogl .name, .nogl .hint, .nogl .panel, .nogl .read-x { display: none !important; }
+      html:not(.js) body, .nogl body { overflow: auto; background: #ece5d9; }
+      html:not(.js) .read, .nogl .read { position: static; opacity: 1; visibility: visible; background: none; backdrop-filter: none; min-height: 100vh; }
+      html:not(.js) .corner, .nogl .corner { opacity: 0.6; color: #2a2421; }
+
+      @media (max-width: 760px), (max-aspect-ratio: 21/20) {
+        .panel { left: 12px; right: 12px; top: auto; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 34px); width: auto; transform: translateY(16px); max-height: min(44vh, 380px); padding: 16px 18px 12px; }
+        .panel.on { transform: none; }
+        .sec h2 { font-size: 32px; }
+        .sec li { padding: 6px 0; }
+        .sec li a { font-size: 18px; }
+        .name { left: 16px; }
+        .who { font-size: 22px; }
+        .corner { right: 12px; gap: 10px; }
+        .pips { left: 16px; transform: none; gap: 2px; }
+        .hint { left: 16px; transform: none; white-space: normal; max-width: calc(100vw - 32px); }
+        .read-inner { padding: 30px 22px 24px; }
+        .read-inner h1 { font-size: 36px; }
+      }
+      @media (max-width: 760px), (max-aspect-ratio: 21/20) {
+        .panel.on ~ .pips, .panel.on ~ .hint { opacity: 0.0; pointer-events: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * { transition-duration: 0.01s !important; animation: none !important; }
+      }
+    </style>
+
+    <script>
+      const root = document.documentElement;
+      const read = document.getElementById('read')!;
+      const btn = document.getElementById('readBtn')!;
+      const open = (v: boolean) => {
+        root.classList.toggle('reading', v);
+        btn.setAttribute('aria-expanded', String(v));
+        if (v) (document.getElementById('readClose') as HTMLElement).focus({ preventScroll: true });
+        else btn.focus({ preventScroll: true });
+      };
+      btn.addEventListener('click', () => open(!root.classList.contains('reading')));
+      document.getElementById('readClose')!.addEventListener('click', () => open(false));
+      read.addEventListener('click', (e) => { if (e.target === read) open(false); });
+      addEventListener('keydown', (e) => { if (e.key === 'Escape' && root.classList.contains('reading')) { e.stopImmediatePropagation(); open(false); } }, true);
+    </script>
+    <script>
+      import '../../components/ideas/unfold/main.ts';
+    </script>
+  </body>
+</html>
