@@ -1,0 +1,7 @@
+---
+// Caustic: an abstract NES demo about light under water (MMC5), running in JSNES through a CRT.
+// Source: nes/carts/caustic/.
+import CartridgePage from '../../components/ideas/cartridge/CartridgePage.astro';
+import rom from '../../components/ideas/cartridge/roms/caustic.nes?url';
+---
+<CartridgePage title="Caustic" description="An NES demo: liquid light, streamed tile by tile from the cartridge." rom={rom} />

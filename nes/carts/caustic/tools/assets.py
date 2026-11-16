@@ -1,0 +1,422 @@
+#!/usr/bin/env python3
+"""Caustic: asset and code generator.
+
+Writes into out/gen/:
+  chr.bin        CHR-ROM: light worlds (64x64 px periodic animations, 128 frames each, four frames
+                 per 4 KB bank) followed by the sprite bank
+  nt.bin         the one and only nametable (static for the whole demo)
+  bandN.inc      ExRAM "band" streamers: per tile, the 4 KB bank (= moment in time) and palette,
+                 plus the V lookup tables
+  kernel.inc     the cycle-timed raster kernel (one block per scanline)
+  boot.inc       sine pages for the kernel, copied to PRG-RAM at reset
+
+The streaming scheme (see src/main.s for the run-time half):
+  World w, frame F (0..127) of the 64x64 animation is stored as 64 tiles at bank 32w + F/4,
+  tile index (F%4)*64 + texture tile. Each screen tile (x, y) has a fixed time offset phi(x, y), a
+  fixed sub-frame k = (g + phi) % 4 baked into the nametable (g = band = y / 8), and its bank is
+  rewritten in ExRAM once every 4 frames, staggered by band, so that every tile shows frame
+  T + phi of the animation. A smooth phi field hides both the 64 px spatial period and the
+  128-frame time loop: no two copies of the texture on screen show the same moment.
+"""
+import os
+import sys
+import numpy as np
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+sys.path.insert(0, str(HERE))
+import caustics  # noqa: E402
+import bluenoise  # noqa: E402
+
+GEN = ROOT / 'out' / 'gen'
+CACHE = Path(os.environ.get('CAUSTIC_CACHE', ROOT / 'out' / 'cache'))
+FRAMES = 128
+
+# --------------------------------------------------------------------------- worlds
+WORLDS = [
+    # name, generator, args, tone (ref percentile, gamma, gain)
+    ('pool', caustics.caustic, dict(seed=21, waves=8, strength=2.0, kmin=2.0, kmax=3.6, tmax=1), (99.0, 0.75, 1.0)),
+    ('rain', caustics.rain, dict(), (99.5, 0.9, 1.0)),
+    ('lattice', caustics.interfere, dict(dirs=((3, 1), (-1, 3), (-2, -2), (2, -3)), tharm=(1, -1, 1, -1)), (99.5, 0.9, 1.0)),
+]
+
+
+def world_frames(i):
+    name, fn, args, _ = WORLDS[i]
+    CACHE.mkdir(parents=True, exist_ok=True)
+    key = CACHE / f'{name}_{abs(hash(repr(sorted(args.items())))) % 10**8}_{FRAMES}.npy'
+    if key.exists():
+        return np.load(key)
+    w = fn(frames=FRAMES, **args)
+    np.save(key, w)
+    return w
+
+
+BN = bluenoise.blue_noise(64, seed=5)
+
+
+def quantise(world, tone):
+    """Tone-map to 0..3 with "plateaus": most pixels sit on a solid level and blue-noise dither
+    only shows in narrow bands between levels (calm flat areas, soft edges)."""
+    pct, gamma, gain, steep = (tone + (4.0,))[:4]
+    ref = np.percentile(world, pct)
+    x = 3 * np.clip(gain * world / ref, 0, 1) ** gamma
+    n = np.floor(x).clip(0, 2)
+    f = np.clip((x - n - 0.5) * steep + 0.5, 0, 1)
+    q = np.floor(n + f + BN[None] - 0.5 + 0.5).clip(0, 3).astype(np.uint8)
+    q = np.floor(n + np.clip(f + BN[None] - 0.5, 0, 1) + 0.5 * 0).astype(np.uint8)
+    return np.where(f + BN[None] >= 1, n + 1, n).clip(0, 3).astype(np.uint8)
+
+
+def tiles_of(img):
+    """64x64 levels -> 64 tiles of 16 bytes (2bpp planar)."""
+    out = bytearray()
+    for ty in range(8):
+        for tx in range(8):
+            t = img[ty * 8:ty * 8 + 8, tx * 8:tx * 8 + 8]
+            p0 = [int(sum(((t[r, c] & 1) << (7 - c)) for c in range(8))) for r in range(8)]
+            p1 = [int(sum((((t[r, c] >> 1) & 1) << (7 - c)) for c in range(8))) for r in range(8)]
+            out += bytes(p0) + bytes(p1)
+    return out
+
+
+def build_chr(levels_by_world):
+    chr_ = bytearray()
+    for q in levels_by_world:
+        for b in range(FRAMES // 4):
+            for k in range(4):
+                chr_ += tiles_of(q[b * 4 + k])
+    return chr_
+
+
+# --------------------------------------------------------------------------- the screen layout
+TX, TY = 32, 30
+
+
+def phi_map():
+    x = np.arange(TX)[None, :].repeat(TY, 0).astype(float)
+    y = np.arange(TY)[:, None].repeat(TX, 1).astype(float)
+    phi = 2.1 * x + 1.4 * y + 9 * np.sin(x * 0.33 + 1.1 * np.sin(y * 0.23)) + 7 * np.cos(y * 0.31 - x * 0.12)
+    return np.round(phi).astype(int) % 128
+
+
+def band_of(y):
+    return min(y // 8, 3)
+
+
+PHI = phi_map()
+G = np.array([[band_of(y) for x in range(TX)] for y in range(TY)])
+K = (G + PHI) % 4
+D0 = ((G + PHI) % 128) >> 2
+
+
+def nametable():
+    nt = bytearray(1024)
+    for y in range(TY):
+        for x in range(TX):
+            nt[y * 32 + x] = K[y, x] * 64 + (y % 8) * 8 + (x % 8)
+    return nt
+
+
+# --------------------------------------------------------------------------- band streamers
+def v_tables():
+    """V_p[i] = p<<6 | (i & 31) | 32 * (i >= 256): palette, world bit, bank within the world."""
+    out = []
+    for p in range(4):
+        out.append([(p << 6) | (i & 31) | (32 if i >= 256 else 0) for i in range(512)])
+    return out
+
+
+def band_asm(name, palmap, order, label):
+    """palmap, order: (TY, TX) arrays: palette 0-3 and dissolve order 0-5 per tile."""
+    L = [f'; {label}: generated by tools/assets.py', f'.segment "{name}"', f'{name}_v:']
+    for p, tab in enumerate(v_tables()):
+        for i in range(0, 512, 32):
+            L.append('  .byte ' + ','.join(str(b) for b in tab[i:i + 32]))
+    L.append(f'{name}_jump:')
+    L.append(f'  .word {name}_b0, {name}_b1, {name}_b2, {name}_b3')
+    for g in range(4):
+        L.append(f'{name}_b{g}:')
+        for y in range(TY):
+            if band_of(y) != g:
+                continue
+            for x in range(TX):
+                p = int(palmap[y, x])
+                dt = 32 + int(D0[y, x]) + 32 * int(order[y, x])
+                assert 0 <= dt <= 255
+                L.append(f'  lda {name}_v+{p * 512 + dt},y')
+                L.append(f'  sta $5C00+{y * 32 + x}')
+        L.append('  rts')
+    return '\n'.join(L) + '\n'
+
+
+def field_coords():
+    x = (np.arange(TX)[None, :] + 0.5).repeat(TY, 0)
+    y = (np.arange(TY)[:, None] + 0.5).repeat(TX, 1)
+    return x, y
+
+
+def tile_dither(v, levels, seed):
+    """Quantise a smooth field v in [0, 1] to 0..levels-1 per tile with blue-noise dithering."""
+    bn = bluenoise.blue_noise(32, sigma=1.3, seed=seed)[:TY, :TX]
+    return np.floor(np.clip(v, 0, 1) * (levels - 1) + bn).clip(0, levels - 1).astype(int)
+
+
+def palmaps():
+    x, y = field_coords()
+    maps = {}
+    # sun pool: a broad soft pool of light, brightest a little above centre
+    r = np.hypot((x - 16) / 17.0, (y - 13) / 14.0)
+    maps['sun'] = tile_dither(np.clip(1.15 - r, 0, 1) ** 0.9, 4, 11)
+    # diagonal shafts of light
+    s = 0.5 + 0.5 * np.sin((x * 0.8 + y * 0.6) * 0.32)
+    maps['shafts'] = tile_dither(0.15 + 0.85 * s * np.clip(1.25 - r * 0.8, 0, 1), 4, 12)
+    # flat: one palette everywhere except gentle variation
+    maps['flat'] = tile_dither(0.35 + 0.3 * np.clip(1 - r, 0, 1), 4, 13)
+    return maps
+
+
+def orders():
+    x, y = field_coords()
+    r = np.hypot(x - 16, (y - 15) * 1.1)
+    out = {}
+    # rings outwards from the centre (dissolve front expands)
+    out['out'] = tile_dither(r / r.max(), 6, 21)
+    # reversed: the front closes in towards the centre
+    out['in'] = 5 - out['out']
+    return out
+
+
+# --------------------------------------------------------------------------- kernel
+# Opcode cycle counts for what the kernel uses.
+KTOP = 24          # first scanline the kernel shapes
+KBOT = 207         # last
+K1, K2, K3 = 3, 251, 2  # sine index step per scanline for the three components (251 = -5)
+TAPER = 20
+
+
+def kernel_asm():
+    L = ['; Raster kernel: generated by tools/assets.py. One block per scanline, all fixed-cycle.',
+         '; Block for target line T runs during line T-1 and writes the scroll for line T in its',
+         '; horizontal blank. 3 lines = 341 dots = 114 + 114 + 113 CPU cycles.']
+    lens = [114, 114, 113]
+    n = 0
+    for t in range(KTOP, KBOT + 1):
+        # taper level for this line (0..4 -> pointer set)
+        e = min(t - KTOP, KBOT - t)
+        lev = 4 if e >= TAPER else (e * 4) // TAPER
+        s1, s2, s3 = [f'ks{c}_{lev}' for c in (1, 2, 3)]
+        c1 = (K1 * t) & 255
+        c2 = (K2 * t) & 255
+        c3 = (K3 * t) & 255
+        body = [
+            (f'lda #{t}', 2), ('clc', 2), ('adc kms', 3), ('tay', 2), ('lda (kmt),y', 5), ('sta kmask', 3),
+            (f'lda #{c2}', 2), ('adc kp2', 3), ('tay', 2), (f'lda ({s2}),y', 5), ('sta ktmp', 3),
+            (f'lda #{c1}', 2), ('adc kp1', 3), ('tay', 2), (f'lda ({s1}),y', 5),
+            ('clc', 2), ('adc ktmp', 3), ('clc', 2), ('adc kxb', 3), ('tax', 2),
+            (f'lda #{c3}', 2), ('adc kp3', 3), ('tay', 2), (f'lda #{t}', 2), ('clc', 2), (f'adc ({s3}),y', 5), ('tay', 2),
+            ('lda LOY,y', 4), ('ora LOX,x', 4),
+            ('sty $2006', 4), ('sty $2005', 4),
+        ]
+        crit = [('stx $2005', 4), ('sta $2006', 4), ('lda kmask', 3), ('sta $2001', 4)]
+        used = sum(c for _, c in body) + sum(c for _, c in crit)
+        total = lens[n % 3]
+        pad = total - used
+        assert pad >= 0, (t, used)
+        L.append(f'; line {t}')
+        L += ['  ' + s for s, _ in body]
+        # padding: KPAD cycles before the critical writes (tuned so they land at ~dot 270),
+        # the rest after them
+        L.append(f'  KDELAY {pad}')
+        L += ['  ' + s for s, _ in crit]
+        n += 1
+    return '\n'.join(L) + '\n'
+
+
+def sine_pages(amps=20):
+    out = []
+    for a in range(amps):
+        for i in range(256):
+            v = int(round(a * np.sin(2 * np.pi * i / 256)))
+            out.append(v & 255)
+    return out
+
+
+def boot_asm():
+    L = ['; boot data: sine pages for the kernel (amplitude 0..19 px), copied to PRG-RAM $6000,',
+         '; then the emphasis pattern pages, copied to $7400',
+         '.segment "BOOT"', 'boot_sine:']
+    s = sine_pages()
+    for i in range(0, len(s), 32):
+        L.append('  .byte ' + ','.join(str(b) for b in s[i:i + 32]))
+    L.append('boot_emph:')
+    for page in emph_pages():
+        for i in range(0, 256, 32):
+            L.append('  .byte ' + ','.join(str(b) for b in page[i:i + 32]))
+    L.append('boot_nt:')
+    nt = nametable()
+    for i in range(0, 1024, 32):
+        L.append('  .byte ' + ','.join(str(b) for b in nt[i:i + 32]))
+    return '\n'.join(L) + '\n'
+
+
+# --------------------------------------------------------------------------- emphasis pages
+# PPUMASK per scanline. JSNES's emphasis bits tint: $20 blue, $40 green, $80 red (the R and B bits
+# are swapped against real hardware), all three = a uniform x0.56 dimmer.
+ON = 0x1E
+B, Gn, R, DIM = 0x20, 0x40, 0x80, 0xE0
+DITH4 = [0, 2, 1, 3]
+
+
+def mix_line(y, a, b, f):
+    """Line y gets b with probability f (ordered over 4 lines), else a."""
+    return b if (DITH4[y % 4] + 0.5) / 4 < f else a
+
+
+def smooth(x):
+    x = min(max(x, 0.0), 1.0)
+    return x * x * (3 - 2 * x)
+
+
+def emph_pages():
+    pages = []
+    # 0 plain
+    pages.append([ON] * 256)
+    # 1 depth: blue tint fading out from the top, a hint of green near the bottom
+    p = []
+    for y in range(256):
+        yy = y % 240
+        if yy < 120:
+            p.append(mix_line(y, ON, ON | B, smooth((110 - yy) / 90)))
+        else:
+            p.append(mix_line(y, ON, ON | Gn, smooth((yy - 150) / 90) * 0.75))
+    pages.append(p)
+    # 2 vignette: dim at top and bottom
+    p = []
+    for y in range(256):
+        yy = y % 240
+        f = max(smooth((70 - yy) / 60), smooth((yy - 170) / 60))
+        p.append(mix_line(y, ON, ON | DIM, f))
+    pages.append(p)
+    # 3 spectrum bands, period 128 (scrolls seamlessly)
+    seq = [0, B, B | Gn, Gn, Gn | R, R, R | B, B]
+    p = []
+    for y in range(256):
+        ph = (y % 128) / 16.0
+        i = int(ph)
+        f = smooth((ph - i - 0.5) * 2.0 + 0.5)
+        p.append(ON | mix_line(y, seq[i % 8], seq[(i + 1) % 8], f))
+    pages.append(p)
+    # 4 rolling light: soft dim bands, period 64
+    p = []
+    for y in range(256):
+        c = 0.5 + 0.5 * np.cos(2 * np.pi * y / 64)
+        p.append(mix_line(y, ON, ON | DIM, c * 0.75))
+    pages.append(p)
+    # 5 warm bands for the sun, period 128
+    seq = [0, R, R | Gn, 0, Gn, R | Gn, R, 0]
+    p = []
+    for y in range(256):
+        ph = (y % 128) / 16.0
+        i = int(ph)
+        f = smooth((ph - i - 0.5) * 2.0 + 0.5)
+        p.append(ON | mix_line(y, seq[i % 8], seq[(i + 1) % 8], f))
+    pages.append(p)
+    # 6 night: blue everywhere, half the lines dimmed
+    pages.append([ON | B if y % 2 else ON | DIM for y in range(256)])
+    # 7 dim
+    pages.append([ON | DIM] * 256)
+    return pages
+
+
+# --------------------------------------------------------------------------- palettes
+sys.path.append(str(HERE.parent.parent.parent / 'tools'))
+import nespal  # noqa: E402
+
+PALS = {
+    # backdrop, then zones 0..3 (dim .. sunlit), three colours each
+    'black': [0x0F] + [0x0F] * 12,
+    'deep':  [0x0C] + [0x0C, 0x1C, 0x21] + [0x0C, 0x1C, 0x2C] + [0x1C, 0x21, 0x2C] + [0x1C, 0x2C, 0x3C],
+    'day':   [0x0C] + [0x1C, 0x21, 0x2C] + [0x1C, 0x2C, 0x3C] + [0x21, 0x2C, 0x3C] + [0x2C, 0x3C, 0x30],
+    'rain':  [0x0C] + [0x11, 0x21, 0x31] + [0x12, 0x22, 0x32] + [0x21, 0x31, 0x30] + [0x22, 0x32, 0x30],
+    'latt':  [0x0F] + [0x03, 0x13, 0x23] + [0x04, 0x14, 0x24] + [0x13, 0x23, 0x33] + [0x14, 0x24, 0x34],
+    'sun':   [0x07] + [0x17, 0x27, 0x37] + [0x17, 0x27, 0x38] + [0x27, 0x37, 0x30] + [0x27, 0x38, 0x30],
+    'dusk':  [0x01] + [0x0C, 0x1C, 0x11] + [0x0C, 0x11, 0x21] + [0x1C, 0x21, 0x31] + [0x11, 0x21, 0x31],
+    'white': [0x30] * 13,
+}
+RAMPS = [('black', 'deep'), ('deep', 'day'), ('day', 'rain'), ('white', 'latt'), ('white', 'sun'),
+         ('sun', 'night'), ('night', 'black')]
+PALS['night'] = [0x0F] + [0x0F, 0x01, 0x11] + [0x0F, 0x01, 0x11] + [0x01, 0x11, 0x21] + [0x01, 0x11, 0x21]
+PALS['dusk'] = [0x0C] + [0x01, 0x11, 0x21] + [0x01, 0x11, 0x21] + [0x11, 0x21, 0x31] + [0x11, 0x21, 0x31]
+STEPS = 16
+CAND = [c for c in nespal.USABLE if c not in (0x00, 0x10, 0x0D, 0x1D, 0x2D, 0x3D, 0x0E, 0x1E, 0x2E, 0x3E, 0x1F, 0x2F, 0x3F)]
+LIN = nespal.srgb_to_lin(nespal.RGB)
+LABC = nespal.lab(nespal.RGB)
+
+
+def nearest(lin):
+    lab = nespal.lab(nespal.lin_to_srgb(lin))
+    w = np.array([1.0, 1.6, 1.6])
+    d = [np.linalg.norm((LABC[c] - lab) * w) for c in CAND]
+    return CAND[int(np.argmin(d))]
+
+
+def ramp(a, b):
+    out = []
+    for i in range(STEPS):
+        f = i / (STEPS - 1)
+        row = []
+        for ca, cb in zip(PALS[a], PALS[b]):
+            row.append(nearest((1 - f) * LIN[ca] + f * LIN[cb]))
+        bd = row[0]
+        out.append([bd] + row[1:4] + [bd] + row[4:7] + [bd] + row[7:10] + [bd] + row[10:13])
+    return out
+
+
+def palettes_asm():
+    L = ['; palette ramps (16 steps x 16 bytes): generated by tools/assets.py', '.segment "RODATA2"']
+    for a, b in RAMPS:
+        L.append(f'ramp_{a}_{b}:')
+        for row in ramp(a, b):
+            L.append('  .byte ' + ','.join(f'${c:02X}' for c in row))
+    return '\n'.join(L) + '\n'
+
+
+# --------------------------------------------------------------------------- sprites
+def sprite_bank():
+    import titlefont
+    return titlefont.sprite_chr()
+
+
+def main():
+    GEN.mkdir(parents=True, exist_ok=True)
+    qs = []
+    for i in range(len(WORLDS)):
+        w = world_frames(i)
+        qs.append(quantise(w, WORLDS[i][3]))
+    np.save(GEN / 'levels.npy', np.stack(qs))
+    chr_ = build_chr(qs)
+    spr = sprite_bank()
+    chr_ += spr + bytes(8192 - len(spr))
+    (GEN / 'chr.bin').write_bytes(bytes(chr_))
+    pm = palmaps()
+    od = orders()
+    variants = [
+        ('BAND0', 'sun', 'out'),
+        ('BAND1', 'shafts', 'out'),
+        ('BAND2', 'sun', 'in'),
+        ('BAND3', 'flat', 'out'),
+    ]
+    for name, p, o in variants:
+        (GEN / f'{name.lower()}.inc').write_text(band_asm(name, pm[p], od[o], f'{p} / {o}'))
+    np.savez(GEN / 'maps.npz', phi=PHI, k=K, d0=D0, **{f'pal_{k}': v for k, v in pm.items()},
+             **{f'ord_{k}': v for k, v in od.items()})
+    (GEN / 'kernel.inc').write_text(kernel_asm())
+    (GEN / 'boot.inc').write_text(boot_asm())
+    (GEN / 'palettes.inc').write_text(palettes_asm())
+    print('chr', len(chr_), 'worlds', len(qs))
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,189 @@
+# Caustic: "Caustic", an ambient piece in D major. Format: see the docstring of tools/compile.py.
+# 75 BPM: 6 frames per row, 8 rows per beat, 32 rows per bar, 128 rows (4 bars) per pattern.
+# 12 patterns = 9216 frames = 2:33.3, looping seamlessly (the last chord leads back to the first).
+#
+# Shape: dawn (pad of slow arpeggios + detuned echo, drone) -> pool (glass-bell melody) -> rain
+# (sixteenth-note shimmer) -> lattice (chromatic tension: Bbmaj7, Cmaj7, soft percussion arrives)
+# -> sun (the melody an octave up over a fat unison, the fullest texture) -> dusk (back to the pad).
+# No DPCM: the demo's raster kernel is cycle-timed.
+
+song caustic
+  speed 6 6
+  rows 128
+  bar 32
+  loop 0
+
+# ---------------------------------------------------------------- instruments
+inst pad                      # slow arpeggio pad: soft swelling pluck, round 50% duty
+  env d2 2 4 6 8 9 10 10 10 9 9 9 8 8 8 7 7 7 6 6 6 6 5 5 5 5 4 4 4 4 4 3 3 3 3 3 2 2 2 2 2 1 1 1 1 0
+inst padq                     # quicker version for sixteenth-note shimmer
+  env d1 3 6 8 8 7 7 6 6 5 5 4 4 4 3 3 3 2 2 2 1 1 1 0
+inst bell                     # glass bell: bright 25% strike, long decay, delayed vibrato
+  env d1 12 10 9 d2 8 8 7 7 6 6 6 5 5 5 5 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 3 | 3 / 2 2 2 1 1 1 1 0
+  vib 2 22 30
+  events lead
+inst bellhi                   # the climax bell, a little brighter and longer
+  env d0 13 d1 11 10 9 9 8 8 7 7 7 6 6 6 6 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 | 4 / 3 3 2 2 1 1 1 0
+  vib 2 20 26
+  events lead
+inst swell                    # long swell for pulse 2 pads
+  rate 3
+  env d2 1 1 2 2 3 3 4 4 5 5 5 6 6 6 | 6 / 5 4 3 2 1 1 0
+  vib 1 12 40
+inst swellb                   # brighter swell (25%) for the lattice section
+  rate 3
+  env d1 1 2 2 3 3 4 4 5 5 6 6 6 7 | 7 / 6 5 4 3 2 1 0
+  vib 1 14 36
+# triangle: volume only gates
+inst drone
+  env 15 / 0
+  events bass
+inst tpl
+  env 15*40 0
+  events bass
+inst tk                       # soft triangle thump (climax only): a short pitch dive
+  env 15*7 0
+  arp 19 12 7 3 1 0
+  events kick
+# noise
+inst wave                     # the sea: a slow swell of soft hiss
+  rate 7
+  env 1 1 1 2 2 2 3 3 3 3 2 2 2 2 1 1 1 1 0
+inst wave2
+  rate 7
+  env 1 1 2 2 3 3 4 4 4 4 3 3 3 2 2 2 1 1 1 1 0
+inst drop                     # a raindrop: tiny metallic tick
+  env 4 2 1 0
+  noise short
+  events hat
+inst hat
+  env 3 2 1 1 0
+  events hat
+inst shk
+  env 1 2 3 2 2 1 1 0
+  events hat
+inst brush                    # soft "snare": a long brushed hiss
+  env 5 5 4 4 3 3 3 2 2 2 2 1 1 1 1 0
+  events snare
+
+drum wv  wave 11
+drum wvb wave2 10
+drum dr  drop 2
+drum drb drop 5
+drum hh  hat 1
+drum sk  shk 3
+drum br  brush 6
+
+# ---------------------------------------------------------------- chord figures (8 eighths = 1 bar)
+def Dm9  o4 d a >e f# a f# e <a
+def Bm11 o3 b >f# a >d e d <a f#
+def Gm7  o3 g >d f# b >d <b f# d
+def Gm9  o3 g >d a b >f# <b a d
+def As4  o3 a >e a >d e d <a e
+def Aa   o3 a >e a >c# e c# <a e
+def As2  o3 a >e a b >e <b a e
+def Fm7  o3 f# >c# e a >c# <a e c#
+def Em9  o3 e b >f# g b g f# <b
+def Bb7  o3 a# >f a >d f d <a f
+def Cm7  o4 c g b >e g e <b g
+def A7s  o3 a >e g >d e d <g e
+def Bm9  o3 b >f# a >c# d c# <a f#
+
+# ---------------------------------------------------------------- pulse 1
+pat dawn0 p1                  # the pad fades in out of nothing
+  @pad {vol 5} l4 $Dm9 | {vol 8} $Dm9 | {vol 11} $Bm11 | {vol 13} $Bm11
+pat dawn1 p1
+  @pad {vol 15} l4 $Gm7 | $Gm9 | $As4 | $Aa
+pat mel2 p1                   # the bell melody
+  @bell {vol 13} o4 a8 >f#12 e4 d8 | c#16 e8 f#8 | <b8 >d8 f#8 a8 | e24 r8
+pat mel3 p1
+  @bell {vol 13} o5 f#12 e4 d8 c#8 | c#12 <a4 >e16 | d8 <b8 >a16 | g8 e8 d16
+pat rain4 p1                  # sixteenth-note shimmer
+  @padq {vol 12} l2 [$Em9]2 | [$Gm7]2 | [$Bm9]2 | [$As4]2
+pat rain5 p1
+  @padq {vol 13} l2 [$Em9]2 | [$Gm7]2 | [$Fm7]2 | [$Bm9]2
+pat latt6 p1                  # tension: the shimmer climbs to Bbmaj7
+  @padq {vol 14} l2 [$Gm7]2 | [$Gm9]2 | [$Bb7]2 | [$Bb7]2
+pat latt7 p1
+  @padq {vol 15} l2 [$Cm7]2 | [$Cm7]2 | [$As4]2 | [$Aa]2
+pat sun8 p1                   # release: the melody an octave up
+  @bellhi {vol 15} o5 a8 >f#12 e4 d8 | d12 c#4 <b16 | b8 >d8 f#8 a8 | g16 e16
+pat sun9 p1
+  @bellhi {vol 15} o6 f#12 e4 d8 <a8 | >c#16 e8 c#8 | <b8 >d8 f#8 b8 | a16 g8 e8
+pat sun10 p1
+  @bellhi {vol 15} o6 f#32 | e8 d8 <b16 | a12 b4 >d16 | e32
+pat dusk11 p1                 # the pad again, fading towards the loop
+  @pad {vol 14} l4 $Dm9 | {vol 12} $Dm9 | {vol 9} $Bm11 | {vol 6} $Bm11
+
+# ---------------------------------------------------------------- pulse 2
+pat p2echo p2                 # detuned echo of the pad, a dotted eighth late
+  {echo 36 9} {detune 2} w128
+pat p2echob p2                # echo of the bell, a beat late, slightly detuned
+  {echo 48 7} {detune 1} w128
+pat p2shim p2                 # an octave-up echo of the shimmer: glassy sparkle
+  {echo 9 5 oct} {detune 0} w128
+pat p2swell6 p2               # long swells under the shimmer
+  {echo off} {detune 0} @swellb {vol 13} o4 b32 | a32 | a#32 | f32
+pat p2swell7 p2
+  {echo off} {detune 0} @swellb {vol 14} o4 e32 | g32 | e32 | c#32
+pat p2fat p2                  # detuned unison: the climax bell made fat and chorused
+  {echo 2 11} {detune 3} w128
+pat p2octv p2                 # octave echo for the last climax pattern
+  {echo 30 7 oct} {detune 0} w128
+
+# ---------------------------------------------------------------- triangle
+pat tdawn0 tri
+  r64 @drone o2 d64
+pat tdawn1 tri
+  @drone o1 g32 g32 | a32 a32
+pat tmel2 tri
+  @tpl o2 d32 | f#32 | o1 g32 | a32
+pat tmel3 tri
+  @tpl o1 b32 | o2 f#32 | o1 g32 | a32
+pat train4 tri
+  @tpl o2 e16 e16 | o1 g16 g16 | b16 b16 | a16 a16
+pat train5 tri
+  @tpl o2 e16 e16 | o1 g16 g16 | o2 f#16 f#16 | o1 b16 b16
+pat tlatt6 tri
+  @drone o1 g32 | g32 | a#32 | a#32
+pat tlatt7 tri
+  @drone o2 c32 | c32 | o1 a32 | a16 @tpl a8 a8
+pat tsun8 tri                 # the soft thump arrives with the climax
+  [@tk o2 d4 @tpl d12 d8 d8]1 | [@tk o1 b4 @tpl b12 b8 b8]1 | [@tk o1 g4 @tpl g12 g8 g8]1 | [@tk o1 a4 @tpl a12 a8 a8]1
+pat tsun9 tri
+  [@tk o2 d4 @tpl d12 d8 d8]1 | [@tk o2 f#4 @tpl f#12 f#8 f#8]1 | [@tk o1 g4 @tpl g12 g8 g8]1 | @tk o2 e4 @tpl e12 @tk o1 a4 @tpl a12
+pat tsun10 tri
+  [@tk o1 g4 @tpl g12 g8 g8]2 | [@tk o2 f#4 @tpl f#12 f#8 f#8]1 | @drone o1 a32
+pat tdusk11 tri
+  @drone o2 d64 | o1 b32 r32
+
+# ---------------------------------------------------------------- noise
+pat nsea noise
+  {vol 15} wv64 wv64
+pat nsea2 noise
+  {vol 15} wvb64 wv64
+pat nrain noise               # sparse raindrops
+  {vol 15} dr4 w6 drb2 w4 dr2 dr2 w6 dr4 w2 | w2 dr2 w8 dr4 drb2 w4 dr4 w6 | dr2 w6 dr4 w4 drb2 w6 dr2 w6 | dr4 w2 drb2 w6 dr2 w4 dr4 w2 drb2 w4
+pat nlatt noise               # the shaker arrives, very soft
+  {vol 15} [w4 sk4]4 | [w4 sk4]4 | [w4 sk2 sk2]4 | [w4 sk4]3 w4 sk2 sk2
+pat nsun noise                # the fullest groove: soft hats, shaker, a brushed backbeat
+  {vol 15} [hh4 sk4 br4 sk4]8
+pat nsun10 noise
+  {vol 15} [hh4 sk4 br4 sk4]6 | wvb32
+pat ndusk noise
+  {vol 15} wv64 w64
+
+# ---------------------------------------------------------------- order (p1 p2 tri noise dmc)
+order
+  dawn0:   dawn0   p2echo   tdawn0  nsea    -
+  dawn1:   dawn1   p2echo   tdawn1  nsea    -
+  pool2:   mel2    p2echob  tmel2   nsea2   -
+  pool3:   mel3    p2echob  tmel3   nsea2   -
+  rain4:   rain4   p2shim   train4  nrain   -
+  rain5:   rain5   p2shim   train5  nrain   -
+  latt6:   latt6   p2swell6 tlatt6  nlatt   -
+  latt7:   latt7   p2swell7 tlatt7  nlatt   -
+  sun8:    sun8    p2fat    tsun8   nsun    -
+  sun9:    sun9    p2fat    tsun9   nsun    -
+  sun10:   sun10   p2octv   tsun10  nsun10  -
+  dusk11:  dusk11  p2echo   tdusk11 ndusk   -

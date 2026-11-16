@@ -1,0 +1,5 @@
+out/
+music/test/build/
+music/test/music_test.nes
+tools/__pycache__/
+music/tools/__pycache__/
