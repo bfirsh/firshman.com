@@ -1,0 +1,365 @@
+# Groove: funk / soul / jazz for the "Groove" cartridge. Format: see the docstring of tools/compile.py.
+# E Dorian vamp (Em9 | A13), a ii-V pre-chorus, a soul chorus on Cmaj9 Bm7 Am11 D13 with a B7#9
+# turnaround, a horn shout, a jazz breakdown with a walking bass solo, and a final chorus a whole
+# tone up (the order list transposes it) that turns back home through B7#9 for the loop.
+# The bass sits in the bass guitar's octave plus one (E2 = 82 Hz root) so laptop speakers carry it.
+# 16th-note swing: even rows 10 frames, odd rows 7 (about 106 BPM). 64 rows = 4 bars = 544 frames.
+# Channels: p1 lead / horn top, p2 guitar chops and chord stabs, or the lead doubled (echo), and the
+# slap overlay; triangle the bass; noise hats, ghost snares, ride; DMC kick, snare, rim, snare+clap.
+
+sample kick  rate 14 events kick
+sample snare rate 14 events snare
+sample rim   rate 15 events rim
+sample clap  rate 14 events snare clap
+
+song groove
+  speed 10 7
+  rows 64
+  bar 16
+  loop 0
+  ghost 4
+
+# ---------------------------------------------------------------- instruments
+# lead voices
+inst lead                     # verse: warm 50% attack settling to 25%, slow vibrato after a beat
+  env d2 7 10 12 d1 12 11 11 10 10 | 10 / 8 6 4 3 2 1 0
+  vib 2 18 22
+  events lead
+inst lead2                    # chorus: fuller and louder
+  env d2 8 11 13 12 12 11 11 | 11 / 9 7 5 3 2 1 0
+  vib 2 22 16
+  events lead
+inst soft                     # breakdown: muted jazz tone
+  env d1 3 6 8 9 9 8 8 | 8 / 6 4 3 2 1 0
+  vib 1 18 26
+  events lead
+inst horn                     # brass stab: scoop up a semitone into the note
+  env d2 6 11 13 12 d1 11 10 9 | 9 / 6 3 1 0
+  arp -1 0
+  events lead horn
+# guitar chops / chord stabs: rootless voicings strummed and cycled one note per frame
+inst cm9
+  env d1 9 8 6 4 3 2 1 0
+  arp | 3 7 10 14
+  events chop
+inst c13
+  env d1 9 8 6 4 3 2 1 0
+  arp | 4 10 14 21
+  events chop
+inst cmaj9
+  env d1 9 8 6 4 3 2 1 0
+  arp | 4 7 11 14
+  events chop
+inst cm7
+  env d1 9 8 6 4 3 2 1 0
+  arp | 3 7 10 12
+  events chop
+inst cm11
+  env d1 9 8 6 4 3 2 1 0
+  arp | 3 10 14 17
+  events chop
+inst c7s9
+  env d1 9 8 6 4 3 2 1 0
+  arp | 4 10 15
+  events chop
+inst cm7b5
+  env d1 9 8 6 4 3 2 1 0
+  arp | 3 6 10 12
+  events chop
+# breakdown comping: softer and longer
+inst pm7
+  env d2 3 5 6 6 5 5 4 4 3 3 | 3 / 2 1 0
+  arp | 0 3 7 10
+  events chop
+inst p7
+  env d2 3 5 6 6 5 5 4 4 3 3 | 3 / 2 1 0
+  arp | 0 4 10 14
+  events chop
+inst pmaj7
+  env d2 3 5 6 6 5 5 4 4 3 3 | 3 / 2 1 0
+  arp | 0 4 7 11
+  events chop
+inst pm7b5
+  env d2 3 5 6 6 5 5 4 4 3 3 | 3 / 2 1 0
+  arp | 0 3 6 10
+  events chop
+# electric-piano pad (intro and outro): soft swell, a slow shimmering arpeggio
+inst padm9
+  env d2 1 2 3 4 5 5 6 | 6 / 5 4 3 2 1 0
+  arp | 3 7 10 14
+  rate 2
+inst pad13
+  env d2 1 2 3 4 5 5 6 | 6 / 5 4 3 2 1 0
+  arp | 4 10 14 21
+  rate 2
+# triangle bass: the envelope only gates it, so articulation is all in the lengths
+inst tb                       # plucked note (rings until the next note or rest)
+  env 15*11 0
+  events bass
+inst tg                       # ghost / dead note: a thud
+  env 15*3 0
+  events ghost
+inst tpop                     # octave pop: pulse 2 doubles the attack an octave up
+  env 15*5 0
+  slap
+  events bass pop
+inst tsc                      # slide up into the note
+  env 15*8 0
+  arp -2 -1 0
+  events bass
+inst tw                       # walking quarter
+  env 15*28 0
+  events bass
+inst tw2                      # walking eighth
+  env 15*13 0
+  events bass
+# noise
+inst hc
+  env 5 4 3 2 2 1 1 0
+  events hat
+inst hca
+  env 7 5 4 3 2 2 1 1 0
+  events hat
+inst ho
+  env 6 5 5 4 4 3 3 3 2 2 2 1 1 0
+  events hat open
+inst gs                       # ghost snare
+  env 4 3 2 1 0
+  events ghost
+inst rd                       # ride: metallic noise
+  env 6 5 4 4 3 3 3 2 2 2 2 1 1 1 1 0
+  noise short
+  events hat
+inst cr
+  rate 3
+  env 9 8 7 7 6 6 5 5 4 4 4 3 3 3 2 2 2 1 1 1 0
+  events crash
+
+drum hc hc 1
+drum hca hca 1
+drum ho ho 2
+drum gs gs 6
+drum rd rd 3
+drum cr cr 3
+
+# ---------------------------------------------------------------- bass bars (16 rows each)
+# Em9 vamp bar: root, octave pop, ghost, the minor pentatonic walk-up, a pop on beat 4
+def bE   @tb o2 e2 @tpop o3 e1 @tg o2 e1 r1 @tb o2 g1 a1 r1 b1 r1 o3 d1 @tg o3 d1 @tpop o3 e1 r1 @tb o3 d1 o2 b1
+def bE2  @tb o2 e2 @tpop o3 e1 @tg o2 e1 @tb o2 g1 @tg o2 g1 @tb o2 a1 a#1 b1 r1 o3 d1 @tg o3 d1 @tpop o3 e1 @tb o3 d1 o2 b1 a#1
+# A13 bar: root, pop, the 3rd up top, b7 and the 13th, sliding back to E
+def bA   @tb o2 a2 @tpop o3 a1 @tg o2 a1 r1 @tb o3 c#1 o2 a1 r1 g1 r1 a1 @tg o2 a1 @tpop o3 g1 r1 @tb o3 e1 @tsc o2 f#1
+def bA2  @tb o2 a2 @tpop o3 a1 @tg o2 a1 @tb o3 c#1 @tg o3 c#1 @tb o3 e1 g1 r1 a1 r1 @tpop o3 a1 @tb o3 g1 e1 c#1 o2 d#1
+# heavier slap versions for the horn shout
+def bEs  @tb o2 e1 @tpop o3 e1 @tg o2 e1 @tpop o3 e1 @tb o2 g1 @tg o2 g1 @tb o2 a1 @tpop o3 a1 @tb o2 b1 @tg o2 b1 @tb o3 d1 @tpop o4 d1 @tpop o3 e1 @tg o2 e1 @tb o3 d1 o2 b1
+def bAs  @tb o2 a1 @tpop o3 a1 @tg o2 a1 @tpop o3 a1 @tb o3 c#1 @tg o3 c#1 @tb o2 g1 @tpop o3 g1 @tb o2 a1 @tg o2 a1 @tb o3 c#1 @tpop o4 c#1 @tpop o3 e1 @tg o3 e1 @tb o3 c#1 o2 d#1
+# pre-chorus: Am9 | D13 | F#m7b5 | B7#9
+def bP1  @tb o2 a3 @tpop o3 a1 r2 @tb o2 e1 g1 a2 r1 @tpop o3 a1 @tb o3 c1 o2 a1 g1 e1
+def bP2  @tb o3 d3 @tpop o4 d1 r2 @tb o2 a1 o3 c1 d2 r1 @tpop o4 d1 @tb o3 f#1 e1 d1 c1
+def bP3  @tb o2 f#3 @tpop o3 f#1 r2 @tb o3 c1 e1 f#2 r1 @tpop o3 f#1 @tb o3 e1 c1 o2 a1 f#1
+def bP4  @tb o2 b3 @tpop o3 b1 r2 @tb o3 d#1 f#1 a2 r1 @tpop o3 b1 @tb o3 a1 f#1 d#1 o2 b1
+# chorus: Cmaj9 | Bm7 | Am11 | D13  and the turnaround  Cmaj9 | Bm7 E7#9 | Am9 D13 | F#m7b5 B7#9
+def bC   @tb o3 c2 @tpop o4 c1 @tg o3 c1 r1 @tb o2 g1 o3 c1 r1 e1 r1 g1 @tg o3 g1 @tpop o4 c1 r1 @tb o3 c1 o2 b1
+def bB   @tb o2 b2 @tpop o3 b1 @tg o2 b1 r1 @tb o3 d1 f#1 r1 a1 r1 f#1 @tg o3 f#1 @tpop o3 b1 r1 @tb o2 b1 a#1
+def bAm  @tb o2 a2 @tpop o3 a1 @tg o2 a1 r1 @tb o3 c1 e1 r1 g1 r1 d1 @tg o3 d1 @tpop o3 a1 r1 @tb o3 c1 c#1
+def bD   @tb o3 d2 @tpop o4 d1 @tg o3 d1 r1 @tb o2 a1 o3 c1 r1 d1 r1 f#1 @tg o3 f#1 @tpop o4 d1 r1 @tb o3 c1 o2 b1
+def bBE  @tb o2 b2 @tpop o3 b1 r1 @tb o3 d1 f#1 @tg o3 f#1 @tb o2 b1 e2 @tpop o3 e1 r1 @tb o2 g#1 b1 o3 d1 o2 g#1
+def bAD  @tb o2 a2 @tpop o3 a1 r1 @tb o3 c1 e1 @tg o3 e1 @tb o2 a1 o3 d2 @tpop o4 d1 r1 @tb o3 c1 o2 a1 f#1 f1
+def bFB  @tb o2 f#2 @tpop o3 f#1 r1 @tb o3 c1 e1 @tg o3 e1 @tb o2 f#1 b2 @tpop o3 b1 r1 @tb o3 d#1 o2 b1 a1 f1
+# walking bass (breakdown): Am7 D7 | Gmaj7 Cmaj7 | F#m7b5 B7 | Em7 E7
+def wk1  @tw o2 a4 o3 c4 d4 o2 f#4
+def wk2  @tw o2 g4 b4 o3 c4 o2 g4
+def wk3  @tw o2 f#4 a4 b4 f4
+def wk4  @tw o2 e4 g4 g#4 b4
+def wk5  @tw o2 a4 o3 e3 @tg o3 e1 @tw o3 d4 @tw2 o3 c2 o2 g#2
+def wk6  @tw o2 g4 b3 @tg o2 b1 @tw o3 c4 @tw2 o3 d2 o2 g2
+def wk7  @tw o2 f#4 o3 c3 @tg o3 c1 @tw o2 b4 @tw2 o3 d#2 o2 f2
+def wk8  @tw o2 e4 g3 @tg o2 g1 @tw o2 g#4 @tw2 o2 b2 f2
+# build: the vamp, then up a gear, then a rising run into a one-beat break
+def bU3  @tb o2 a1 @tpop o3 a1 @tb o2 a1 @tpop o3 a1 @tb o2 a1 @tpop o3 a1 @tb o3 c#1 e1 @tb o2 a1 @tpop o3 a1 @tb o2 a1 @tpop o3 a1 @tb o3 g1 e1 c#1 o2 a#1
+def bU4  @tb o2 b1 @tpop o3 b1 @tb o2 b1 @tpop o3 b1 @tb o3 c1 c#1 d1 d#1 e1 f1 f#1 g1 r4
+# horn shout ending: (written a tone low, it is transposed +2) A7#9 -> leading tone into E
+def bHE  @tb o2 a2 @tpop o3 a1 r1 @tb o3 c#1 g1 @tg o3 g1 @tb o2 a1 o3 c1 c#1 e1 @tpop o3 a1 @tb o3 g1 e1 o2 b1 c#1
+
+# ---------------------------------------------------------------- melody bars
+def v1a  r4 o4 b2 >d2 {slide 10} e6 {slide 0} d1 <b1
+def v1b  o4 a3 b1 g4 e6 r2
+def v1c  r2 o5 c#2 e2 f#2 {slide 6} g4 {slide 0} f#2 e2
+def v1d  o5 e3 c#1 <b4 {bend 1} a6 {bend 0} r2
+def v2a  r2 o5 e2 g2 a2 {slide 12} b6 {slide 0} a1 g1
+def v2b  o5 e2 d2 e4 <b4 r4
+def v2c  r2 o5 a2 b2 >c#2 d4 c#2 <a2
+def v2d  o5 b3 a1 g2 e2 d2 {slide 8} e6 {slide 0}
+def v3a  r2 o5 g2 a2 b2 {slide 14} >d6 {slide 0} c#1 <b1
+def v3b  o5 a2 g2 a2 b2 {slide 10} >e6 {slide 0} r2
+def v3c  r2 o5 c#2 e2 f#2 {slide 8} g6 {slide 0} f#2
+def v3d  o5 e2 d2 c#2 <b2 {slide 8} >e8 {slide 0}
+# pre-chorus horn line
+def p1a  r2 o5 e2' r2 e1' g1' r2 a2' r2 b2'
+def p1b  r2 o5 f#2' r2 f#1' a1' r2 b2' r2 >c2'
+def p1c  r2 o5 e2' r2 e1' c1' r2 e2' r2 f#2'
+def p1d  o5 d#2' r2 d#2' f#2 a6 r2
+# chorus hook
+def c1a  o5 g2 e2 g2 {slide 10} b6 {slide 0} a2 g2
+def c1b  o5 f#4 d2 f#2 a8
+def c1c  r2 o5 e2 g2 a2 {slide 12} >d6 {slide 0} c1 <b1
+def c1d  o5 a3 b1 a2 f#2 {bend 1} e8 {bend 0}
+def c2a  o5 g2 e2 g2 {slide 10} b6 {slide 0} >d2 e2
+def c2b  o6 d4 <b2 a2 {slide 8} g#6 {slide 0} b2
+def c2c  o5 a3 g1 e2 g2 a2 f#2 e2 d2
+def c2d  o5 e4 d#2 f#2 {slide 6} a8 {slide 0}
+# horn shout
+def h1a  o5 e1' r1 e1' g1' r2 a2' r1 b2 a1' g2' e2'
+def h1b  o5 d2' e2' r2 <b2' >d4 e2' r2
+def h1c  o5 c#1' r1 c#1' e1' r2 f#2' r1 g2 f#1' e2' c#2'
+def h1d  o5 b2' >c#2' r2 d2' e6 r2
+def h1e  o5 c#2' e2' r2 g2' >c6 r2
+# breakdown melody
+def bd1  r4 o5 c2 e2 g4 {slide 8} a4 {slide 0}
+def bd2  o5 b6 a2 g4 e4
+def bd3  o5 a2 >c2 <a2 f#2 {slide 6} d#6 {slide 0} r2
+def bd4  o5 e6 d2 <b4 g#4
+# build: stabs climbing
+def u1   o5 e2' r6 e2' r6
+def u2   o5 f#2' r6 f#2' r2 g2' r2
+def u3   o5 g2' r2 g2' r2 a2' r2 a2' r2
+def u4   o5 a1 a1 a1 a1 b1 b1 b1 b1 >c1 c1 c#1 c#1 r4
+
+# ---------------------------------------------------------------- chops
+# chicken-scratch rhythm (rows 3, 6, 10, 14: off the bass pops)
+def chE  r3 @cm9 o4 e1 r2 e1 r3 e1 r3 e1 r1
+def chA  r3 @c13 o3 a1 r2 a1 r3 a1 r3 a1 r1
+def chE2 r3 @cm9 o4 e1 r2 e1 e1 r2 e1 r1 e1 e1 e1 r1
+def chA2 r3 @c13 o3 a1 r2 a1 a1 r2 a1 r1 a1 a1 a1 r1
+# chorus stabs: on the beat and the "and of 2"
+def stC  @cmaj9 o4 c2 r4 c1 r1 c2 r4 c1 r1
+def stB  @cm7 o3 b2 r4 b1 r1 b2 r4 b1 r1
+def stA  @cm11 o3 a2 r4 a1 r1 a2 r4 a1 r1
+def stD  @c13 o4 d2 r4 d1 r1 d2 r4 d1 r1
+# breakdown comping (Charleston), two chords a bar
+def cp1  @pm7 o3 a3 r3 a1 r1 @p7 o4 d3 r3 d1 r1
+def cp2  @pmaj7 o3 g3 r3 g1 r1 @pmaj7 o4 c3 r3 c1 r1
+def cp3  @pm7b5 o3 f#3 r3 f#1 r1 @p7 o3 b3 r3 b1 r1
+def cp4  @pm7 o3 e3 r3 e1 r1 @p7 o3 e3 r3 e1 r1
+
+# ---------------------------------------------------------------- drum bars
+def nG   hc1 hc1 hca1 hc1 hc1 hc1 hca1 gs1 hc1 gs1 hca1 hc1 hc1 hc1 ho2
+def nGc  cr2 hca1 hc1 hc1 hc1 hca1 gs1 hc1 gs1 hca1 hc1 hc1 hc1 ho2
+def nC   hc1 hc1 ho2 hc1 hc1 ho2 hc1 gs1 ho2 hc1 hc1 ho2
+def nCc  cr2 ho2 hc1 hc1 ho2 hc1 gs1 ho2 hc1 hc1 ho2
+def nR   rd4 rd3 rd1 rd4 rd3 rd1
+def dG   kick3 kick1 snare6 kick2 snare4
+def dG2  kick3 kick1 snare3 kick1 r2 kick2 snare3 kick1
+def dF   kick3 kick1 snare3 snare1 snare2 snare1 snare1 snare2 snare2
+def dC   kick3 kick1 clap6 kick2 clap4
+def dCF  kick3 kick1 clap3 snare1 snare2 snare1 snare1 clap2 clap2
+
+# ---------------------------------------------------------------- patterns
+pat b_vamp tri
+  $bE | $bE2 | $bA | $bA2 |
+pat b_horn tri
+  $bEs | $bE2 | $bAs | $bA2 |
+pat b_hornend tri
+  $bEs | $bE2 | $bAs | $bHE |
+pat b_pre tri
+  $bP1 | $bP2 | $bP3 | $bP4 |
+pat b_chA tri
+  $bC | $bB | $bAm | $bD |
+pat b_chB tri
+  $bC | $bBE | $bAD | $bFB |
+pat b_walk1 tri
+  $wk1 | $wk2 | $wk3 | $wk4 |
+pat b_walk2 tri
+  $wk5 | $wk6 | $wk7 | $wk8 |
+pat b_build tri
+  $bE | $bE2 | $bU3 | $bU4 |
+
+pat m_v1 p1
+  {bend 0} {slide 0} @lead $v1a | $v1b | $v1c | $v1d |
+pat m_v2 p1
+  {bend 0} {slide 0} @lead $v2a | $v2b | $v2c | $v2d |
+pat m_v3 p1
+  {bend 0} {slide 0} @lead2 $v3a | $v3b | $v3c | $v3d |
+pat m_pre p1
+  {bend 0} {slide 0} @horn $p1a | $p1b | $p1c | $p1d |
+pat m_chA p1
+  {bend 0} {slide 0} @lead2 $c1a | $c1b | $c1c | $c1d |
+pat m_chB p1
+  {bend 0} {slide 0} @lead2 $c2a | $c2b | $c2c | $c2d |
+pat m_horn p1
+  {bend 0} {slide 0} @horn $h1a | $h1b | $h1c | $h1d |
+pat m_hornend p1
+  {bend 0} {slide 0} @horn $h1a | $h1b | $h1c | $h1e |
+pat m_bd p1
+  {bend 0} {slide 0} @soft $bd1 | $bd2 | $bd3 | $bd4 |
+pat m_build p1
+  {bend 0} {slide 0} @horn $u1 | $u2 | $u3 | $u4 |
+
+pat c_vamp p2
+  {echo off} {detune 0} $chE | $chE2 | $chA | $chA2 |
+pat c_outro p2
+  {echo off} {detune 0} $chE | $chE2 | @pad13 o3 a16 | w16 |
+pat c_intro p2
+  {echo off} {detune 0} @padm9 o4 e16 | w16 | @pad13 o3 a16 | w16 |
+pat c_chA p2
+  {echo off} {detune 0} $stC | $stB | $stA | $stD |
+pat c_walk p2
+  {echo off} {detune 0} $cp1 | $cp2 | $cp3 | $cp4 |
+pat c_build p2
+  {echo off} {detune 0} $chE | $chE2 | $chA2 | @c7s9 o3 b1 b1 b1 b1 b1 b1 b1 b1 b1 b1 b1 b1 r4 |
+pat e_dbl p2
+  {echo 0 9} {detune 3} w16 | w16 | w16 | w16 |
+pat e_dly p2
+  {echo 13 6} {detune 0} w16 | w16 | w16 | w16 |
+
+pat n_intro noise
+  r16 | r16 | hc2 hc2 hc2 hc2 hc2 hc2 hc2 ho2 | $nG |
+pat n_groove noise
+  $nG | $nG | $nG | $nG |
+pat n_groovec noise
+  $nGc | $nG | $nG | $nG |
+pat n_chorus noise
+  $nCc | $nC | $nC | $nC |
+pat n_ride noise
+  $nR | $nR | $nR | $nR |
+pat n_build noise
+  $nG | $nG | hca1 hc1 hca1 hc1 hca1 hc1 hca1 hc1 hca1 hc1 hca1 hc1 ho2 ho2 | ho4 ho4 ho4 r4 |
+pat n_outro noise
+  $nG | $nG | hc2 hc2 hc2 hc2 hc2 hc2 hc2 ho2 | hc2 hc2 hc2 ho2 r8 |
+
+pat d_intro dmc
+  r16 | r16 | r16 | r4 rim4 r4 rim2 snare1 snare1 |
+pat d_groove dmc
+  $dG | $dG2 | $dG | $dG2 |
+pat d_groovef dmc
+  $dG | $dG2 | $dG | $dF |
+pat d_chorus dmc
+  $dC | $dC | $dC | $dC |
+pat d_chorusf dmc
+  $dC | $dC | $dC | $dCF |
+pat d_rim dmc
+  r4 rim4 r4 rim4 | r4 rim4 r4 rim4 | r4 rim4 r4 rim4 | r4 rim4 r4 rim2 rim2 |
+pat d_rim2 dmc
+  kick4 rim4 kick2 kick2 rim4 | kick4 rim4 kick2 kick2 rim4 | kick4 rim4 kick2 kick2 rim4 | kick4 rim4 kick2 kick2 snare1 snare1 snare2 |
+pat d_build dmc
+  $dG | $dG2 | snare2 snare2 snare2 snare2 snare2 snare2 snare2 snare2 | snare1 snare1 snare1 snare1 snare1 snare1 snare1 snare1 snare1 snare1 snare1 snare1 r4 |
+pat d_outro dmc
+  $dG | $dG2 | kick6 kick2 kick6 kick2 | r16 |
+
+# ---------------------------------------------------------------- order
+order
+  intro:   -         c_intro  b_vamp    n_intro    d_intro
+  groove:  -         c_vamp   b_vamp    n_groovec  d_groove
+  verse1:  m_v1      c_vamp   b_vamp    n_groove   d_groove
+  verse2:  m_v2      c_vamp   b_vamp    n_groove   d_groovef
+  pre:     m_pre     e_dbl    b_pre     n_groove   d_groovef
+  chorusA: m_chA     c_chA    b_chA     n_chorus   d_chorus
+  chorusB: m_chB     e_dbl    b_chB     n_chorus   d_chorusf
+  horns:   m_horn    e_dbl    b_horn    n_groovec  d_groove
+  walk1:   -         c_walk   b_walk1   n_ride     d_rim
+  walk2:   m_bd      c_walk   b_walk2   n_ride     d_rim2
+  build:   m_build   c_build  b_build   n_build    d_build
+  verse3:  m_v3      e_dly    b_vamp    n_groovec  d_groovef
+  liftA:   m_chA     c_chA    b_chA     n_chorus   d_chorus   +2
+  liftB:   m_chB     e_dbl    b_chB     n_chorus   d_chorusf  +2
+  shout:   m_hornend e_dbl    b_hornend n_groovec  d_chorus   +2
+  outro:   -         c_outro  b_vamp    n_outro    d_outro
