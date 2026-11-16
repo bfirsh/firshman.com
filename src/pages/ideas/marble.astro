@@ -1,0 +1,319 @@
+---
+import { name, email, now, projects, alsoWorkedOn, socials } from '../../data/bio';
+
+const bySlug = (s: string) => projects.find((p) => p.slug === s)!;
+const gallery = ['cog', 'clig', 'compose', 'machine', 'whalebrew'].map(bySlug);
+const orchard = ['jsnes', 'arxiv-vanity', 'django', 'ukhas'].map(bySlug);
+const roman = ['i', 'ii', 'iii', 'iv', 'v', 'vi'];
+const titles = ['the gate garden', 'the workshop', 'the long gallery', 'the old orchard', 'the bell court', 'the summit'];
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman works on Replicate, and made Cog, Docker Compose, JSNES and more. Tilt a little floating labyrinth to roll a glass marble through its rooms." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <canvas id="c" role="img" aria-label="A small floating labyrinth of garden rooms joined by stair bridges, with a glass marble. Tilt it to roll the marble onto each room's pressure plate. Everything it reveals is also in the read panel."></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <nav id="journal" aria-label="Rooms found">
+      <p class="jname">{name}</p>
+      <ol>
+        {roman.map((r, k) => (
+          <li><button type="button" disabled data-k={k} title={cap(titles[k])}><span>{r}</span></button></li>
+        ))}
+      </ol>
+    </nav>
+
+    <div class="cards" aria-live="polite">
+      <article class="card" data-k="0" data-title="Ben Firshman" aria-hidden="true" inert>
+        <button class="close" type="button" aria-label="Fold away">&times;</button>
+        <p class="kicker">i &middot; {titles[0]}</p>
+        <h2 class="title">{name}</h2>
+        <p class="lede">Hello. This little labyrinth keeps the things I&rsquo;ve made. Roll on through; each room opens onto the next.</p>
+      </article>
+
+      <article class="card" data-k="1" data-title="Replicate" aria-hidden="true" inert>
+        <button class="close" type="button" aria-label="Fold away">&times;</button>
+        <p class="kicker">ii &middot; {titles[1]}</p>
+        <p class="pre">I&rsquo;m working on</p>
+        <h2 class="title"><a href={now.url}>{now.name}</a></h2>
+        <p class="lede">{cap(now.blurb)}.</p>
+      </article>
+
+      <article class="card" data-k="2" data-title="Things I've made" aria-hidden="true" inert>
+        <button class="close" type="button" aria-label="Fold away">&times;</button>
+        <p class="kicker">iii &middot; {titles[2]}</p>
+        <h2 class="title small">Things I&rsquo;ve made</h2>
+        <ul class="works">
+          {gallery.map((p) => (<li><a href={p.url}>{p.name}</a><span>{p.blurb}</span></li>))}
+        </ul>
+      </article>
+
+      <article class="card" data-k="3" data-title="And before that" aria-hidden="true" inert>
+        <button class="close" type="button" aria-label="Fold away">&times;</button>
+        <p class="kicker">iv &middot; {titles[3]}</p>
+        <h2 class="title small">And before that</h2>
+        <ul class="works">
+          {orchard.map((p) => (<li><a href={p.url}>{p.name}</a><span>{p.blurb}</span></li>))}
+        </ul>
+      </article>
+
+      <article class="card" data-k="4" data-title="Greetings" aria-hidden="true" inert>
+        <button class="close" type="button" aria-label="Fold away">&times;</button>
+        <p class="kicker">v &middot; {titles[4]}</p>
+        <h2 class="title small">Greetings to</h2>
+        <p class="pre">the teams I also worked with on</p>
+        <ul class="greets">
+          {alsoWorkedOn.map((a) => (<li><a href={a.url}>{a.name}</a></li>))}
+        </ul>
+      </article>
+
+      <article class="card" data-k="5" data-title="Write to me" aria-hidden="true" inert>
+        <button class="close" type="button" aria-label="Fold away">&times;</button>
+        <p class="kicker">vi &middot; {titles[5]}</p>
+        <h2 class="title small">Write to me</h2>
+        <p class="mail"><a href={`mailto:${email}`}>{email}</a></p>
+        <ul class="socials">
+          {socials.map((s) => (<li><a href={s.url}>{s.name} <span>{s.handle}</span></a></li>))}
+        </ul>
+      </article>
+    </div>
+
+    <div id="fin" class="fin" aria-live="polite">
+      <button class="close" type="button" aria-label="Close">&times;</button>
+      <p class="fin-t">That&rsquo;s everything.</p>
+      <p class="fin-s">Thank you for rolling by.</p>
+      <p class="fin-l"><button type="button" data-open-read>read it all as text</button> &middot; <a href="/ideas/marble">roll a new labyrinth</a></p>
+    </div>
+
+    <p id="hint" class="hint" aria-hidden="true"></p>
+    <div id="joy" class="joy" aria-hidden="true"><i></i></div>
+    <div id="ghost" class="ghost" aria-hidden="true"></div>
+
+    <footer class="corner">
+      <button type="button" id="sound" aria-pressed="false" hidden>sound</button>
+      <button type="button" id="tilt" aria-pressed="false" hidden>tilt</button>
+      <a href="#read" id="readBtn">read</a>
+      <a href="/ideas">ideas</a>
+      <a id="edition" class="ed" href="?seed=1" title="This labyrinth's seed: link to it">&nbsp;</a>
+    </footer>
+
+    <section id="read" class="read" aria-label="Ben Firshman, as plain text">
+      <div class="inner" tabindex="-1">
+        <button class="close" type="button" aria-label="Close">&times;</button>
+        <main>
+          <h1>{name}</h1>
+          <p>I&rsquo;m working on <a href={now.url}>{now.name}</a>. Some other stuff I&rsquo;ve done:</p>
+          <ul>
+            <li><a href="https://github.com/replicate/cog">Cog</a>, containers for machine learning.</li>
+            <li><a href="https://clig.dev">Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+            <li><a href="https://github.com/docker/compose">Docker Compose</a> and <a href="https://github.com/docker/machine">Docker Machine</a>.</li>
+            <li><a href="https://github.com/bfirsh/jsnes">JSNES</a>, one of the first JavaScript emulators.</li>
+            <li><a href="https://github.com/whalebrew/whalebrew">Whalebrew</a>, a Docker package manager.</li>
+            <li><a href="https://www.arxiv-vanity.com/">arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+            <li>I worked on {alsoWorkedOn.map((a, i) => (<>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={a.url}>{a.name}</a></>))}.</li>
+            <li>I worked on many parts of <a href="https://www.djangoproject.com/">Django</a>, including class-based views, feeds, and search.</li>
+            <li>I helped start the <a href="https://ukhas.org.uk/">UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+          </ul>
+          <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+            I&rsquo;m also on {socials.map((s, i) => (<>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={s.url}>{s.name}</a></>))}.</p>
+          <p class="aside">This page is also a small game: a floating labyrinth you tilt to roll a glass marble from room to room. <a href="/ideas">More ideas</a>.</p>
+        </main>
+      </div>
+    </section>
+
+    <script>
+      import { start } from '../../components/ideas/marble/main';
+      start();
+    </script>
+
+    <style is:global>
+      :root {
+        --ink: #5a2f45; --paper: #fff7ef; --accent: #3fb0ad;
+        --sky0: #e9a5a5; --sky1: #fde3cf; --sky2: #f7cdbd;
+        --serif: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+        --sans: 'Jost', 'Avenir Next', system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        background: linear-gradient(var(--sky0), var(--sky1) 60%, var(--sky2));
+        background-attachment: fixed;
+        color: var(--ink);
+        font-family: var(--sans);
+        -webkit-font-smoothing: antialiased;
+        -webkit-tap-highlight-color: transparent;
+        min-height: 100vh;
+      }
+      a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+      button { font: inherit; color: inherit; }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+      #c, .grain, #journal, .cards, .fin, .hint, .joy, .corner { display: none; }
+      html.gl body { overflow: hidden; overscroll-behavior: none; height: 100dvh; }
+      html.gl #c { display: block; position: fixed; inset: 0; width: 100vw; height: 100dvh; touch-action: none; outline: none; }
+      html.gl .grain, html.gl #journal, html.gl .cards, html.gl .fin, html.gl .hint, html.gl .joy, html.gl .corner { display: block; }
+      html.js:not(.gl):not(.nogl) .read { visibility: hidden; }
+
+      .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(130% 100% at 55% 45%, transparent 55%, color-mix(in srgb, var(--ink) 16%, transparent)); }
+      .vignette { display: none; } html.gl .vignette { display: block; }
+      .grain {
+        position: fixed; inset: -50%; pointer-events: none; z-index: 2; opacity: 0.07; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 1.6 -0.3'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+        animation: grain 1.1s steps(6) infinite;
+      }
+      @keyframes grain { 0% { transform: translate(0, 0); } 20% { transform: translate(-3%, 2%); } 40% { transform: translate(2%, -3%); } 60% { transform: translate(-2%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); } }
+
+      /* journal: the name, once found, and six room marks */
+      #journal { position: fixed; z-index: 5; left: max(22px, env(safe-area-inset-left)); top: max(18px, env(safe-area-inset-top)); }
+      .jname { margin: 0 0 6px; font: italic 600 26px/1 var(--serif); letter-spacing: 0.01em; opacity: 0; transform: translateY(-6px); transition: opacity 1.2s, transform 1.2s; text-shadow: 0 0 18px color-mix(in srgb, var(--paper) 70%, transparent); }
+      html.named .jname { opacity: 0.92; transform: none; }
+      #journal ol { list-style: none; display: flex; gap: 4px; margin: 0; padding: 0; }
+      #journal button {
+        width: 30px; height: 30px; display: grid; place-items: center; padding: 0; border: 0; background: none; cursor: default;
+        font: italic 500 15px/1 var(--serif); opacity: 0.34; position: relative;
+      }
+      #journal button span { position: relative; z-index: 1; }
+      #journal button::before { content: ''; position: absolute; inset: 7px; border: 1px solid currentColor; transform: rotate(45deg); opacity: 0.5; transition: background 0.6s, opacity 0.6s; }
+      #journal button.found { opacity: 0.9; cursor: pointer; }
+      #journal button.found::before { background: color-mix(in srgb, var(--paper) 75%, transparent); border-color: var(--accent); opacity: 1; }
+      #journal button.cur::before { background: var(--accent); }
+      #journal button.cur { color: var(--paper); }
+      #journal button.found:hover::before { inset: 5px; }
+
+      /* cards unfurl like a little banner */
+      .card {
+        position: fixed; z-index: 6; left: max(28px, env(safe-area-inset-left)); top: 50%; width: min(360px, calc(40vw - 36px));
+        transform: translateY(-50%); padding: 26px 28px 24px;
+        background: color-mix(in srgb, var(--paper) 86%, transparent);
+        backdrop-filter: blur(10px) saturate(1.1); -webkit-backdrop-filter: blur(10px) saturate(1.1);
+        border-radius: 3px;
+        box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 10%, transparent), 0 24px 60px -20px color-mix(in srgb, var(--ink) 40%, transparent);
+        clip-path: inset(0 0 100% 0); visibility: hidden; pointer-events: none;
+        transition: clip-path 0.55s cubic-bezier(0.6, 0, 0.8, 0.4), visibility 0s 0.55s;
+      }
+      .card::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--accent); }
+      .card.show { clip-path: inset(0 0 0 0); visibility: visible; pointer-events: auto; transition: clip-path 1s cubic-bezier(0.2, 0.7, 0.1, 1); }
+      .card > * { opacity: 0; transform: translateY(8px); transition: opacity 0.3s, transform 0.3s; }
+      .card.show > * { opacity: 1; transform: none; transition: opacity 0.7s, transform 0.9s cubic-bezier(0.2, 0.7, 0.1, 1); }
+      .card.show > :nth-child(2) { transition-delay: 0.15s; }
+      .card.show > :nth-child(3) { transition-delay: 0.3s; }
+      .card.show > :nth-child(4) { transition-delay: 0.45s; }
+      .card.show > :nth-child(5) { transition-delay: 0.6s; }
+      @media (max-height: 560px) and (orientation: landscape) {
+        .card { top: max(90px, env(safe-area-inset-top)); transform: none; max-height: calc(100dvh - 110px); overflow-y: auto; padding: 18px 22px; }
+        .title { font-size: 32px; } .title.small { font-size: 24px; margin-bottom: 8px; }
+        .works li { padding: 5px 0 6px; } .works a { font-size: 17px; } .works span { font-size: 12.5px; }
+        .greets a { font-size: 18px; }
+        .fin { top: 14px; } .fin-t { font-size: 24px; } .fin-s { margin: 2px 0 4px; font-size: 13px; }
+      }
+      .card .close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border: 0; background: none; font-size: 20px; line-height: 1; cursor: pointer; opacity: 0.4; }
+      .card .close:hover { opacity: 0.9; }
+      .kicker { margin: 0 0 12px; font: 400 11px/1.2 var(--sans); letter-spacing: 0.24em; text-transform: uppercase; opacity: 0.62; }
+      .pre { margin: 0 0 2px; font: italic 500 18px/1.3 var(--serif); opacity: 0.8; }
+      .title { margin: 0 0 10px; font: 600 40px/1.02 var(--serif); letter-spacing: -0.005em; }
+      .title.small { font-size: 30px; margin-bottom: 14px; }
+      .title a { text-decoration-thickness: 1.5px; text-underline-offset: 0.12em; text-decoration-color: var(--accent); }
+      .lede { margin: 0; font: 300 16px/1.55 var(--sans); }
+      .works, .greets, .socials { list-style: none; margin: 0; padding: 0; }
+      .works li { padding: 8px 0 9px; border-top: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); }
+      .works li:first-child { border-top: 0; padding-top: 0; }
+      .works a { display: block; font: 600 20px/1.15 var(--serif); text-decoration-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+      .works span { display: block; margin-top: 2px; font: 300 13.5px/1.4 var(--sans); opacity: 0.8; }
+      .greets { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+      .greets a { font: italic 600 22px/1.3 var(--serif); text-decoration-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+      .greets li { animation: none; }
+      .mail { margin: 0 0 14px; font: 500 21px/1.2 var(--serif); }
+      .mail a { text-decoration-color: var(--accent); }
+      .socials { display: flex; flex-wrap: wrap; gap: 8px; }
+      .socials a { display: inline-block; text-decoration: none; font: 400 13px/1 var(--sans); letter-spacing: 0.04em; padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent); border-radius: 999px; }
+      .socials a span { opacity: 0.6; }
+      .socials a:hover { background: var(--ink); color: var(--paper); }
+
+      .fin { position: fixed; z-index: 7; left: calc(50% + var(--resL, 0px) / 2); top: max(22px, env(safe-area-inset-top)); transform: translate(-50%, -10px); text-align: center; opacity: 0; visibility: hidden; transition: opacity 1.6s, transform 1.6s, visibility 0s 1.6s; width: max-content; max-width: calc(100vw - 32px); pointer-events: none; }
+      .fin.show { opacity: 1; visibility: visible; transform: translate(-50%, 0); transition: opacity 2.4s 0.4s, transform 2.4s 0.4s; pointer-events: auto; }
+      .fin-t { margin: 0; font: italic 600 32px/1.1 var(--serif); text-shadow: 0 0 24px color-mix(in srgb, var(--paper) 80%, transparent); }
+      .fin-s { margin: 4px 0 8px; font: 300 15px/1.4 var(--sans); letter-spacing: 0.04em; }
+      .fin-l { margin: 0; font: 400 12px/1.4 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; }
+      .fin-l button { border: 0; background: none; padding: 0; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; font: inherit; letter-spacing: inherit; text-transform: inherit; }
+      .fin .close { display: none; }
+
+      .hint { position: fixed; z-index: 4; left: 50%; bottom: max(28px, env(safe-area-inset-bottom)); margin: 0; transform: translate(-50%, 6px); font: italic 500 19px/1 var(--serif); letter-spacing: 0.02em; opacity: 0; transition: opacity 1.2s, transform 1.2s; pointer-events: none; }
+      .hint.show { opacity: 0.75; transform: translate(-50%, 0); }
+
+      .joy { position: fixed; z-index: 4; left: 0; top: 0; width: 0; height: 0; pointer-events: none; opacity: 0; transition: opacity 0.25s; }
+      .joy.on { opacity: 1; }
+      .joy::before { content: ''; position: absolute; left: -64px; top: -64px; width: 128px; height: 128px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--paper) 80%, transparent); background: color-mix(in srgb, var(--paper) 12%, transparent); }
+      .joy i { position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; border-radius: 50%; background: color-mix(in srgb, var(--paper) 70%, transparent); box-shadow: 0 2px 10px color-mix(in srgb, var(--ink) 25%, transparent); }
+
+      .ghost { position: fixed; z-index: 3; left: 0; top: 0; width: 0; height: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+      html.gl .ghost { display: block; }
+      .ghost.on { opacity: 1; }
+      .ghost::before { content: ''; position: absolute; left: calc(var(--r, 8px) * -1 - 2px); top: calc(var(--r, 8px) * -1 - 2px); width: calc(var(--r, 8px) * 2 + 4px); height: calc(var(--r, 8px) * 2 + 4px); border-radius: 50%; border: 1.5px dashed color-mix(in srgb, var(--paper) 90%, transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--paper) 50%, transparent); }
+      .corner { position: fixed; z-index: 5; right: max(16px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); display: flex; gap: 12px; align-items: baseline; font: 400 11px/1 var(--sans); letter-spacing: 0.12em; }
+      .corner { display: none; }
+      html.gl .corner { display: flex; }
+      .corner a, .corner button { opacity: 0.42; text-decoration: none; border: 0; background: none; padding: 6px 0; cursor: pointer; font: inherit; letter-spacing: inherit; transition: opacity 0.3s; }
+      .corner a:hover, .corner button:hover, .corner a:focus-visible, .corner button:focus-visible { opacity: 1; }
+      .corner [aria-pressed='true'] { opacity: 0.85; }
+      .corner .ed { font-variant-numeric: tabular-nums; opacity: 0.28; }
+      .corner a, .corner button, #journal button, .hint { text-shadow: 0 0 6px color-mix(in srgb, var(--paper) 85%, transparent), 0 0 1px color-mix(in srgb, var(--paper) 60%, transparent); }
+      html.night .corner a, html.night .corner button, html.night #journal button, html.night .hint { text-shadow: 0 0 6px rgba(20, 10, 40, 0.6); }
+
+      /* read panel: plain, calm text; the page itself when there is no WebGL */
+      .read { color: var(--ink); }
+      .read .inner { max-width: 34em; margin: 0 auto; padding: 12vh 28px 10vh; outline: none; position: relative; }
+      .read h1 { font: italic 600 52px/1 var(--serif); margin: 0 0 26px; letter-spacing: -0.01em; }
+      .read p, .read li { font: 300 17.5px/1.62 var(--sans); }
+      .read ul { padding-left: 1.1em; margin: 0 0 1.2em; }
+      .read li { margin: 0 0 0.45em; }
+      .read li::marker { color: var(--accent); }
+      .read a { text-decoration-color: color-mix(in srgb, var(--accent) 80%, transparent); }
+      .read .aside { margin-top: 2.4em; font-size: 14px; opacity: 0.65; }
+      .read .close { display: none; }
+      html.gl .read { position: fixed; inset: 0; z-index: 20; overflow-y: auto; overscroll-behavior: contain; background: color-mix(in srgb, var(--sky1) 55%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); opacity: 0; visibility: hidden; transition: opacity 0.5s, visibility 0s 0.5s; }
+      html.gl .read.open { opacity: 1; visibility: visible; transition: opacity 0.5s; }
+      html.gl .read .inner { background: color-mix(in srgb, var(--paper) 92%, transparent); margin: 8vh auto; padding: 56px 48px 40px; border-radius: 3px; box-shadow: 0 30px 80px -30px color-mix(in srgb, var(--ink) 45%, transparent); max-width: min(36em, calc(100vw - 24px)); }
+      html.gl .read .close { display: block; position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border: 0; background: none; font-size: 24px; cursor: pointer; opacity: 0.45; }
+      html.gl .read .close:hover { opacity: 1; }
+
+      @media (max-width: 819px) and (orientation: portrait), (max-width: 559px) {
+        .card {
+          left: 12px; right: 12px; top: auto; bottom: max(40px, calc(env(safe-area-inset-bottom) + 34px)); width: auto; transform: none;
+          max-height: 46dvh; overflow-y: auto; padding: 20px 20px 18px;
+        }
+        .card.peek { max-height: 62px; overflow: hidden; cursor: pointer; }
+        .card.peek > :not(.kicker):not(.title):not(.close) { opacity: 0.2; }
+        .title { font-size: 34px; }
+        .title.small { font-size: 26px; margin-bottom: 10px; }
+        .works li { padding: 6px 0 7px; }
+        .works a { font-size: 18px; }
+        .works span { font-size: 13px; }
+        .greets a { font-size: 20px; }
+        .jname { font-size: 22px; }
+        .fin-t { font-size: 28px; }
+        .fin { top: max(92px, calc(env(safe-area-inset-top) + 76px)); }
+        .hint { bottom: max(64px, calc(env(safe-area-inset-bottom) + 52px)); }
+        html.gl .read .inner { padding: 44px 24px 32px; margin: 12px auto; }
+        .read h1 { font-size: 42px; }
+        .read p, .read li { font-size: 16.5px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .grain { animation: none; }
+        .card, .card.show, .card > *, .card.show > * { transition-duration: 0.01s !important; transition-delay: 0s !important; }
+      }
+      html.night .jname, html.night .hint, html.night .fin, html.night #journal, html.night .corner { color: var(--paper); }
+      html.night .jname, html.night .fin-t { text-shadow: 0 0 20px rgba(0, 0, 0, 0.25); }
+    </style>
+  </body>
+</html>
