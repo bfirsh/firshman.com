@@ -1,0 +1,276 @@
+# RUSH: the cartridge's tune. Drum and bass / jungle, 171.7 BPM. Format: see tools/compile.py.
+# Home key D minor (Dm Bb F C); the halftime goes to the dominant (A), the final drop is up a tone.
+# Groove 5,5,5,6 frames per 16th = 21 frames per beat; 64 rows (4 bars) = 336 frames per pattern.
+
+sample kick  rate 13 events kick
+sample snare rate 14 events snare
+sample ghost rate 14
+sample boom  rate 10 events kick
+sample snup  rate 15 data snare events snare     # the snare pitched up ~4 semitones (rolls)
+sample kup   rate 14 data kick events kick       # the kick pitched up (stutters)
+
+song rush
+  speed 5 5 5 6
+  rows 64
+  bar 16
+  loop 0
+
+# ---------------------------------------------------------------- instruments
+inst pad                      # airy chord pad (tracker arpeggio), slow swell, slight vibrato
+  env d2 2 3 4 5 6 7 7 8 8 | 8 / 7 6 5 4 3 3 2 2 1 1 0
+  vib 1 10 30
+  events lead
+inst padp                     # pulsing 8th-note pad
+  env d2 8 7 6 5 5 4 4 3 3 2 2 2 1 1 0
+  events lead
+inst lead                     # the euphoric lead: 25% with a delayed vibrato
+  env d1 12 11 10 10 9 9 | 9 / 7 5 4 3 2 1 0
+  vib 2 18 20
+  events lead
+inst leadh                    # final-drop lead: a 50% bite and an octave chirp first
+  env d2 13 d1 12 11 11 10 10 | 10 / 8 6 4 3 2 1 0
+  arp 12 0
+  vib 2 20 16
+  events lead
+inst pluck                    # 16th arpeggio plucks
+  env d1 10 8 6 5 4 3 3 2 2 1 1 0
+  events lead
+inst stab                     # chord stabs
+  env d2 10 9 7 6 5 4 3 2 1 0
+  events lead
+inst reese                    # pulse half of the Reese: slow PWM, deep slow vibrato against the triangle
+  env d1 | 9 9 9 9 9 9 9 9 d2 9 9 9 9 9 9 9 9 d1 9 9 9 9 9 9 9 9 d0 9 9 9 9 9 9 9 9 / 6 4 2 0
+  vib 3 3 0
+inst reeseh                   # halftime: wider wobble
+  env d0 | 10 10 10 10 10 10 d1 10 10 10 10 10 10 d2 10 10 10 10 10 10 d1 10 10 10 10 10 10 / 7 5 3 1 0
+  vib 5 4 0
+inst reese2                   # final drop: faster, harder PWM
+  env d0 | 10 10 10 d1 10 10 10 d2 10 10 10 d1 10 10 10 / 7 5 3 1 0
+  vib 4 6 0
+# triangle
+inst sub                      # rolling sub notes, gated
+  env 15*13 0
+  events bass
+inst subl                     # long sub
+  env 15 / 0
+  events bass
+# noise (the drum's number is the noise period, 0 = brightest)
+inst hc
+  env 4 3 2 1 0
+  events hat
+inst hk                       # accented hat
+  env 7 5 3 2 1 0
+  events hat
+inst ho
+  env 6 5 5 4 4 3 3 2 2 2 1 1 1 0
+  events hat
+inst sn                       # noise crack layered under the DPCM snare
+  env 9 7 6 4 3 2 1 0
+inst cr
+  rate 3
+  env 11 10 9 9 8 8 7 7 6 6 5 5 5 4 4 4 3 3 3 2 2 2 1 1 1 0
+inst ri                       # short riser
+  rate 2
+  env 1>11:32
+  arp 0>-10:32
+inst rilong                   # long build riser (a whole pattern)
+  rate 10
+  env 1>12:32
+  arp 0>-11:32
+inst wind
+  rate 6
+  env 1 1 2 2 3 | 3 3 2 2 3 3 4 3 2 2
+inst zap                      # downlifter after the drop hit
+  rate 2
+  env 9>0:24
+  arp 0>9:24
+
+drum hc hc 0
+drum hk hk 1
+drum ho ho 2
+drum sn sn 6
+drum cr cr 3
+drum ri ri 12
+drum rl rilong 12
+drum wind wind 10
+drum zap zap 3
+
+# ---------------------------------------------------------------- phrases
+# one bar of the main break and its variations (16 rows each); snares always on rows 4 and 12
+def bA kick2 ghost2 snare3 ghost3 kick2 snare2 ghost2
+def bB kick2 ghost1 kick1 snare2 ghost2 ghost2 kick1 kick1 snare3 ghost1
+def bV kick2 ghost1 kick1 snare2 ghost3 ghost1 kick2 snare3 snare1
+def bC kick2 kick1 kick1 snare2 {retrig 2} ghost2 {retrig 0} kick2 snare2 ghost2 ghost2
+# the same bars' hats with the noise crack on the snares
+def nb hc2 hc1 hc1 sn2 hc1 hk1 ho2 hc1 hc1 sn2 hc1 hk1
+def nbc cr2 hc1 hc1 sn2 hc1 hk1 ho2 hc1 hc1 sn2 hc1 hk1
+# bass bars (root X): rolling and syncopated
+def rD  o2 d6 d2 d4 o3 d2 o2 d2
+def rBb o1 a#6 a#2 a#4 o2 a#2 o1 a#2
+def rF  o2 f6 f2 f4 o3 f2 o2 f2
+def rC  o2 c6 c2 c4 o3 c2 o2 c2
+def sD  o2 d3 d3 d2 r2 d2 o3 d2 o2 d2
+def sBb o1 a#3 a#3 a#2 r2 a#2 o2 a#2 o1 a#2
+def sF  o2 f3 f3 f2 r2 f2 o3 f2 o2 f2
+def sC  o2 c3 c3 c2 r2 c2 o3 c2 o2 c2
+
+# ---------------------------------------------------------------- pulse 1
+pat padA p1
+  @pad {vol 9} {slide 0} {bend 0} {detune 0} {arp 37} o4 d16 | {arp 38} d16 | {arp 59} c16 | {arp 47} c16
+pat padB p1
+  @padp {vol 11} {slide 0} {arp 37} o4 [d2]8 | {arp 38} [d2]8 | {arp 59} [c2]8 | {arp 47} [c2]8
+pat leadT1 p1
+  @lead {vol 13} {arp 0} {slide 0} o5 a12 g4 | f8 d8 | c12 o4 a4 | g16
+pat leadT2 p1
+  @lead {vol 13} {arp 0} {slide 0} o5 a12 o6 d4 | o5 c8 o4 a#8 | o5 c12 f4 | e16
+pat stabA p1
+  @stab {vol 13} {slide 0} o4 {arp 37} d2 r2 d2 d2 r4 d2 r2 | {arp 38} d2 r2 d2 d2 r4 d2 r2 | {arp 59} c2 r2 c2 c2 r4 c2 r2 | {arp 47} c2 r2 c2 c2 r2 c1 c1 c2 c2
+pat arpRise p1
+  @pluck {vol 14} {arp 0} {slide 0} o4 [a1 o5 c#1 e1 a1 o4]4 | o5 [c#1 e1 a1 o6 c#1 o5]4 | o5 [e1 a1 o6 c#1 e1 o5]4 | @lead o5 a12 r4
+pat arpRise2 p1
+  @pluck {vol 14} {arp 0} {slide 0} o4 [d1 f1 a1 o5 d1 o4]4 | [d1 f1 a#1 o5 d1 o4]4 | o5 [c1 f1 a1 o6 c1 o5]4 | o5 [e1 g1 o6 c1 e1 o5]4
+pat leadA p1
+  @lead {vol 15} {arp 0} {slide 0} o5 a6 g2 f4 e2 f2 | d8 r2 f2 g2 a2 | o6 c6 o5 a2 g4 f2 g2 | e8 g4 e4
+pat leadB p1
+  @lead {vol 15} {arp 0} {slide 0} o5 a6 o6 d6 o5 a4 | o6 d4 c4 d4 f4 | e6 c6 o5 a4 | g8 o6 c4 e4
+pat leadA2 p1
+  @lead {vol 15} {arp 0} {slide 0} o5 a6 g2 f4 e2 f2 | d8 r2 f2 g2 a2 | o6 c6 o5 a2 g4 f2 g2 | e8 o6 c4 d4
+pat leadB2 p1
+  @lead {vol 15} {arp 0} {slide 0} o5 a6 o6 d6 o5 a4 | o6 d4 c4 d4 f4 | e6 c6 o5 a4 | g4 a4 o6 c4 d4
+pat pluckA p1
+  @pluck {vol 15} {arp 0} {slide 0} o5 [d1 f1 a1 o6 d1 o5]4 | [d1 f1 a#1 o6 d1 o5]4 | [c1 f1 a1 o6 c1 o5]4 | [c1 e1 g1 o6 c1 o5]4
+pat pluckB p1
+  @pluck {vol 15} {arp 0} {slide 0} o6 [d1 o5 a1 f1 d1 o6]4 | [d1 o5 a#1 f1 d1 o6]4 | [c1 o5 a1 f1 c1 o6]4 | [e1 c1 o5 g1 e1 o6]2 o6 [g1 e1 c1 o5 g1 o6]2
+pat padH p1
+  @pad {vol 11} {slide 0} {arp 37} o4 d16 | {arp 38} d16 | {arp 59} c16 | {arp 38} c#16
+pat leadH p1
+  @lead {vol 14} {arp 0} {slide 0} o5 f8 e4 d4 | d16 | c8 o4 a4 o5 c4 | c#16
+pat leadH2 p1
+  @lead {vol 14} {arp 0} {slide 0} o5 a8 g4 f4 | f8 d8 | c8 f4 a4 | e8 c#8
+pat leadF p1                  # final drop: the hard lead
+  @leadh {vol 15} {arp 0} {slide 0} o5 a6 g2 f4 e2 f2 | d8 r2 f2 g2 a2 | o6 c6 o5 a2 g4 f2 g2 | e8 g4 e4
+pat leadF2 p1
+  @leadh {vol 15} {arp 0} {slide 0} o5 a6 o6 d6 o5 a4 | o6 d4 c4 d4 f4 | e6 c6 o5 a4 | g8 o6 c4 e4
+pat leadEnd p1
+  @leadh {vol 15} {arp 0} {slide 0} o5 a6 o6 d6 o5 a4 | o6 d4 c4 d4 f4 | e6 c6 o5 a4 | {slide 6} o6 d16 {slide 0}
+
+# ---------------------------------------------------------------- pulse 2
+pat p2echo p2                 # an airy echo of pulse 1, a little under a beat later
+  {echo 16 9} {detune 0} {slide 0} w64
+pat p2reeseA p2
+  {echo off} {detune 10} {slide 0} {vol 10} @reese $rD | $rBb | $rF | $rC
+pat p2reeseB p2
+  {echo off} {detune 10} {slide 0} {vol 10} @reese $sD | $sBb | $sF | $sC
+pat p2reeseH p2
+  {echo off} {detune 7} {vol 11} @reeseh {slide 20} o2 d12 {slide 48} o3 d4 {slide 20} | o1 a#16 | o2 f12 g4 | o1 a16 {slide 0}
+pat p2reeseP p2               # the build: a pedal on A, 8ths then 16ths, cut before the drop
+  {echo off} {detune 10} {slide 0} {vol 10} @reese o1 [a2]8 | [a2]8 | [a1]16 | [a1]12 r4
+pat p2reese2A p2
+  {echo off} {detune 8} {slide 0} {vol 11} @reese2 $rD | $rBb | $rF | $rC
+pat p2reese2B p2
+  {echo off} {detune 8} {slide 0} {vol 11} @reese2 $sD | $sBb | $sF | $sC
+
+# ---------------------------------------------------------------- triangle
+pat tsubA tri
+  @subl {slide 0} o2 d16 | o1 a#16 | o2 f16 | o2 c16
+pat tsubOut tri
+  @subl {slide 0} o2 d16 | o1 a#16 | o2 f16 | o2 c8 r8
+pat treeseA tri
+  @sub {slide 0} $rD | $rBb | $rF | $rC
+pat treeseB tri
+  @sub {slide 0} $sD | $sBb | $sF | $sC
+pat treeseH tri
+  @subl {slide 20} o2 d12 o3 d4 | o1 a#16 | o2 f12 g4 | o1 a16 {slide 0}
+pat treeseP tri
+  @sub {slide 0} o1 [a2]8 | [a2]8 | [a1]16 | [a1]12 r4
+pat treeseEnd tri
+  @sub {slide 0} $rD | $rBb | $rF | @subl o2 d16
+
+# ---------------------------------------------------------------- noise
+pat nwind noise
+  {vol 15} wind64
+pat nwind2 noise
+  {vol 15} wind48 ri16
+pat nhat8 noise
+  {vol 15} [hc2 hk2]16
+pat nhat8f noise
+  {vol 15} [hc2 hk2]12 ri16
+pat nbreak noise
+  {vol 15} [$nb]4
+pat nbreakC noise
+  {vol 15} $nbc [$nb]3
+pat ndropA noise
+  {vol 15} cr4 sn2 hc1 hc1 ho2 hc1 hc1 sn2 hc1 hk1 [$nb]3
+pat nroll noise
+  {vol 15} rl60 r4
+pat nhalf noise
+  {vol 15} [hc2 hk2 hc2 hk2 sn4 ho2 hk2]4
+pat nhalfB noise
+  {vol 15} [hc2 hk2 hc2 hk2 sn4 ho2 hk2]2 | $nb | ri16
+pat nhalfA noise              # the halftime's first bar opens with the crash
+  {vol 15} cr8 sn4 ho2 hk2 [hc2 hk2 hc2 hk2 sn4 ho2 hk2]3
+pat nend noise
+  {vol 15} [$nb]3 | cr16
+
+# ---------------------------------------------------------------- DPCM (the break)
+pat dtease dmc                # the break, sparse: kick and snare only
+  {cue 0} {retrig 0} [kick4 snare6 kick2 snare4]4
+pat dteaseF dmc
+  {cue 0} {retrig 0} [kick4 snare6 kick2 snare4]3 | {cue 1} {retrig 3} kup4 {retrig 2} snare4 {retrig 0} {cue 0} kick2 ghost2 snare2 snare2
+pat dbreakA dmc
+  {cue 0} {retrig 0} $bA | $bA | $bA | $bV
+pat dbreakB dmc
+  {cue 0} {retrig 0} $bB | $bA | $bB | $bV
+pat dbreakBF dmc              # chopped bars, then a stuttered fill
+  {cue 0} {retrig 0} $bB | $bA | $bB | {cue 2} {retrig 2} snare4 {retrig 3} snare4 {retrig 0} {cue 0} kick2 snare2 {cue 2} {retrig 2} snup4 {retrig 0}
+pat dbreakC dmc
+  {cue 0} {retrig 0} $bA | $bC | $bA | $bV
+pat ddropA dmc                # the drop: impact, then the break
+  {cue 3} {retrig 0} boom4 {cue 0} snare3 ghost3 kick2 snare2 ghost2 | $bA | $bB | $bV
+pat droll dmc                 # build: snare roll, 8ths, 16ths, then a buzz roll and a gap
+  {cue 0} {retrig 0} [kick2 snare2]4 | [snare2]8 | [snare1]16 | {cue 2} {retrig 2} snup12 {retrig 0} {cue 4} r4
+pat dfillBig dmc              # end of drop 1: stutter and stop dead
+  {cue 0} {retrig 0} $bB | $bA | $bB | {cue 1} {retrig 3} kup4 {retrig 2} snare4 {retrig 0} {cue 4} r8
+pat dhalf dmc                 # halftime: snare on beat 3
+  {cue 0} {retrig 0} [kick8 snare6 ghost2 | kick6 kick2 snare4 ghost2 ghost2]2
+pat dhalfA dmc
+  {cue 3} {retrig 0} boom8 {cue 0} snare6 ghost2 | kick6 kick2 snare4 ghost2 ghost2 | kick8 snare6 ghost2 | kick6 kick2 snare4 ghost2 ghost2
+pat dhalfRoll dmc
+  {cue 0} {retrig 0} kick8 snare6 ghost2 | kick6 kick2 snare4 ghost2 ghost2 | $bA | [snare1]8 {cue 2} {retrig 2} snup8 {retrig 0}
+pat dchopA dmc                # final drop: chops with stutters inside the bars
+  {cue 0} {retrig 0} $bA | {cue 1} $bC {cue 0} | $bB | $bV
+pat dchopF dmc
+  {cue 0} {retrig 0} $bA | {cue 1} $bC {cue 0} | $bB | {cue 1} {retrig 5} kick8 {retrig 2} snare4 {cue 2} {retrig 1} snup4 {retrig 0} {cue 0}
+pat dend dmc
+  {cue 0} {retrig 0} $bA | $bC | $bB | {cue 3} boom16
+
+# ---------------------------------------------------------------- order (p1 p2 tri noise dmc [transpose])
+order
+  intro0:  padA     p2echo     -         nwind    -
+  intro1:  padA     p2echo     tsubA     nwind2   -
+  intro2:  padB     p2echo     tsubA     nhat8    dtease
+  intro3:  padB     p2echo     tsubA     nhat8f   dteaseF
+  build0:  leadT1   p2echo     tsubA     nbreak   dbreakA
+  build1:  leadT2   p2echo     tsubA     nbreak   dbreakB
+  build2:  stabA    p2reeseA   treeseA   nbreak   dbreakA
+  build3:  arpRise  p2reeseP   treeseP   nroll    droll
+  drop0:   leadA    p2reeseA   treeseA   ndropA   ddropA
+  drop1:   leadB    p2reeseA   treeseA   nbreak   dbreakBF
+  drop2:   pluckA   p2reeseB   treeseB   nbreakC  dbreakA
+  drop3:   pluckB   p2reeseB   treeseB   nbreak   dbreakBF
+  drop4:   leadA2   p2reeseA   treeseA   nbreakC  dbreakC
+  drop5:   leadB2   p2reeseA   treeseA   nbreak   dfillBig
+  half0:   padH     p2reeseH   treeseH   nhalfA   dhalfA
+  half1:   padH     p2reeseH   treeseH   nhalf    dhalf
+  half2:   leadH    p2reeseH   treeseH   nhalf    dhalf
+  half3:   leadH2   p2reeseH   treeseH   nhalfB   dhalfRoll
+  build4:  arpRise2 p2reeseA   treeseA   nbreak   dbreakA
+  build5:  arpRise  p2reeseP   treeseP   nroll    droll
+  final0:  leadF    p2reese2A  treeseA   ndropA   ddropA    2
+  final1:  leadF2   p2reese2A  treeseA   nbreak   dbreakBF  2
+  final2:  pluckA   p2reese2B  treeseB   nbreakC  dchopA    2
+  final3:  pluckB   p2reese2B  treeseB   nbreak   dchopF    2
+  final4:  leadF    p2reese2A  treeseA   nbreakC  dchopA    2
+  final5:  leadEnd  p2reese2A  treeseEnd nend     dend      2
+  outro0:  padB     p2echo     tsubA     nhat8    dtease
+  outro1:  padA     p2echo     tsubOut   nwind    -
