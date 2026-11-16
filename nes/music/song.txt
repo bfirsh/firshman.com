@@ -1,0 +1,306 @@
+# Cartridge: "Ascent", the demo's main tune. Format: see the docstring of tools/compile.py.
+# Home key E minor; the climax modulates up a whole tone to F# minor and the outro falls back home.
+# 7 frames per row, 64 rows per pattern (4 bars of 16ths), 22 patterns, loops to the top.
+
+sample kick  rate 14 events kick
+sample snare rate 14 events snare
+sample boom  rate 12 events kick
+
+song ascent
+  speed 7 7
+  rows 64
+  bar 16
+  loop 0
+
+# ---------------------------------------------------------------- instruments
+# pulses: env = duty (d0 12.5%, d1 25%, d2 50%) and volume per frame; "|" loop, "/" release
+inst pad                      # intro broken chords: warm 50% pluck
+  env d2 8 7 6 5 5 4 4 3 3 3 2 2 2 1 1 1 0
+inst soft                     # lift-off melody: slow swell, gentle vibrato
+  env d1 3 5 7 8 9 9 8 8 | 8 / 7 6 5 4 3 2 1 0
+  vib 2 18 24
+  events lead
+inst soft2                    # breakdown melody
+  env d1 2 4 6 7 8 8 8 7 7 | 7 / 6 5 4 3 2 1 0
+  vib 2 15 30
+  events lead
+inst lead2                    # climb melody: round 50%
+  env d2 10 10 9 9 8 8 | 8 / 6 4 2 0
+  vib 1 24 20
+  events lead
+inst lead                     # main lead: 50% punch then 25%, octave chirp on the first frame
+  env d2 14 d1 13 12 12 11 11 10 | 10 / 8 6 4 2 0
+  arp 12 0
+  vib 2 22 16
+  events lead
+inst thin                     # rebuild: thin 12.5% version of the theme, opened up by {vol}
+  env d0 9 9 8 8 7 | 7 / 4 2 0
+  vib 1 22 16
+  events lead
+inst stab                     # chord stabs (used with {arp xy})
+  env d1 8 7 6 5 4 4 3 3 2 2 1 1 0
+inst stab2
+  env d1 9 7 6 5 4 3 3 2 2 1 1 0
+inst sparkle
+  env d1 5 4 3 3 2 2 2 1 1 1 0
+inst beacon                   # the radio beacon: a thin, quiet beep
+  env d0 6 7 7 6 | 6 / 3 1 0
+# triangle: volume only gates (0 = off)
+inst tk                       # triangle kick: pitch dives into the bass note
+  env 15*11 0
+  arp 30 22 15 9 5 2 0
+  events kick bass
+inst tb
+  env 15*5 0
+  events bass
+inst tb2
+  env 15*12 0
+  events bass
+inst tsus
+  env 15 / 0
+  events bass
+inst tb3                      # long, breathing bass pulses (breakdown and outro)
+  env 15*44 0
+  events bass
+# noise: the drum's number is the noise period (0 = brightest); arp offsets it
+inst hc
+  env 4 3 2 1 0
+  events hat
+inst ho
+  env 5 4 4 3 3 2 2 2 1 1 1 0
+  events hat
+inst sn
+  env 11 10 8 7 6 5 4 3 3 2 2 1 1 0
+  arp -3 -2 -1 0
+  events snare
+inst cr
+  rate 3
+  env 10 9 8 7 7 6 6 5 5 4 4 3 3 3 2 2 2 1 1 1 0
+inst ri
+  rate 7
+  env 1>10:16
+  arp 0>-12:16
+inst wind
+  rate 5
+  env 1 1 2 2 | 3 3 3 2 2 1 1 2
+
+drum hc hc 1
+drum ho ho 2
+drum sn sn 7
+drum cr cr 3
+drum ri ri 14
+drum wind wind 11
+
+# ---------------------------------------------------------------- phrases
+# intro figures (8 rows each)
+def emf l1 o4 e b >f# g b g f# <b
+def cf  l1 o4 c g >d e g e d <g
+def df  l1 o4 d a >e f# a f# e <a
+
+# lift-off melody (Em Em C C | Em Em D D)
+def L1 o4 b6 >e6 g4
+def L2 o5 f#12 e4
+def L3 o5 c6 e6 g4
+def L4 o5 b12 a4
+def L5 o5 g6 e6 <b4
+def L6 o5 e16
+def L7 o5 d6 f#6 a4
+def L8 o5 b12 r4
+
+# climb melody (Em C G D | Em C Am B)
+def mA1 o5 e3 <b3 >e2 g4 f#2 e2
+def mA2 o5 e3 c3 e2 g2 a2 g4
+def mA3 o5 d3 <b3 >d2 g4 a2 b2
+def mA4 o5 a6 f#4 d2 e2 f#2
+def mA5 o5 g3 e3 <b2 >e4 g2 b2
+def mA6 o6 c6 <b2 g4 e2 g2
+def mA7 o5 a3 e3 c2 e2 a2 >c2 <b2
+def mA8 o5 b8 a2 f#2 d#2 f#2
+
+# main theme (C D Em Bm | C D G/B B7)
+def tA1 o5 e3 g3 b2 a2 g2 e2 d2
+def tA2 o5 f#3 a3 >d4 e2 d2 <a2
+def tA3 o5 b3 g3 e2 g2 {slide 6} b6 {slide 0}
+def tA4 o5 a3 f#3 d2 e2 f#4 d2
+def tB1 o5 e3 g3 b2 a2 g2 e2 g2
+def tB2 o5 a3 b3 >d2 e4 d2 <b2
+def tB3 {slide 5} o6 e6 {slide 0} d2 <b2 g2 b2 >d2
+def tB4 o6 d#6 <b2 f#2 a2 b4
+
+# breakdown: the theme at half speed
+def bd1 o5 e6 g6 b4 | a4 g4 e4 d4
+def bd2 o5 f#6 a6 >d4 | w4 e4 d4 <a4
+def bd3 o5 b6 g6 e4 | g4 {slide 3} b12 {slide 0}
+def bd4 o5 a6 f#6 d4 | e4 f#8 d4
+
+# bass beats (root C, moved with t): climb = kick + octave offbeat, drop = kick + gallop
+def cb @tk o2 c2 @tb o3 c2
+def db @tk o2 c2 @tb c1 o3 c1
+
+def nd hc1 hc1 ho2 sn2 hc1 hc1 hc1 hc1 ho2 sn2 hc1 hc1
+
+# ---------------------------------------------------------------- pulse 1
+pat intro0 p1
+  @pad {vol 9} {slide 0} {bend 0} {arp 0} {detune 0} [$emf]2 | {vol 11} [$emf]2 | {vol 13} [$cf]2 | {vol 15} [$cf]2
+pat intro1 p1
+  @pad {vol 15} [$emf]4 | [$df]4
+pat outro20 p1
+  @pad {vol 15} {slide 0} [$emf]4 | [$cf]4
+pat outro21 p1
+  @pad {vol 15} [$emf]2 | {vol 13} [$emf]2 | {vol 11} [$df]2 | {vol 9} [$df]2
+pat lift2 p1
+  @soft {vol 15} {slide 0} $L1 | $L2 | $L3 | $L4
+pat lift3 p1
+  @soft {vol 15} {slide 0} $L5 | $L6 | $L7 | $L8
+pat climbA p1
+  @lead2 {vol 15} {slide 0} $mA1 | $mA2 | $mA3 | $mA4
+pat climbB p1
+  @lead2 {vol 15} {slide 0} $mA5 | $mA6 | $mA7 | $mA8
+pat build6 p1
+  @lead {vol 11} {slide 0} o5 e3 g3 b2 r8 | f#3 a3 >d2< r8 | d3 f#3 b2 r8 | e3 g3 b2 >e8<
+pat build7 p1                 # the break bar: the held B bends up like a siren over the riser
+  @lead {vol 12} {slide 0} o5 e3 g3 b2 e3 g3 b2 | f#3 a3 >d2< f#3 a3 >d2< | l1 [e g b >e<]4 | o5 {bend -1} b8 r4 {bend 0} f#1 a1 b1 >d#1<
+pat themeA p1
+  @lead {vol 15} {slide 0} $tA1 | $tA2 | $tA3 | $tA4
+pat themeB p1
+  @lead {vol 15} {slide 0} $tB1 | $tB2 | $tB3 | $tB4
+pat themeEnd p1
+  @lead {vol 15} {slide 0} $tB1 | $tB2 | $tB3 | o5 b2 {slide 4} >c14
+pat bd12 p1
+  @soft2 {vol 15} {slide 0} $bd1 | $bd2
+pat bd13 p1
+  @soft2 {vol 15} {slide 0} $bd3 | $bd4
+pat rebuild14 p1
+  @thin {slide 0} {vol 9} $tA1 | {vol 11} $tA2 | {vol 13} $tA3 | {vol 15} $tA4
+
+# ---------------------------------------------------------------- pulse 2
+pat p2echo p2                 # echo of pulse 1, a dotted eighth later
+  {echo 21 8} {detune 0} w64
+pat p2lift p2
+  {echo 21 6} {detune 0} w64
+pat p2climbA p2
+  {echo off} {detune 0} {vol 15} @stab o4 {arp 37} e3 e3 e2 e3 e3 e2 | {arp 47} c3 c3 c2 c3 c3 c2 | <g3 g3 g2 g3 g3 g2> | d3 d3 d2 d3 d3 d2
+pat p2climbB p2
+  {echo off} {detune 0} {vol 15} @stab o4 {arp 37} e3 e3 e2 e3 e3 e2 | {arp 47} c3 c3 c2 c3 c3 c2 | {arp 37} <a3 a3 a2 a3 a3 a2 | {arp 47} b3 b3 b2 b3 b3 b2>
+pat p2build6 p2
+  {echo off} {detune 0} {vol 15} @stab o4 {arp 47} [c2]8 | [d2]8 | {arp 37} [<b2>]8 | [e2]8
+pat p2build7 p2
+  {echo off} {detune 0} {vol 15} @stab o4 {arp 47} [c1]16 | [d1]16 | [c1]16 | {echo 14 7} w16
+pat p2dropA p2
+  {echo off} {detune 0} {vol 15} @stab2 o4 {arp 47} [c1 w1 c1 c1 w1 c1 w1 c1]2 | [d1 w1 d1 d1 w1 d1 w1 d1]2 | {arp 37} [e1 w1 e1 e1 w1 e1 w1 e1]2 | <[b1 w1 b1 b1 w1 b1 w1 b1]2>
+pat p2dropB p2
+  {echo off} {detune 0} {vol 15} @stab2 o4 {arp 47} [c1 w1 c1 c1 w1 c1 w1 c1]2 | [d1 w1 d1 d1 w1 d1 w1 d1]2 | {arp 38} <[b1 w1 b1 b1 w1 b1 w1 b1]2 | {arp 4a} [b1 w1 b1 b1 w1 b1 w1 b1]2>
+pat p2echoDrop p2
+  {echo 21 7} {detune 0} w64
+pat p2bd p2                   # long echo for the breakdown
+  {echo 42 7} {detune 0} w64
+pat p2sparkle p2
+  {echo off} {detune 0} {arp 0} {vol 15} @sparkle l1 o5 [e g b >e g e< b g]4 | [d f# b >d f# d< b f#]4
+pat p2rebuild p2
+  {echo off} {detune 0} {vol 15} @stab o4 {arp 47} [c2]8 | [d2]8 | {arp 37} [e2]8 | [<b2>]8
+pat p2unison p2               # detuned unison: a fat double lead
+  {echo 0 12} {detune 1} w64
+pat p2octave p2               # shimmer: pulse 1 an octave up, a sixteenth later
+  {echo 7 6 oct} {detune 0} w64
+
+pat p2beacon p2               # morse "UP", twice, like a balloon's radio beacon
+  {echo off} {detune 0} {arp 0} {vol 15} @beacon o5 [b1 r1 b1 r1 b3 r3 b1 r1 b3 r1 b3 r1 b1 r7]2 r8
+
+# ---------------------------------------------------------------- triangle
+pat tlift2 tri
+  @tb2 [o2 e6 e6 >e4]2 | [o2 c6 c6 >c4]2
+pat tlift3 tri
+  @tb2 [o2 e6 e6 >e4]2 | [o2 d6 d6 >d4]2
+pat tclimbA tri
+  t4 [$cb]4 | t0 [$cb]4 | t-5 [$cb]4 | t2 [$cb]4
+pat tclimbB tri
+  t4 [$cb]4 | t0 [$cb]4 | t-3 [$cb]4 | t-1 [$cb]4
+pat tbuild6 tri
+  t0 [$cb]4 | t2 [$cb]4 | t-1 [$cb]4 | t4 [$cb]4
+pat tbuild7 tri
+  t0 [$cb]4 | t2 [$cb]4 | t0 [$cb]4 | r16
+pat tdropA tri
+  t0 [$db]4 | t2 [$db]4 | t4 [$db]4 | t-1 [$db]4
+pat tdropB tri
+  t0 [$db]4 | t2 [$db]4 | t-1 [$db]4 | [$db]3 t0 @tb o1 b1 o2 c#1 d#1 f#1
+pat tbd12 tri
+  @tb3 o2 [c8]4 | [d8]4
+pat tbd13 tri
+  @tb3 o2 [e8]4 | o1 [b8]4
+pat trebuild tri
+  t0 [$cb]4 | t2 [$cb]4 | t4 [$cb]4 | t-1 [$cb]4
+pat tend tri
+  t0 [$db]4 | t2 [$db]4 | t-1 [$db]4 | t0 @tk o2 c2 @tsus c14
+pat toutro tri                # the bass thins out towards the intro
+  @tb3 o2 e16 e16 | c16 c16
+pat toutro2 tri
+  @tb3 o2 e16 r16 | d16 r16
+
+# ---------------------------------------------------------------- noise
+pat nlift2 noise
+  {vol 15} [w2 hc2]16
+pat nlift3 noise
+  {vol 15} [w2 hc1 hc1]16
+pat nclimb noise
+  {vol 15} [w2 ho2 sn2 hc1 hc1 w2 ho2 sn2 hc1 hc1]4
+pat nbuild6 noise              # the snare roll crescendos through the build
+  {vol 15} [w2 ho2 sn2 hc1 hc1 w2 ho2 sn2 hc1 hc1]2 | {vol 6} [sn2]4 {vol 7} [sn2]4 | {vol 8} [sn2]4 {vol 9} [sn2]4
+pat nbuild7 noise
+  {vol 9} [sn2]8 | {vol 10} [sn2]4 {vol 11} [sn2]4 | {vol 12} [sn1]8 {vol 13} [sn1]8 | ri16
+pat ndropA noise
+  {vol 15} cr4 sn2 hc1 hc1 hc1 hc1 ho2 sn2 hc1 hc1 | [$nd]3
+pat ndrop noise
+  {vol 15} [$nd]4
+pat nfill noise
+  {vol 15} [$nd]3 | [sn1]16
+pat nwind noise
+  {vol 15} wind64
+pat nrebuild noise
+  {vol 15} [w2 hc1 hc1]8 | [sn2]16
+pat nend noise
+  {vol 15} [$nd]3 | cr16
+pat noutro noise
+  {vol 15} [w2 hc2]8 | w32
+
+# ---------------------------------------------------------------- DPCM
+pat dclimb dmc
+  [kick4 snare4]8
+pat dbuild6 dmc
+  [kick4]16
+pat dbuild7 dmc
+  [kick4]8 | [snare1]16 | r16
+pat ddropA dmc
+  boom8 kick4 snare4 | [kick4 snare4]6
+pat ddrop dmc
+  [kick4 snare4]8
+pat dfill dmc
+  [kick4 snare4]6 | kick4 snare2 snare2 snare1 snare1 snare1 snare1 snare2 snare2
+pat drebuild dmc
+  [kick4]16
+pat dend dmc
+  [kick4 snare4]6 | boom16
+
+# ---------------------------------------------------------------- order (p1 p2 tri noise dmc [transpose])
+order
+  ground0:   intro0    p2echo     -        -        -
+  ground1:   intro1    p2beacon   -        -        -
+  liftoff2:  lift2     p2lift     tlift2   nlift2   -
+  liftoff3:  lift3     p2lift     tlift3   nlift3   -
+  climb4:    climbA    p2climbA   tclimbA  nclimb   dclimb
+  climb5:    climbB    p2climbB   tclimbB  nclimb   dclimb
+  build6:    build6    p2build6   tbuild6  nbuild6  dbuild6
+  build7:    build7    p2build7   tbuild7  nbuild7  dbuild7
+  drop8:     themeA    p2dropA    tdropA   ndropA   ddropA
+  drop9:     themeB    p2dropB    tdropB   ndrop    ddrop
+  drop10:    themeA    p2echoDrop tdropA   ndropA   ddrop
+  drop11:    themeB    p2echoDrop tdropB   nfill    dfill
+  break12:   bd12      p2bd       tbd12    nwind    -
+  break13:   bd13      p2sparkle  tbd13    nwind    -
+  rebuild14: rebuild14 p2rebuild  trebuild nrebuild drebuild
+  rebuild15: build7    p2build7   tbuild7  nbuild7  dbuild7
+  climax16:  themeA    p2unison   tdropA   ndropA   ddropA   2
+  climax17:  themeB    p2unison   tdropB   ndrop    ddrop    2
+  climax18:  themeA    p2octave   tdropA   ndropA   ddrop    2
+  climax19:  themeEnd  p2octave   tend     nend     dend     2
+  descent20: outro20   p2echo     toutro   noutro   -
+  descent21: outro21   p2beacon   toutro2  -        -
