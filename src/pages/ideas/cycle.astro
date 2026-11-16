@@ -1,0 +1,212 @@
+---
+// Cycle: a pixel landscape animated only by rotating colour ranges. The content hides in the scenery.
+import { name, email, now, projects, alsoWorkedOn, socials } from '../../data/bio';
+const p = Object.fromEntries(projects.map((x) => [x.slug, x]));
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ben Firshman</title>
+    <meta name="description" content="Ben Firshman works on Replicate. Before that: Cog, Command Line Interface Guidelines, Docker Compose, JSNES, and more." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet" />
+    <script is:inline>
+      (function () {
+        var d = document.documentElement, q = new URLSearchParams(location.search);
+        var s = parseInt(q.get('seed') || '', 10);
+        if (!(s > 0 && s < 100000)) s = 1 + Math.floor(Math.random() * 99999);
+        d.dataset.seed = s;
+        var c = document.createElement('canvas');
+        if (c.getContext && c.getContext('2d')) d.classList.add('js');
+      })();
+    </script>
+    <style is:global>
+      :root {
+        --ink: #e9e4f4; --soft: rgba(233, 228, 244, .62); --card: rgba(14, 14, 32, .86); --edge: rgba(233, 228, 244, .22);
+        --paper: #f6f1e7; --pink: #ffb4a0;
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: #0b0f26; }
+      body { color: var(--ink); font-family: 'Newsreader', 'Iowan Old Style', Georgia, serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
+      html:not(.js) body { overflow: auto; background: #f6f1e7; }
+
+      #cy {
+        position: fixed; display: block; image-rendering: pixelated; image-rendering: crisp-edges;
+        opacity: 0; transition: opacity 1.6s ease; touch-action: none; user-select: none; -webkit-user-select: none;
+      }
+      #cy.on { opacity: 1; }
+      html:not(.js) #cy, html:not(.js) .ui.r, html:not(.js) #readBtn, html:not(.js) #ed, html:not(.js) #found, html:not(.js) #spots, html:not(.js) #label, html:not(.js) #hint { display: none !important; }
+
+      #spots { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+      .spot {
+        position: absolute; left: 0; top: 0; padding: 0; margin: 0; border: 0; background: transparent;
+        pointer-events: none; border-radius: 3px;
+      }
+      .spot:focus-visible { outline: 1px dashed rgba(255, 255, 255, .7); outline-offset: 2px; }
+
+      #label {
+        position: fixed; left: 0; top: 0; z-index: 4; pointer-events: auto; max-width: min(330px, calc(100vw - 24px));
+        background: var(--card); color: var(--ink);
+        border: 1px solid var(--edge); border-radius: 2px;
+        box-shadow: 4px 4px 0 rgba(0, 0, 0, .32);
+        padding: 12px 16px 13px; font-size: 16px; line-height: 1.38;
+        backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+        animation: pop .22s cubic-bezier(.2, 1.5, .4, 1);
+      }
+      #label[hidden] { display: none; }
+      @keyframes pop { from { opacity: 0; scale: .94; } to { opacity: 1; scale: 1; } }
+      #label h2 {
+        font: 400 8px/1 'Silkscreen', monospace; font-size: 8px; letter-spacing: .12em; text-transform: uppercase;
+        margin: 0 0 8px; color: var(--pink); transform-origin: left; scale: 1.5; width: 66%;
+      }
+      #label p { margin: 0 0 4px; }
+      #label .sub { color: var(--soft); font-style: italic; font-size: 15px; }
+      #label ul { list-style: none; margin: 2px 0 0; padding: 0; }
+      #label li { margin: 0 0 7px; }
+      #label li span { display: block; color: var(--soft); font-style: italic; font-size: 15px; line-height: 1.25; }
+      #label .greets li { display: inline; margin: 0; }
+      #label .greets li + li::before { content: ' \2726 '; color: var(--pink); font-size: 11px; padding: 0 4px; }
+      #label a { color: #fff; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .35); text-underline-offset: .18em; text-decoration-thickness: 1px; }
+      #label a:hover, #label a:focus-visible { text-decoration-color: #fff; }
+      #label[data-kind='star'] h2 { color: #b9cbff; }
+      #label[data-kind='name'] h2 { color: #ffd38a; }
+
+      .ui { position: fixed; z-index: 3; bottom: 10px; display: flex; align-items: center; gap: 12px;
+        font: 400 8px/1 'Silkscreen', monospace; letter-spacing: .08em; }
+      .ui.l { left: 14px; }
+      .ui.r { right: 14px; }
+      .ui button, .ui a {
+        font: inherit; color: #fff; background: none; border: 0; padding: 6px 0; cursor: pointer; text-decoration: none;
+        opacity: .34; transition: opacity .25s; text-shadow: 0 1px 0 rgba(0, 0, 0, .45);
+      }
+      .ui button:hover, .ui a:hover, .ui button:focus-visible, .ui a:focus-visible { opacity: .9; outline: none; }
+      .ui button[aria-pressed='true'] { opacity: .85; }
+      .ui .w { display: flex; gap: 9px; }
+      #found { opacity: .3; color: #fff; text-shadow: 0 1px 0 rgba(0, 0, 0, .45); }
+      #dial {
+        width: 34px; height: 34px; border-radius: 50%; position: relative; cursor: grab; touch-action: none;
+        border: 1px solid rgba(255, 255, 255, .3); opacity: .55; transition: opacity .25s;
+        background: linear-gradient(to bottom, rgba(255, 255, 255, .06) 50%, rgba(0, 0, 0, .2) 50%);
+      }
+      #dial:hover, #dial:focus-visible { opacity: .95; outline: none; }
+      #dial::after { content: ''; position: absolute; left: 3px; right: 3px; top: 50%; height: 1px; background: rgba(255, 255, 255, .3); }
+      #dialSun { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; background: #ffd27a; box-shadow: 0 0 6px #ffb050; }
+      #dial[data-night='true'] #dialSun { background: #dfe6ff; box-shadow: 0 0 6px #9fb4ff; border-radius: 50%; }
+
+      #hint {
+        position: fixed; z-index: 3; left: 50%; top: 18px; translate: -50% 0; margin: 0; pointer-events: none;
+        font: 400 8px/1 'Silkscreen', monospace; letter-spacing: .1em; color: #fff; opacity: .55;
+        text-shadow: 0 1px 0 rgba(0, 0, 0, .5); transition: opacity 1.4s ease; white-space: nowrap;
+        animation: hintIn 2.4s ease both .9s;
+      }
+      @keyframes hintIn { from { opacity: 0; } to { opacity: .55; } }
+      #hint.gone { opacity: 0 !important; animation: none; }
+
+      /* the read panel: also the no-JS page */
+      #read { position: fixed; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center;
+        background: rgba(8, 9, 22, .5); opacity: 0; pointer-events: none; transition: opacity .35s ease; padding: 16px; }
+      #read.open { opacity: 1; pointer-events: auto; }
+      .sheet {
+        position: relative; width: min(35rem, 100%); max-height: calc(100vh - 32px); overflow: auto;
+        background: var(--paper); color: #2b2233; border-radius: 3px; padding: 44px 46px 38px;
+        box-shadow: 6px 6px 0 rgba(0, 0, 0, .28); font-size: 18px; line-height: 1.52;
+        translate: 0 8px; transition: translate .35s ease;
+      }
+      #read.open .sheet { translate: 0 0; }
+      .sheet h1 { font-weight: 500; font-size: 2rem; line-height: 1.1; margin: 0 0 1.1rem; letter-spacing: -.01em; }
+      .sheet p, .sheet ul { margin: 0 0 1rem; }
+      .sheet ul { padding-left: 1.1rem; }
+      .sheet li { margin: 0 0 .4rem; }
+      .sheet li::marker { color: #b36a7a; }
+      .sheet a { color: inherit; text-decoration-color: rgba(43, 34, 51, .3); text-underline-offset: .18em; text-decoration-thickness: 1px; }
+      .sheet a:hover { text-decoration-color: currentColor; }
+      .sheet hr { border: 0; border-top: 1px solid rgba(43, 34, 51, .15); margin: 1.5rem 0 0; }
+      #readClose { position: absolute; top: 14px; right: 16px; font: 400 8px/1 'Silkscreen', monospace; letter-spacing: .1em;
+        background: none; border: 0; color: #2b2233; opacity: .5; cursor: pointer; padding: 6px; }
+      #readClose:hover, #readClose:focus-visible { opacity: 1; }
+      html:not(.js) #read { position: static; opacity: 1; pointer-events: auto; background: none; display: block; padding: 8vh 20px; }
+      html:not(.js) .sheet { margin: 0 auto; box-shadow: none; max-height: none; translate: none; background: none; padding: 0; }
+      html:not(.js) #readClose { display: none; }
+      html:not(.js) .ui a { color: #2b2233; text-shadow: none; }
+
+      @media (max-width: 560px) {
+        .ui { bottom: max(8px, env(safe-area-inset-bottom)); }
+        .ui.l { left: 12px; gap: 10px; }
+        .ui.r { right: 12px; gap: 9px; }
+        .ui .w { gap: 7px; }
+        #found { display: none; }
+        .sheet { padding: 40px 24px 28px; font-size: 17px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #label { animation: none; }
+        #read, .sheet, #cy { transition: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="cy" aria-hidden="true"></canvas>
+    <div id="spots" aria-label="Things hidden in the landscape"></div>
+    <div id="label" role="status" hidden></div>
+    <p id="hint" aria-hidden="true">drag the sky to turn the hours</p>
+
+    <nav class="ui l" aria-label="Page">
+      <button type="button" id="readBtn" aria-expanded="false" aria-controls="read">read</button>
+      <a href="/ideas">ideas</a>
+      <button type="button" id="ed" title="Copy a link to this landscape"></button>
+      <span id="found" hidden></span>
+    </nav>
+    <div class="ui r">
+      <div class="w" role="group" aria-label="Weather">
+        <button type="button" data-weather="clear" aria-pressed="false">clear</button>
+        <button type="button" data-weather="rain" aria-pressed="false">rain</button>
+        <button type="button" data-weather="snow" aria-pressed="false">snow</button>
+        <button type="button" data-weather="fog" aria-pressed="false">fog</button>
+      </div>
+      <button type="button" id="sound" aria-pressed="false">sound</button>
+      <div id="dial" role="slider" tabindex="0" aria-label="Time of day" aria-valuemin="0" aria-valuemax="24" aria-valuenow="12"><span id="dialSun"></span></div>
+    </div>
+
+    <section id="read" aria-label="Ben Firshman, in plain text">
+      <div class="sheet">
+        <button type="button" id="readClose">close</button>
+        <main>
+          <h1>{name}</h1>
+          <p>I'm working on <a href={now.url}>{now.name}</a>. Some other stuff I've done:</p>
+          <ul>
+            <li><a href={p.cog.url}>Cog</a>, containers for machine learning.</li>
+            <li><a href={p.clig.url}>Command Line Interface Guidelines</a>, a guide to help you write better command-line programs.</li>
+            <li><a href={p.compose.url}>Docker Compose</a> and <a href={p.machine.url}>Docker Machine</a>.</li>
+            <li><a href={p.jsnes.url}>JSNES</a>, one of the first JavaScript emulators.</li>
+            <li><a href={p.whalebrew.url}>Whalebrew</a>, a Docker package manager.</li>
+            <li><a href={p['arxiv-vanity'].url}>arXiv Vanity</a>, which rendered papers from arXiv as responsive web pages.</li>
+            <li>I worked on {alsoWorkedOn.map((g, i) => (
+              <>{i > 0 && (i === alsoWorkedOn.length - 1 ? ', and ' : ', ')}<a href={g.url}>{g.name}</a></>
+            ))}.</li>
+            <li>I worked on many parts of <a href={p.django.url}>Django</a>, including class-based views, feeds, and search.</li>
+            <li>I helped start the <a href={p.ukhas.url}>UK High Altitude Society</a>, a group for amateur near-space exploration.</li>
+          </ul>
+          <p>Email me at <a href={`mailto:${email}`}>{email}</a>.<br />
+            I'm also on {socials.map((x, i) => (
+              <>{i > 0 && (i === socials.length - 1 ? ', and ' : ', ')}<a href={x.url}>{x.name}</a></>
+            ))}.</p>
+          <hr />
+        </main>
+      </div>
+    </section>
+
+    <script>
+      import { start } from '../../components/ideas/cycle/main';
+      if (document.documentElement.classList.contains('js')) {
+        try { start(); }
+        catch (e) {
+          console.error(e);
+          document.documentElement.classList.remove('js');
+        }
+      }
+    </script>
+  </body>
+</html>
